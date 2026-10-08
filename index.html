@@ -3,316 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="IRONFIT - An ultra-exclusive private fitness sanctuary engineered for high-performance athletes and executives.">
-  <title>Pro fit!</title>
-  
-  <!-- Premium Fonts: Syne (High-fashion / Athletic) & Plus Jakarta Sans (Clean Editorial) -->
+  <meta name="description" content="PRO FIT - An elite private performance training club equipped with Olympic platforms and expert coaching.">
+  <title>PRO FIT</title>
+
+  <!-- Professional Athletic Typography: Barlow Condensed (Headings) & Inter (Body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Syne:wght@700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  
-  <!-- Remix Icons CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-  
-  <!-- Main Stylesheet -->
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Ambient Cursor Glow Effect (Luxury Desktop Interaction) -->
-  <div class="cursor-glow" id="cursorGlow"></div>
-
-  <!-- Noise Texture Overlay (Gives matte black an organic carbon/film grain texture) -->
-  <div class="noise-overlay"></div>
-
-  <!-- Top Announcement / Club Status Strip -->
-  <aside class="top-announcement" aria-label="Club status">
-    <div class="announcement-content">
-      <span class="status-indicator">
-        <span class="pulse-dot"></span>
-        <span>PRIVATE SANCTUARY // LIMITED CAPACITY (88% FULL)</span>
-      </span>
-      <span class="announcement-divider">•</span>
-      <span class="location-tag">LOCATIONS: • INDIA(UTTAR PRADESH)(MZN) </span>
-      <span class="announcement-divider">•</span>
-      <a href="#plans" class="apply-link">APPLY FOR VIP ENTRY <i class="ri-arrow-right-up-line"></i></a>
-    </div>
-  </aside>
-
-  <!-- ==================== 1. COMMERCIAL-TIER NAVBAR ==================== -->
-  <header class="header" id="header">
-    <div class="nav-container">
+  <!-- ==================== 1. NAVBAR ==================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
       
       <!-- Brand Logo -->
-      <a href="#" class="brand-logo" aria-label="IRONFIT Home">
-        <span class="brand-mark">
-          <span class="iron">PRO FIT</span><span class="fit">FIT</span>
-          <span class="brand-registered">®</span>
-        </span>
-        <span class="brand-tag">PERFORMANCE LAB</span>
+      <a href="#" class="brand" aria-label="PRO FIT Homepage">
+        <span class="brand-name">PRO<span class="brand-accent">FIT</span></span>
+        <span class="brand-sub">TRAINING CLUB</span>
       </a>
 
-      <!-- Desktop Navigation Menu -->
-      <nav class="nav-menu" id="nav-menu" aria-label="Main Navigation">
-        <ul class="nav-list">
-          <li class="nav-item">
-            <a href="#home" class="nav-link active">
-              <span class="nav-index">01</span>
-              <span class="nav-title">Home</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="#about" class="nav-link">
-              <span class="nav-index">02</span>
-              <span class="nav-title">The Sanctuary</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="#services" class="nav-link">
-              <span class="nav-index">03</span>
-              <span class="nav-title">Disciplines</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="#plans" class="nav-link">
-              <span class="nav-index">04</span>
-              <span class="nav-title">Memberships</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="#trainers" class="nav-link">
-              <span class="nav-index">05</span>
-              <span class="nav-title">Masters</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="#contact" class="nav-link">
-              <span class="nav-index">06</span>
-              <span class="nav-title">Concierge</span>
-            </a>
-          </li>
+      <!-- Desktop Navigation -->
+      <nav class="main-nav" id="mainNav" aria-label="Primary navigation">
+        <ul class="nav-links">
+          <li><a href="#about" class="nav-link">About</a></li>
+          <li><a href="#programs" class="nav-link">Programs</a></li>
+          <li><a href="#services" class="nav-link">Services</a></li>
+          <li><a href="#plans" class="nav-link">Memberships</a></li>
+          <li><a href="#trainers" class="nav-link">Trainers</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
         </ul>
-
-        <!-- Mobile Drawer Footer Info -->
-        <div class="mobile-drawer-footer">
-          <div class="drawer-contact-info">
-            <p class="drawer-label">VIP CONCIERGE</p>
-            <p class="drawer-phone">+91 9368593249</p>
-            <p class="drawer-address">New mandi, near taishk, Muzaffarnagar</p>
-          </div>
-          <a href="#plans" class="btn btn-primary btn-full-width">
-            <span>Request Invitation</span>
-            <i class="ri-arrow-right-line"></i>
-          </a>
-        </div>
       </nav>
 
       <!-- Right Header Actions -->
-      <div class="nav-actions">
-        <a href="tel:+1800840IRON" class="concierge-quick-call" aria-label="Contact VIP Concierge">
-          <i class="ri-phone-line"></i>
-          <span class="concierge-text">VIP LINE</span>
-        </a>
+      <div class="header-actions">
+        <a href="#plans" class="btn btn-primary nav-cta">Start Free Trial</a>
 
-        <a href="#plans" class="btn btn-magnetic nav-cta">
-          <span class="btn-text">Request Access</span>
-          <span class="btn-icon-wrapper">
-            <i class="ri-arrow-right-up-line"></i>
-          </span>
-        </a>
-
-        <!-- Custom Hamburger Toggle for Mobile -->
-        <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-label="Toggle navigation menu">
-          <span class="bar bar-1"></span>
-          <span class="bar bar-2"></span>
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-toggle" id="mobileToggle" aria-expanded="false" aria-label="Toggle menu">
+          <span class="toggle-line"></span>
+          <span class="toggle-line"></span>
+          <span class="toggle-line"></span>
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- ==================== 2. EDITORIAL HERO SECTION ==================== -->
-  <section class="hero" id="home">
-    
-    <!-- Multi-layered High Dynamic Range Media Background -->
-    <div class="hero-media-wrapper">
-      <div class="hero-media-image"></div>
-      <!-- Vignette and Dark Gradients -->
-      <div class="hero-overlay-dark"></div>
-      <div class="hero-overlay-radial"></div>
-      <div class="hero-lighting-accent"></div>
-    </div>
+  <!-- ==================== 2. HERO SECTION ==================== -->
+  <main>
+    <section class="hero" id="home">
+      <!-- Authentic Gym Photography with Controlled Dark Gradient Overlays -->
+      <div class="hero-backdrop">
+        <div class="hero-image"></div>
+        <div class="hero-scrim"></div>
+      </div>
 
-    <div class="hero-container">
-      <div class="hero-layout">
-        
-        <!-- Left Column: Editorial Headline & Actions -->
-        <div class="hero-main">
+      <div class="hero-content-wrapper">
+        <div class="hero-text-block">
           
-          <!-- VIP Cohort Badge -->
-          <div class="luxury-pill">
-            <span class="pill-dot"></span>
-            <span class="pill-text">APPLICATION ONLY // COHORT 2026</span>
+          <!-- Category / Location Marker -->
+          <div class="hero-eyebrow">
+            <span class="eyebrow-accent"></span>
+            <span>PRIVATE PERFORMANCE FACILITY — SOHO & DOWNTOWN</span>
           </div>
 
-          <!-- Monumental Architectural Headline -->
+          <!-- Strong, Unapologetic Editorial Headline -->
           <h1 class="hero-title">
-            FORGING <br>
-            THE <span class="text-lime-gradient">0.1%</span> <br>
-            OF HUMANITY.
+            BUILD YOUR<BR>BEST VERSION 
           </h1>
 
-          <!-- Precision Crafted Tagline -->
-          <p class="hero-description">
-            Pro Fit® is an invite-only performance lab combining Olympic-grade biomechanics, private cryo-recovery suites, and bespoke biometric tracking for athletes and visionary executives.
+          <!-- Grounded, Realistic Supporting Copy -->
+          <p class="hero-copy">
+            Skip the excuses, lift the weights, and build a version of yourself that even your lazy self would be proud of.
           </p>
 
-          <!-- Action Trigger Buttons -->
-          <div class="hero-action-row">
-            <a href="#plans" class="btn btn-primary btn-hero">
-              <span class="btn-text">Claim Private Access</span>
-              <span class="btn-icon-circle">
-                <i class="ri-arrow-right-line"></i>
-              </span>
-            </a>
-
-            <button class="btn btn-secondary-glass" id="openVideoBtn" aria-label="Watch club cinema walkthrough">
-              <span class="play-indicator">
-                <i class="ri-play-fill"></i>
-              </span>
-              <span class="btn-text">Experience Film [01:42]</span>
-            </button>
-          </div>
-
-          <!-- Key Quantitative Proof Badges -->
-          <div class="hero-metrics-grid">
-            <div class="metric-card">
-              <div class="metric-val">15,000<span class="metric-suffix">SQ FT</span></div>
-              <div class="metric-desc">Biometric Custom Facility</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-val">1 : 1<span class="metric-suffix">RATIO</span></div>
-              <div class="metric-desc">Master Coach Protocol</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-val">99.4<span class="metric-suffix">%</span></div>
-              <div class="metric-desc">Biomarker Goal Retention</div>
-            </div>
+          <!-- Action Buttons (One Clear Primary, One Crisp Secondary) -->
+          <div class="hero-cta-group">
+            <a href="#plans" class="btn btn-primary">Start Your 7-Day Trial</a>
+            <a href="#about" class="btn btn-secondary">Explore The Facility</a>
           </div>
 
         </div>
+      </div>
 
-        <!-- Right Column: Floating Interactive Glass Card -->
-        <div class="hero-aside">
-          <div class="membership-card-preview">
-            
-            <div class="card-glass-header">
-              <div class="card-chip">
-                <i class="ri-rfid-line"></i>
-                <span>BIOMETRIC BLACK PASS</span>
-              </div>
-              <span class="card-status-badge">ACTIVE</span>
-            </div>
-
-            <div class="card-glass-body">
-              <p class="card-lead">INCLUDED SANCTUARY PRIVILEGES</p>
-              <ul class="privilege-list">
-                <li>
-                  <i class="ri-checkbox-circle-fill"></i>
-                  <span>Private Olympic Lifting Deck</span>
-                </li>
-                <li>
-                  <i class="ri-checkbox-circle-fill"></i>
-                  <span>Hyperbaric Oxygen & Cryo Chamber</span>
-                </li>
-                <li>
-                  <i class="ri-checkbox-circle-fill"></i>
-                  <span>DEXA Body Scan & Hormone Panel</span>
-                </li>
-                <li>
-                  <i class="ri-checkbox-circle-fill"></i>
-                  <span>24/7 Valet & Executive Lounge</span>
-                </li>
-              </ul>
-            </div>
-
-            <div class="card-glass-footer">
-              <div class="member-avatars">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="Member" class="avatar-img">
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces" alt="Member" class="avatar-img">
-                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=faces" alt="Member" class="avatar-img">
-                <span class="avatar-badge">+420</span>
-              </div>
-              <div class="rating-info">
-                <div class="rating-stars">
-                  <i class="ri-star-fill"></i>
-                  <i class="ri-star-fill"></i>
-                  <i class="ri-star-fill"></i>
-                  <i class="ri-star-fill"></i>
-                  <i class="ri-star-fill"></i>
-                </div>
-                <span class="rating-label">Vetted Founders & Athletes</span>
-              </div>
-            </div>
-
-            <!-- Glowing Border Light Effect -->
-            <div class="card-glow-reflection"></div>
+      <!-- Grounded Real-World Facility Facts Strip -->
+      <div class="hero-bottom-bar">
+        <div class="facts-container">
+          <div class="fact-item">
+            <span class="fact-title">24/7 ACCESS</span>
+            <span class="fact-desc">Keycard entry every day of the year</span>
+          </div>
+          <div class="fact-divider"></div>
+          <div class="fact-item">
+            <span class="fact-title">ELEIKO EQUIPPED</span>
+            <span class="fact-desc">IPF & IWF certified bars and calibrated plates</span>
+          </div>
+          <div class="fact-divider"></div>
+          <div class="fact-item">
+            <span class="fact-title">LIMITED MEMBERSHIP</span>
+            <span class="fact-desc">Strict 300 member cap. No wait for racks</span>
           </div>
         </div>
-
       </div>
-    </div>
+    </section>
+  </main>
 
-    <!-- Commercial Infinite Ticker / Marquee Ribbon -->
-    <div class="hero-ticker-band">
-      <div class="ticker-track">
-        <span class="ticker-item"><i class="ri-flashlight-line"></i> HYPERTROPHY BIOMECHANICS</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-pulse-line"></i> INFRARED & COLD PLUNGE SUITES</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-shield-star-line"></i> VALET & BESPOKE NUTRITION</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-cpu-line"></i> 24/7 BIOMETRIC RECOVERY ACCESS</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-fire-line"></i> OLYMPIC CALIBER EQUIPMENT</span>
-        <span class="ticker-sep">•</span>
-        <!-- Duplicated for continuous infinite marquee -->
-        <span class="ticker-item"><i class="ri-flashlight-line"></i> HYPERTROPHY BIOMECHANICS</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-pulse-line"></i> INFRARED & COLD PLUNGE SUITES</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-shield-star-line"></i> VALET & BESPOKE NUTRITION</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-cpu-line"></i> 24/7 BIOMETRIC RECOVERY ACCESS</span>
-        <span class="ticker-sep">•</span>
-        <span class="ticker-item"><i class="ri-fire-line"></i> OLYMPIC CALIBER EQUIPMENT</span>
-        <span class="ticker-sep">•</span>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- Interactive Cinema Walkthrough Modal (Triggered by 'Experience Film') -->
-  <div class="video-modal" id="videoModal" aria-hidden="true" role="dialog">
-    <div class="modal-backdrop" id="modalBackdrop"></div>
-    <div class="modal-dialog">
-      <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close video preview">
-        <i class="ri-close-line"></i>
-      </button>
-      <div class="video-container">
-        <iframe 
-          id="promoIframe"
-          src="" 
-          title="IRONFIT Brand Walkthrough"
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen>
-        </iframe>
-      </div>
-    </div>
-  </div>
-
-  <!-- JavaScript -->
   <script src="script.js"></script>
 </body>
 </html>
