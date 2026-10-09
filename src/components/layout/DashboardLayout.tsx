@@ -14,29 +14,20 @@ import {
   X, 
   ShieldCheck, 
   User, 
-  Flame,
-  Layers,
+  Layers, 
   CalendarCheck
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { NotificationDropdown } from '@/components/common/NotificationDropdown';
-import type { UserRole } from '@/types';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const { user, role, logout, switchRole } = useAuth();
+  const { user, role, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-
-  const handleRoleChange = (newRole: UserRole) => {
-    switchRole(newRole);
-    if (newRole === 'admin') navigate('/admin/dashboard');
-    else if (newRole === 'trainer') navigate('/trainer/dashboard');
-    else navigate('/member/dashboard');
-  };
 
   const memberLinks = [
     { to: '/member/dashboard', icon: LayoutDashboard, label: 'Overview' },
@@ -112,28 +103,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           })}
         </nav>
 
-        {/* Quick Role Switcher Demo Box */}
-        <div className="p-4 mx-3 mb-4 rounded border border-gym-border bg-gym-black/60">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-gym-lime mb-2 flex items-center gap-1.5">
-            <Flame className="w-3 h-3 text-gym-lime" /> DEMO ROLE SWITCHER
-          </div>
-          <div className="grid grid-cols-3 gap-1">
-            {(['member', 'trainer', 'admin'] as UserRole[]).map(r => (
-              <button
-                key={r}
-                onClick={() => handleRoleChange(r)}
-                className={`py-1 text-[11px] font-heading uppercase font-bold rounded transition-colors ${
-                  role === r
-                    ? 'bg-gym-lime text-gym-black'
-                    : 'bg-gym-surface hover:bg-gym-surface-hover text-gym-secondary border border-gym-border'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* User Card & Logout */}
         <div className="p-4 border-t border-gym-border bg-gym-black/30 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -193,25 +162,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         <div className="md:hidden bg-gym-surface border-b border-gym-border p-4 space-y-3 z-40">
           <div className="flex items-center justify-between pb-3 border-b border-gym-border">
             <div className="text-xs">
-              <span className="font-bold text-white">{user?.full_name}</span>
-              <span className="text-gym-muted block text-[11px]">Role: {role?.toUpperCase()}</span>
+              <span className="font-bold text-white block">{user?.full_name}</span>
+              <span className="text-gym-muted text-[11px] font-mono">{user?.email}</span>
             </div>
-            <div className="flex gap-1">
-              {(['member', 'trainer', 'admin'] as UserRole[]).map(r => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    handleRoleChange(r);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`px-2 py-1 text-[10px] font-heading font-bold rounded ${
-                    role === r ? 'bg-gym-lime text-gym-black' : 'bg-gym-black text-gym-secondary'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-heading font-black uppercase tracking-wider bg-gym-lime/10 text-gym-lime border border-gym-lime/20">
+              {role?.toUpperCase()}
+            </span>
           </div>
           <nav className="space-y-1">
             {currentLinks.map(link => {

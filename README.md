@@ -29,9 +29,9 @@ Yeh project **PROFIT Training Club** (`https://profitgym-ten.vercel.app/`) ka co
 
 ---
 
-## 🔑 Demo Access Credentials (1-Click Switcher Available in UI)
+## 🔑 Account Access Credentials
 
-App ke andar **Instant 1-Click Role Switcher** laga hua hai jisse bina typing ke Member, Trainer ya Admin test kar sakte hain:
+Aap direct credentials enter karke login kar sakte hain:
 
 | Role | Email | Password | Landing Page |
 |---|---|---|---|

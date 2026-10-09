@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, ShieldCheck, Dumbbell, UserCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, switchRole } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,13 +32,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickDemo = (role: 'member' | 'trainer' | 'admin') => {
-    switchRole(role);
-    if (role === 'admin') navigate('/admin/dashboard');
-    else if (role === 'trainer') navigate('/trainer/dashboard');
-    else navigate('/member/dashboard');
-  };
-
   return (
     <div className="min-h-screen bg-gym-black flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background Graphic Accents */}
@@ -61,38 +54,8 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Demo Access Box */}
-        <div className="mt-8 bg-gym-surface/80 border border-gym-lime/30 rounded p-4 backdrop-blur shadow-lime-glow">
-          <div className="text-xs font-heading font-black uppercase text-gym-lime tracking-wider flex items-center gap-1.5 mb-2.5">
-            <ShieldCheck className="w-4 h-4" /> ONE-CLICK INSTANT DEMO ROLES
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleQuickDemo('member')}
-              className="px-2 py-2 bg-gym-black hover:bg-gym-lime hover:text-gym-black text-gym-primary rounded border border-gym-border text-xs font-heading uppercase font-bold tracking-wider transition-all flex flex-col items-center gap-1"
-            >
-              <Dumbbell className="w-3.5 h-3.5" />
-              <span>MEMBER</span>
-            </button>
-            <button
-              onClick={() => handleQuickDemo('trainer')}
-              className="px-2 py-2 bg-gym-black hover:bg-gym-lime hover:text-gym-black text-gym-primary rounded border border-gym-border text-xs font-heading uppercase font-bold tracking-wider transition-all flex flex-col items-center gap-1"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>TRAINER</span>
-            </button>
-            <button
-              onClick={() => handleQuickDemo('admin')}
-              className="px-2 py-2 bg-gym-black hover:bg-gym-lime hover:text-gym-black text-gym-primary rounded border border-gym-border text-xs font-heading uppercase font-bold tracking-wider transition-all flex flex-col items-center gap-1"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>ADMIN</span>
-            </button>
-          </div>
-        </div>
-
         {/* Login Card */}
-        <div className="mt-6 bg-gym-surface border border-gym-border py-8 px-6 shadow-card rounded sm:px-10">
+        <div className="mt-8 bg-gym-surface border border-gym-border py-8 px-6 shadow-card rounded sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
