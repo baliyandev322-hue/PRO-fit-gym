@@ -253,172 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ==========================================================================
-     3. HERO VIDEO CROSSFADE DYNAMICS & RESTRAINED PARALLAX
-     Professional two-layer crossfading workout background video coordinator
+     3. RESTRAINED HERO PARALLAX (DESKTOP ONLY)
      ========================================================================== */
   const heroImage = document.getElementById('heroImage');
   const heroBackdrop = document.getElementById('heroBackdrop');
-  const video1 = document.getElementById('heroVideo1');
-  const video2 = document.getElementById('heroVideo2');
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Crossfade controller
-  const initHeroVideoCrossfade = () => {
-    if (!video1 || !video2) return;
-
-    const CROSSFADE_SECONDS = 1.8; // Duration of CSS crossfade
-    const SLOW_MOTION_RATE = 0.8;  // Elegant athletic slow-motion playback
-
-    let currentVideo = video1;
-    let nextVideo = video2;
-    let isTransitioning = false;
-    let video1Failed = false;
-    let video2Failed = false;
-
-    // Configure muted autoplay policies and slow-motion playback
-    const setupVideo = (vid) => {
-      vid.muted = true;
-      vid.defaultMuted = true;
-      vid.playsInline = true;
-      vid.setAttribute('muted', '');
-      vid.setAttribute('playsinline', '');
-
-      const applyPlaybackRate = () => {
-        try {
-          vid.playbackRate = SLOW_MOTION_RATE;
-        } catch (err) {}
-      };
-
-      vid.addEventListener('loadedmetadata', applyPlaybackRate);
-      vid.addEventListener('play', applyPlaybackRate);
-      vid.addEventListener('canplay', applyPlaybackRate);
-    };
-
-    setupVideo(video1);
-    setupVideo(video2);
-
-    // Error resilience: prevent black flashes, flickering, or empty backgrounds
-    video1.addEventListener('error', () => {
-      video1Failed = true;
-      if (!video2Failed) {
-        video2.loop = true;
-        video2.classList.add('is-active');
-        video2.play().catch(() => {});
-      }
-    });
-
-    video2.addEventListener('error', () => {
-      video2Failed = true;
-      if (!video1Failed) {
-        video1.loop = true;
-        video1.classList.add('is-active');
-        video1.play().catch(() => {});
-      }
-    });
-
-    // Seamless crossfade transition executor
-    const performCrossfade = () => {
-      if (isTransitioning) return;
-      if (video1Failed || video2Failed) return;
-
-      isTransitioning = true;
-
-      // Rewind and prepare the next video
-      nextVideo.currentTime = 0;
-      try {
-        nextVideo.playbackRate = SLOW_MOTION_RATE;
-      } catch (err) {}
-
-      const startNextVideo = () => {
-        // Trigger CSS opacity transition: fade next in, fade current out
-        nextVideo.classList.add('is-active');
-        currentVideo.classList.remove('is-active');
-
-        // Once the crossfade opacity transition completes, pause previous video and swap
-        setTimeout(() => {
-          try {
-            currentVideo.pause();
-            currentVideo.currentTime = 0;
-          } catch (err) {}
-
-          // Swap active video references
-          const previous = currentVideo;
-          currentVideo = nextVideo;
-          nextVideo = previous;
-          isTransitioning = false;
-        }, CROSSFADE_SECONDS * 1000);
-      };
-
-      const playPromise = nextVideo.play();
-      if (playPromise !== undefined) {
-        playPromise.then(startNextVideo).catch(() => {
-          // If play fails unexpectedly, abort transition to prevent blank screen
-          isTransitioning = false;
-        });
-      } else {
-        startNextVideo();
-      }
-    };
-
-    // Monitor playback progress to initiate crossfade near the end
-    const onTimeUpdate = (vid) => {
-      if (vid !== currentVideo || isTransitioning) return;
-
-      if (vid.duration && !isNaN(vid.duration)) {
-        const remaining = vid.duration - vid.currentTime;
-        if (remaining <= CROSSFADE_SECONDS + 0.3) {
-          performCrossfade();
-        }
-      }
-    };
-
-    video1.addEventListener('timeupdate', () => onTimeUpdate(video1));
-    video2.addEventListener('timeupdate', () => onTimeUpdate(video2));
-
-    // Fallback if timeupdate skips exact threshold (e.g. low-power mode)
-    video1.addEventListener('ended', () => {
-      if (currentVideo === video1 && !isTransitioning) performCrossfade();
-    });
-    video2.addEventListener('ended', () => {
-      if (currentVideo === video2 && !isTransitioning) performCrossfade();
-    });
-
-    // Handle tab visibility to save resources
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        currentVideo.pause();
-      } else {
-        currentVideo.play().catch(() => {});
-      }
-    });
-
-    // Initiate first video playback
-    video1.classList.add('is-active');
-    const firstPlayPromise = video1.play();
-    if (firstPlayPromise !== undefined) {
-      firstPlayPromise.catch(() => {
-        // If autoplay blocked by strict browser policy, start on first interaction
-        const unlockPlayback = () => {
-          video1.play().catch(() => {});
-          window.removeEventListener('click', unlockPlayback);
-          window.removeEventListener('touchstart', unlockPlayback);
-          window.removeEventListener('scroll', unlockPlayback);
-        };
-        window.addEventListener('click', unlockPlayback, { once: true, passive: true });
-        window.addEventListener('touchstart', unlockPlayback, { once: true, passive: true });
-        window.addEventListener('scroll', unlockPlayback, { once: true, passive: true });
-      });
-    }
-
-    // Preload video 2 in background
-    video2.load();
-  };
-
-  initHeroVideoCrossfade();
-
-  // Subtle Hero Parallax (Desktop Only) across hero image and video layers
-  if (!prefersReducedMotion) {
-    const parallaxElements = [heroImage, video1, video2].filter(Boolean);
+  if (heroImage && !prefersReducedMotion) {
     let ticking = false;
 
     window.addEventListener('scroll', () => {
@@ -429,9 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const heroHeight = heroBackdrop ? heroBackdrop.offsetHeight : 800;
             if (scrollPos <= heroHeight) {
               const translateY = Math.round(scrollPos * 0.22);
-              parallaxElements.forEach((el) => {
-                el.style.transform = `translateY(${translateY}px)`;
-              });
+              heroImage.style.transform = `translateY(${translateY}px)`;
             }
           }
           ticking = false;
