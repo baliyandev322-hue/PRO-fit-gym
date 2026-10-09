@@ -9,24 +9,31 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.0",
     "@stripe/stripe-js": "^4.10.0",
     "@supabase/supabase-js": "^2.47.10",
+    "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.3",
     "html5-qrcode": "^2.3.8",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.468.0",
     "qrcode.react": "^4.1.0",
+    "razorpay": "^2.9.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
     "recharts": "^2.15.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
+    "prisma": "^6.4.0",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.6.3",
     "vite": "^6.0.3"

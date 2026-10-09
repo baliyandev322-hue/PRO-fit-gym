@@ -138,6 +138,12 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Update memberships
     setMemberships(prev => [newMembership, ...prev.filter(m => m.user_id !== user.id)]);
 
+    const isRazorpay = _paymentMethod.includes('RAZORPAY');
+    const inrPrice = targetPlan.id.includes('starter') ? 14900 : targetPlan.id.includes('elite') ? 39900 : 24900;
+    const finalAmount = isRazorpay ? inrPrice : targetPlan.price;
+    const finalCurrency = isRazorpay ? 'INR' : 'USD';
+    const txnId = isRazorpay ? `pay_rzp_${Date.now()}` : `pi_stripe_${Date.now()}`;
+
     // Record Payment
     const newPayment: PaymentRecord = {
       id: `pay-${Date.now()}`,
@@ -145,10 +151,10 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       member_name: user.full_name,
       plan_id: targetPlan.id,
       plan_name: `${targetPlan.name} Plan`,
-      amount: targetPlan.price,
-      currency: 'USD',
+      amount: finalAmount,
+      currency: finalCurrency,
       status: 'paid',
-      stripe_payment_intent_id: `pi_${Date.now()}`,
+      stripe_payment_intent_id: txnId,
       receipt_url: '#',
       created_at: new Date().toISOString()
     };
@@ -158,7 +164,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addNotification({
       user_id: user.id,
       title: 'Payment Successful & Plan Activated',
-      message: `Your ${targetPlan.name} membership ($${targetPlan.price}/mo) is now active for 30 days.`,
+      message: `Your ${targetPlan.name} membership (${isRazorpay ? `₹${inrPrice.toLocaleString()} INR` : `$${targetPlan.price} USD`}) is active for 30 days.`,
       type: 'payment',
       link: '/member/dashboard'
     });
@@ -166,7 +172,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast({
       type: 'success',
       title: 'MEMBERSHIP ACTIVATED',
-      message: `Welcome to ${targetPlan.name} Tier! Check-in key and locker pass ready.`
+      message: `Welcome to ${targetPlan.name} Tier! Digital QR turnstile pass synchronized.`
     });
 
     return true;

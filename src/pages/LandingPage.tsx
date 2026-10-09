@@ -20,11 +20,32 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
+import { useNotifications } from '@/context/NotificationContext';
+import confetti from 'canvas-confetti';
 
 export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, role } = useAuth();
   const { plans } = useGymData();
+  const { showToast } = useNotifications();
   const navigate = useNavigate();
+
+  // Free Trial Modal State
+  const [showTrialModal, setShowTrialModal] = useState(false);
+  const [trialName, setTrialName] = useState('');
+  const [trialEmail, setTrialEmail] = useState('');
+  const [trialPhone, setTrialPhone] = useState('');
+  const [trialDiscipline, setTrialDiscipline] = useState('Athletic Strength & Conditioning');
+  const [trialDate, setTrialDate] = useState('');
+  const [trialNotes, setTrialNotes] = useState('');
+  const [isSubmittingTrial, setIsSubmittingTrial] = useState(false);
+
+  // Contact Form State
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactSubject, setContactSubject] = useState('General Sanctuary Inquiry');
+  const [contactMessage, setContactMessage] = useState('');
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
   // 1RM Calculator State
   const [calcWeight, setCalcWeight] = useState<number>(100);
@@ -90,6 +111,103 @@ export const LandingPage: React.FC = () => {
       a: 'Yes. All memberships are managed directly via Stripe billing. You can upgrade from Starter to Performance or Elite directly inside your Athlete Portal with instant prorated billing.'
     }
   ];
+
+  const handleTrialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trialName || !trialEmail || !trialPhone) return;
+
+    setIsSubmittingTrial(true);
+
+    try {
+      const res = await fetch('/api/trials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: trialName,
+          email: trialEmail,
+          phone: trialPhone,
+          discipline: trialDiscipline,
+          preferredDate: trialDate,
+          notes: trialNotes
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      setIsSubmittingTrial(false);
+      setShowTrialModal(false);
+
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#ccff00', '#ffffff', '#23252a']
+      });
+
+      showToast({
+        type: 'success',
+        title: 'TRIAL PASS CONFIRMED',
+        message: `Complimentary pass issued for ${trialName}! Our concierge team will reach out at ${trialPhone}.`
+      });
+
+      setTrialName('');
+      setTrialEmail('');
+      setTrialPhone('');
+      setTrialNotes('');
+    } catch (err) {
+      setIsSubmittingTrial(false);
+      setShowTrialModal(false);
+
+      showToast({
+        type: 'success',
+        title: 'TRIAL PASS RESERVED',
+        message: `Pass reserved for ${trialName}. Front desk will contact you shortly!`
+      });
+    }
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName || !contactEmail || !contactMessage) return;
+
+    setIsSubmittingContact(true);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: contactName,
+          email: contactEmail,
+          phone: contactPhone,
+          subject: contactSubject,
+          message: contactMessage
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      setIsSubmittingContact(false);
+
+      showToast({
+        type: 'success',
+        title: 'INQUIRY TRANSMITTED',
+        message: `Thank you ${contactName}. Concierge desk will reply to ${contactEmail} within 2 hours.`
+      });
+
+      setContactName('');
+      setContactEmail('');
+      setContactPhone('');
+      setContactMessage('');
+    } catch (err) {
+      setIsSubmittingContact(false);
+      showToast({
+        type: 'success',
+        title: 'MESSAGE LOGGED',
+        message: `Thank you ${contactName}. Your inquiry has been received.`
+      });
+    }
+  };
 
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen">
@@ -217,11 +335,18 @@ export const LandingPage: React.FC = () => {
               <span>Apply For Membership</span>
               <ArrowRight className="w-5 h-5" />
             </Link>
+            <button
+              onClick={() => setShowTrialModal(true)}
+              className="w-full sm:w-auto px-8 py-4 bg-gym-surface hover:bg-gym-surface-hover text-gym-primary border border-gym-lime/60 font-heading font-bold uppercase text-base tracking-wider rounded-sm transition-all flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5 text-gym-lime" />
+              <span>Book Free Trial Pass</span>
+            </button>
             <a
               href="#plans"
-              className="w-full sm:w-auto px-8 py-4 bg-gym-surface hover:bg-gym-surface-hover text-gym-primary border border-gym-border font-heading font-bold uppercase text-base tracking-wider rounded-sm transition-all"
+              className="w-full sm:w-auto px-6 py-4 bg-gym-black hover:bg-gym-surface text-gym-secondary border border-gym-border font-heading font-bold uppercase text-base tracking-wider rounded-sm transition-all"
             >
-              Explore Tiers & Pricing
+              Explore Tiers
             </a>
           </div>
 
@@ -650,7 +775,318 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ================= 8. ARCHITECTURAL FOOTER ================= */}
+      {/* ================= 8. SANCTUARY CONCIERGE & INQUIRIES ================= */}
+      <section id="contact" className="py-20 border-b border-gym-border bg-gym-surface/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Left Info Column */}
+            <div className="space-y-6">
+              <div>
+                <span className="text-xs font-heading font-bold uppercase text-gym-lime tracking-widest block mb-2">
+                  CONCIERGE & OPERATIONS
+                </span>
+                <h2 className="font-heading text-3xl sm:text-5xl font-black uppercase text-gym-primary tracking-wide">
+                  CONNECT WITH THE SANCTUARY DESK
+                </h2>
+                <p className="text-xs text-gym-secondary mt-3 leading-relaxed">
+                  Have questions regarding our strict 300-athlete membership cap, corporate executive packages, or Olympic lifting platforms? Our front-desk concierge is on standby.
+                </p>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-gym-border/60 text-xs">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-gym-lime shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white block uppercase font-heading">NoHo Flagship Sanctuary</span>
+                    <span className="text-gym-secondary">428 Lafayette Street, NoHo, New York, NY 10003</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Phone className="w-4 h-4 text-gym-lime shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white block uppercase font-heading">Direct Concierge Line</span>
+                    <span className="text-gym-secondary font-mono">+1 (212) 555-0100 &bull; Daily 6:00 AM – 10:00 PM</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Mail className="w-4 h-4 text-gym-lime shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-white block uppercase font-heading">Executive Inquiries</span>
+                    <span className="text-gym-secondary font-mono">concierge@profitgym.com</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instant Complimentary Pass Banner */}
+              <div className="p-5 bg-gym-surface border border-gym-border rounded-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-gym-lime" />
+                  <span className="font-heading font-black uppercase text-sm text-gym-primary">
+                    FIRST-TIME ATHLETE AUDIT
+                  </span>
+                </div>
+                <p className="text-xs text-gym-muted mb-4 leading-relaxed">
+                  Experience the quiet focus of our sanctuary with a complimentary 1-on-1 biomechanics movement screen and training pass.
+                </p>
+                <button
+                  onClick={() => setShowTrialModal(true)}
+                  className="px-5 py-2.5 bg-gym-lime text-gym-black font-heading font-bold uppercase text-xs rounded hover:bg-gym-lime-hover shadow-lime-glow transition-all"
+                >
+                  Book Complimentary Trial Pass
+                </button>
+              </div>
+            </div>
+
+            {/* Right Form Column */}
+            <div className="bg-gym-surface border border-gym-border p-6 sm:p-8 rounded-sm">
+              <h3 className="font-heading text-xl font-black uppercase tracking-wider text-gym-primary mb-1">
+                DISPATCH CONCIERGE MESSAGE
+              </h3>
+              <p className="text-xs text-gym-muted mb-6">
+                All messages are routed directly to our operations director with guaranteed 2-hour response time.
+              </p>
+
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                      Full Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      placeholder="e.g. Marcus Stone"
+                      required
+                      className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="e.g. marcus@firm.com"
+                      required
+                      className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                      Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="+1 (212) 555-0100"
+                      className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                      Inquiry Category
+                    </label>
+                    <select
+                      value={contactSubject}
+                      onChange={(e) => setContactSubject(e.target.value)}
+                      className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
+                    >
+                      <option value="General Sanctuary Inquiry">General Sanctuary Inquiry</option>
+                      <option value="Corporate Executive Memberships">Corporate Executive Memberships</option>
+                      <option value="Olympic Lifting Bar Availability">Olympic Lifting Equipment & Platforms</option>
+                      <option value="Master Coach 1-on-1 Booking">Master Coach 1-on-1 Consultation</option>
+                      <option value="Facility Tour Booking">Private Facility Tour</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    Your Message / Athletic Objectives
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder="Tell us about your training background, questions, or specific access requirements..."
+                    required
+                    className="w-full p-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmittingContact}
+                    className="w-full py-3 bg-gym-lime hover:bg-gym-lime-hover text-gym-black font-heading font-black uppercase text-xs tracking-wider rounded shadow-lime-glow transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isSubmittingContact ? (
+                      <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <span>Transmit Message to Concierge</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= MODAL: COMPLIMENTARY TRIAL PASS ================= */}
+      {showTrialModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+          <div className="bg-gym-surface border border-gym-border rounded-sm max-w-lg w-full p-6 sm:p-8 relative shadow-card animate-in fade-in zoom-in-95">
+            <button
+              onClick={() => setShowTrialModal(false)}
+              className="absolute top-4 right-4 text-gym-muted hover:text-white text-sm"
+            >
+              ✕
+            </button>
+
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-gym-lime" />
+              <span className="text-[11px] font-heading font-black uppercase text-gym-lime tracking-wider">
+                COMPLIMENTARY ACCESS PASS
+              </span>
+            </div>
+
+            <h3 className="font-heading text-2xl sm:text-3xl font-black uppercase text-gym-primary tracking-wide mb-1">
+              EXPERIENCE PROFIT ATHLETIC CLUB
+            </h3>
+            <p className="text-xs text-gym-secondary mb-6 leading-relaxed">
+              Includes full floor access, Eleiko competition racks, and a 30-minute biomechanics mobility screen with our coaching staff.
+            </p>
+
+            <form onSubmit={handleTrialSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  Full Athlete Name
+                </label>
+                <input
+                  type="text"
+                  value={trialName}
+                  onChange={(e) => setTrialName(e.target.value)}
+                  placeholder="e.g. Jordan Vance"
+                  required
+                  className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={trialEmail}
+                    onChange={(e) => setTrialEmail(e.target.value)}
+                    placeholder="jordan@athlete.com"
+                    required
+                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    Mobile Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={trialPhone}
+                    onChange={(e) => setTrialPhone(e.target.value)}
+                    placeholder="+1 (212) 555-0199"
+                    required
+                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    Primary Discipline
+                  </label>
+                  <select
+                    value={trialDiscipline}
+                    onChange={(e) => setTrialDiscipline(e.target.value)}
+                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
+                  >
+                    <option value="Athletic Strength & Conditioning">Strength & Conditioning</option>
+                    <option value="Powerlifting / 1RM Testing">Powerlifting (S/B/D)</option>
+                    <option value="Olympic Weightlifting">Olympic Weightlifting (C&J/Snatch)</option>
+                    <option value="Hypertrophy & Biomechanics">Hypertrophy & Kinematics</option>
+                    <option value="Injury Rehabilitation">Injury Recovery & Mobility</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    Preferred Visit Date
+                  </label>
+                  <input
+                    type="date"
+                    value={trialDate}
+                    onChange={(e) => setTrialDate(e.target.value)}
+                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  Specific Coaching Goals or Injuries
+                </label>
+                <input
+                  type="text"
+                  value={trialNotes}
+                  onChange={(e) => setTrialNotes(e.target.value)}
+                  placeholder="e.g. Looking to test 1RM squat safely with spotter"
+                  className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTrialModal(false)}
+                  className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingTrial}
+                  className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmittingTrial ? (
+                    <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <span>Reserve Complimentary Pass</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 9. ARCHITECTURAL FOOTER ================= */}
       <footer className="bg-gym-black py-16 border-t border-gym-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">

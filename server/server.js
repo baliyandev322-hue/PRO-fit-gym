@@ -91,10 +91,12 @@ app.get('/api', (req, res) => {
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/memberships', require('./routes/memberships'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/trials', require('./routes/trials'));
 
 // Mount Admin & Authentication Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/payments', require('./routes/payments'));
 
 
 // 404 Handler for undefined API routes

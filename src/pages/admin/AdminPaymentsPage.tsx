@@ -35,10 +35,10 @@ export const AdminPaymentsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-heading text-2xl font-black uppercase text-gym-primary tracking-wide">
-            STRIPE REVENUE LEDGER & TRANSACTIONS
+            RAZORPAY & STRIPE REVENUE LEDGER
           </h2>
           <p className="text-xs text-gym-secondary">
-            Verified payments, subscription invoices, and merchant settlement status
+            Verified HMAC orders, subscription invoices, UPI transactions, and merchant settlement status
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export const AdminPaymentsPage: React.FC = () => {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-gym-border text-gym-muted font-heading uppercase tracking-wider text-[11px] bg-gym-black/40">
-                <th className="py-3.5 px-4">Transaction / Stripe ID</th>
+                <th className="py-3.5 px-4">Transaction / Razorpay ID</th>
                 <th className="py-3.5 px-4">Date</th>
                 <th className="py-3.5 px-4">Athlete Member</th>
                 <th className="py-3.5 px-4">Tier / Description</th>
@@ -142,7 +142,7 @@ export const AdminPaymentsPage: React.FC = () => {
                   </td>
                   <td className="py-3.5 px-4 text-gym-secondary">{p.plan_name || 'Performance Tier'}</td>
                   <td className="py-3.5 px-4 font-heading font-black text-gym-lime text-sm">
-                    ${p.amount}.00 USD
+                    ₹{p.amount > 1000 ? p.amount.toLocaleString() : (p.amount * 85).toLocaleString()} INR
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="px-2 py-0.5 rounded text-[10px] font-heading font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -150,8 +150,8 @@ export const AdminPaymentsPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <span className="text-gym-lime font-mono text-xs flex items-center justify-end gap-1">
-                      <span>Stripe PDF</span> <ArrowUpRight className="w-3 h-3" />
+                    <span className="text-gym-lime font-mono text-xs flex items-center justify-end gap-1 cursor-pointer hover:underline">
+                      <span>Receipt PDF</span> <ArrowUpRight className="w-3 h-3" />
                     </span>
                   </td>
                 </tr>

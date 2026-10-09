@@ -1,0 +1,518 @@
+// ============================================================================
+// PROFIT TRAINING CLUB — PRISMA RELATIONAL DATABASE SCHEMA
+// Database: PostgreSQL
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// ENUMS
+// ----------------------------------------------------------------------------
+
+enum UserRole {
+  MEMBER
+  TRAINER
+  ADMIN
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentGateway {
+  RAZORPAY
+  STRIPE
+  CASH
+}
+
+enum AttendanceMethod {
+  QR_SCAN
+  MANUAL
+  NFC
+}
+
+enum WorkoutCategory {
+  PUSH
+  PULL
+  LEGS
+  CHEST
+  BACK
+  SHOULDERS
+  ARMS
+  FULL_BODY
+  CARDIO_CORE
+}
+
+enum NotificationType {
+  MEMBERSHIP
+  WORKOUT
+  ATTENDANCE
+  PAYMENT
+  SYSTEM
+}
+
+enum TrialStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  REJECTED
+}
+
+enum ContactStatus {
+  UNREAD
+  READ
+  RESPONDED
+  ARCHIVED
+}
+
+// ----------------------------------------------------------------------------
+// 1. CORE AUTHENTICATION & USERS
+// ----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          UserRole  @default(MEMBER)
+  fullName      String
+  phone         String?
+  avatarUrl     String?
+  isActive      Boolean   @default(true)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // 1-to-1 Sub-profiles
+  memberProfile Member?
+  trainerProfile Trainer?
+  adminProfile  Admin?
+
+  // System Relations
+  notifications Notification[]
+  sessions      Session[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ----------------------------------------------------------------------------
+// 2. ROLE-SPECIFIC PROFILES
+// ----------------------------------------------------------------------------
+
+model Member {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  emergencyContact String?
+  bio              String?
+  dateOfBirth      DateTime?
+  gender           String?
+  heightCm         Float?
+  startingWeightKg Float?
+  qrPassToken      String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Domain Relations
+  memberships      Membership[]
+  attendanceLogs   Attendance[]
+  workoutPlans     WorkoutPlan[]
+  workoutSessions  WorkoutSession[]
+  workoutLogs      WorkoutLog[]
+  progressRecords  ProgressRecord[]
+  personalRecords  PersonalRecord[]
+  payments         Payment[]
+  trainerAssignments TrainerAssignment[]
+
+  @@index([userId])
+  @@index([qrPassToken])
+}
+
+model Trainer {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  specialty      String
+  biography      String?
+  certifications String[]
+  isAvailable    Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relations
+  authoredWorkoutPlans WorkoutPlan[]
+  assignedAthletes     TrainerAssignment[]
+
+  @@index([userId])
+}
+
+model Admin {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  department     String    @default("Operations")
+  permissions    String[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model TrainerAssignment {
+  id         String    @id @default(cuid())
+  memberId   String
+  trainerId  String
+  assignedAt DateTime  @default(now())
+  isActive   Boolean   @default(true)
+  notes      String?
+
+  member     Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  trainer    Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, trainerId])
+  @@index([memberId])
+  @@index([trainerId])
+}
+
+// ----------------------------------------------------------------------------
+// 3. MEMBERSHIPS & PLANS
+// ----------------------------------------------------------------------------
+
+model MembershipPlan {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  priceInr     Int           // Price in INR paise or rupees (e.g., 14900 = ₹149 or 14900 Rs)
+  durationDays Int           @default(30)
+  description  String
+  features     String[]
+  isPopular    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  memberships  Membership[]
+  payments     Payment[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Membership {
+  id                   String           @id @default(cuid())
+  memberId             String
+  planId               String
+  status               MembershipStatus @default(ACTIVE)
+  startDate            DateTime         @default(now())
+  expiryDate           DateTime
+  autoRenew            Boolean          @default(true)
+  razorpaySubId        String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  member               Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  plan                 MembershipPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payments             Payment[]
+
+  @@index([memberId])
+  @@index([planId])
+  @@index([status])
+  @@index([expiryDate])
+}
+
+// ----------------------------------------------------------------------------
+// 4. PAYMENTS & TRANSACTIONS (RAZORPAY INTEGRATION)
+// ----------------------------------------------------------------------------
+
+model Payment {
+  id                 String               @id @default(cuid())
+  memberId           String
+  membershipId       String?
+  planId             String?
+  amount             Int                  // Amount in INR rupees
+  currency           String               @default("INR")
+  gateway            PaymentGateway       @default(RAZORPAY)
+  status             PaymentStatus        @default(PENDING)
+  receiptNumber      String               @unique
+  invoiceUrl         String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  member             Member               @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membership         Membership?          @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  plan               MembershipPlan?      @relation(fields: [planId], references: [id], onDelete: SetNull)
+  transactions       PaymentTransaction[]
+
+  @@index([memberId])
+  @@index([status])
+  @@index([receiptNumber])
+}
+
+model PaymentTransaction {
+  id                 String         @id @default(cuid())
+  paymentId          String
+  gateway            PaymentGateway @default(RAZORPAY)
+  razorpayOrderId    String?        @unique
+  razorpayPaymentId  String?        @unique
+  razorpaySignature  String?
+  status             PaymentStatus  @default(PENDING)
+  errorMessage       String?
+  rawResponse        Json?
+  createdAt          DateTime       @default(now())
+
+  payment            Payment        @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+}
+
+// ----------------------------------------------------------------------------
+// 5. QR ATTENDANCE
+// ----------------------------------------------------------------------------
+
+model Attendance {
+  id           String           @id @default(cuid())
+  memberId     String
+  checkInTime  DateTime         @default(now())
+  checkOutTime DateTime?
+  gymLocation  String           @default("NYC - NoHo Flagship (Sanctuary 01)")
+  method       AttendanceMethod @default(QR_SCAN)
+  date         DateTime         @default(now())
+  verifiedBy   String?          // Staff or Gate Terminal ID
+  createdAt    DateTime         @default(now())
+
+  member       Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([date])
+  @@index([checkInTime])
+}
+
+// ----------------------------------------------------------------------------
+// 6. WORKOUT TRACKING & EXERCISES
+// ----------------------------------------------------------------------------
+
+model Exercise {
+  id               String            @id @default(cuid())
+  name             String            @unique
+  category         WorkoutCategory
+  targetMuscles    String[]
+  equipment        String?
+  instructions     String?
+  videoUrl         String?
+  createdAt        DateTime          @default(now())
+
+  workoutExercises WorkoutExercise[]
+  workoutLogs      WorkoutLog[]
+  personalRecords  PersonalRecord[]
+
+  @@index([category])
+  @@index([name])
+}
+
+model WorkoutPlan {
+  id           String            @id @default(cuid())
+  trainerId    String?
+  memberId     String
+  title        String
+  category     WorkoutCategory
+  notes        String?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  trainer      Trainer?          @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  member       Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  exercises    WorkoutExercise[]
+  sessions     WorkoutSession[]
+
+  @@index([memberId])
+  @@index([trainerId])
+  @@index([isActive])
+}
+
+model WorkoutExercise {
+  id             String      @id @default(cuid())
+  workoutPlanId  String
+  exerciseId     String
+  sets           Int         @default(3)
+  reps           Int         @default(10)
+  targetWeightKg Float       @default(0)
+  restSeconds    Int         @default(90)
+  orderIndex     Int         @default(1)
+  notes          String?
+
+  workoutPlan    WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise       Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([workoutPlanId])
+  @@index([exerciseId])
+}
+
+model WorkoutSession {
+  id             String       @id @default(cuid())
+  memberId       String
+  workoutPlanId  String?
+  title          String
+  startedAt      DateTime     @default(now())
+  completedAt    DateTime?
+  totalVolumeKg  Float        @default(0)
+  notes          String?
+  createdAt      DateTime     @default(now())
+
+  member         Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workoutPlan    WorkoutPlan? @relation(fields: [workoutPlanId], references: [id], onDelete: SetNull)
+  logs           WorkoutLog[]
+
+  @@index([memberId])
+  @@index([workoutPlanId])
+}
+
+model WorkoutLog {
+  id               String          @id @default(cuid())
+  sessionId        String
+  memberId         String
+  exerciseId       String
+  setNumber        Int
+  actualReps       Int
+  actualWeightKg   Float
+  rpeScore         Float?
+  notes            String?
+  completedAt      DateTime        @default(now())
+
+  session          WorkoutSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  member           Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  exercise         Exercise        @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([memberId])
+  @@index([exerciseId])
+}
+
+// ----------------------------------------------------------------------------
+// 7. PROGRESS & PERSONAL RECORDS
+// ----------------------------------------------------------------------------
+
+model ProgressRecord {
+  id                String    @id @default(cuid())
+  memberId          String
+  recordedDate      DateTime  @default(now())
+  bodyWeightKg      Float
+  bodyFatPercentage Float?
+  chestCm           Float?
+  waistCm           Float?
+  armsCm            Float?
+  thighsCm          Float?
+  notes             String?
+  createdAt         DateTime  @default(now())
+
+  member            Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([recordedDate])
+}
+
+model PersonalRecord {
+  id           String    @id @default(cuid())
+  memberId     String
+  exerciseId   String
+  weightKg     Float
+  reps         Int       @default(1)
+  estimated1RM Float?
+  achievedAt   DateTime  @default(now())
+  notes        String?
+
+  member       Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  exercise     Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, exerciseId])
+  @@index([memberId])
+  @@index([exerciseId])
+}
+
+// ----------------------------------------------------------------------------
+// 8. NOTIFICATIONS & FORMS
+// ----------------------------------------------------------------------------
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  fullName  String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    ContactStatus @default(UNREAD)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model TrialRequest {
+  id          String      @id @default(cuid())
+  fullName    String
+  email       String
+  phone       String
+  preferredDate DateTime?
+  discipline  String?
+  notes       String?
+  status      TrialStatus @default(NEW)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}

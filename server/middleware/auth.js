@@ -1,23 +1,22 @@
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const Admin = require('../models/Admin');
 
 /**
- * Middleware to authenticate requests to protected admin endpoints using JWT tokens.
+ * Core Authentication Middleware
+ * Validates JWT Bearer tokens and attaches the authenticated user to req.user
  */
-const verifyAdmin = async (req, res, next) => {
+const verifyAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. Valid Bearer authentication token is required.',
+        message: 'Authentication required. Missing or malformed Bearer token.',
       });
     }
 
     const token = authHeader.split(' ')[1];
-    const secret = process.env.JWT_SECRET || 'profit_gym_default_secret_key_change_in_prod';
+    const secret = process.env.JWT_SECRET || 'profit_gym_dev_secret_key_change_in_production_938472';
 
     let decoded;
     try {
@@ -26,42 +25,69 @@ const verifyAdmin = async (req, res, next) => {
       if (err.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
-          message: 'Your admin session has expired. Please log in again.',
+          message: 'Session expired. Please log in again.',
         });
       }
       return res.status(401).json({
         success: false,
-        message: 'Invalid authorization token.',
+        message: 'Invalid or forged authentication token.',
       });
     }
 
-    // Verify admin in database if connected
-    if (mongoose.connection.readyState === 1) {
-      const admin = await Admin.findById(decoded.id).select('-password');
-      if (!admin || !admin.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'Admin account not found or has been deactivated.',
-        });
-      }
-      req.admin = admin;
-    } else {
-      // In development fallback if database is restarting
-      req.admin = {
-        id: decoded.id,
-        email: decoded.email,
-        role: decoded.role,
-      };
-    }
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: (decoded.role || 'MEMBER').toUpperCase(),
+      fullName: decoded.fullName,
+    };
 
     next();
   } catch (error) {
     console.error('[Auth Middleware Error]', error);
     return res.status(500).json({
       success: false,
-      message: 'Server error during authentication.',
+      message: 'Authentication processing failed.',
     });
   }
 };
 
-module.exports = { verifyAdmin };
+/**
+ * Role-Based Access Control Middleware Generator
+ * @param  {...string} allowedRoles Roles permitted to access the route
+ */
+const requireRole = (...allowedRoles) => {
+  const normalized = allowedRoles.map((r) => r.toUpperCase());
+
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required.',
+      });
+    }
+
+    const userRole = (req.user.role || '').toUpperCase();
+    if (!normalized.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: `Forbidden. Role '${userRole}' is not authorized for this resource.`,
+      });
+    }
+
+    next();
+  };
+};
+
+const requireAdmin = [verifyAuth, requireRole('ADMIN')];
+const requireTrainer = [verifyAuth, requireRole('TRAINER', 'ADMIN')];
+const requireMember = [verifyAuth, requireRole('MEMBER', 'TRAINER', 'ADMIN')];
+
+module.exports = {
+  verifyAuth,
+  requireRole,
+  requireAdmin,
+  requireTrainer,
+  requireMember,
+  // Backward compatibility
+  verifyAdmin: requireAdmin,
+};

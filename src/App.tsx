@@ -18,6 +18,7 @@ import { MemberAttendancePage } from '@/pages/member/MemberAttendancePage';
 import { MemberWorkoutsPage } from '@/pages/member/MemberWorkoutsPage';
 import { MemberProgressPage } from '@/pages/member/MemberProgressPage';
 import { MemberMembershipPage } from '@/pages/member/MemberMembershipPage';
+import { MemberPaymentsPage } from '@/pages/member/MemberPaymentsPage';
 import { MemberProfilePage } from '@/pages/member/MemberProfilePage';
 
 // Trainer Pages
@@ -34,6 +35,8 @@ import { AdminMembershipsPage } from '@/pages/admin/AdminMembershipsPage';
 import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
 import { AdminAttendancePage } from '@/pages/admin/AdminAttendancePage';
 import { AdminWorkoutsPage } from '@/pages/admin/AdminWorkoutsPage';
+import { AdminTrialsPage } from '@/pages/admin/AdminTrialsPage';
+import { AdminMessagesPage } from '@/pages/admin/AdminMessagesPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
 export const App: React.FC = () => {
@@ -61,6 +64,7 @@ export const App: React.FC = () => {
                         <Route path="workouts" element={<MemberWorkoutsPage />} />
                         <Route path="progress" element={<MemberProgressPage />} />
                         <Route path="membership" element={<MemberMembershipPage />} />
+                        <Route path="payments" element={<MemberPaymentsPage />} />
                         <Route path="profile" element={<MemberProfilePage />} />
                         <Route path="*" element={<Navigate to="/member/dashboard" replace />} />
                       </Routes>
@@ -101,6 +105,8 @@ export const App: React.FC = () => {
                         <Route path="payments" element={<AdminPaymentsPage />} />
                         <Route path="attendance" element={<AdminAttendancePage />} />
                         <Route path="workouts" element={<AdminWorkoutsPage />} />
+                        <Route path="trials" element={<AdminTrialsPage />} />
+                        <Route path="messages" element={<AdminMessagesPage />} />
                         <Route path="settings" element={<AdminSettingsPage />} />
                         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                       </Routes>

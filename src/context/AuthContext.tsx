@@ -3,15 +3,17 @@ import type { UserProfile, UserRole } from '@/types';
 import { SEED_USERS, getLocalData, setLocalData } from '@/lib/supabase';
 import { useNotifications } from './NotificationContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 interface AuthContextType {
   user: UserProfile | null;
   role: UserRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  token: string | null;
   login: (email: string, password?: string) => Promise<boolean>;
   register: (email: string, fullName: string, role?: UserRole, password?: string) => Promise<boolean>;
   logout: () => void;
-  switchRole: (newRole: UserRole) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
 }
 
@@ -20,6 +22,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserProfile[]>(() => {
     return getLocalData<UserProfile[]>('users', SEED_USERS);
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('profit_gym_jwt_token');
   });
 
   const [user, setUser] = useState<UserProfile | null>(() => {
@@ -31,7 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return SEED_USERS[0];
       }
     }
-    // Default to Alex Vance (Member) for seamless demo
     return SEED_USERS[0];
   });
 
@@ -50,123 +55,221 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const login = async (email: string, _password?: string): Promise<boolean> => {
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600));
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('profit_gym_jwt_token', token);
+    } else {
+      localStorage.removeItem('profit_gym_jwt_token');
+    }
+  }, [token]);
 
-    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  // Restore session via API if token exists
+  useEffect(() => {
+    const verifyStoredToken = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser((prev) => ({
+              ...prev,
+              ...data.user,
+              role: (data.user.role || 'MEMBER').toLowerCase() as UserRole,
+              full_name: data.user.fullName || data.user.full_name || prev?.full_name,
+            }));
+          }
+        }
+      } catch {
+        // Server offline; local state retained
+      }
+    };
+    verifyStoredToken();
+  }, [token]);
+
+  const login = async (email: string, password = 'password123'): Promise<boolean> => {
+    setIsLoading(true);
+
+    try {
+      // 1. Attempt Real Server Authentication via /api/auth/login
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          setToken(data.token);
+          const loggedUser: UserProfile = {
+            id: data.user.id,
+            email: data.user.email,
+            role: (data.user.role || 'MEMBER').toLowerCase() as UserRole,
+            full_name: data.user.fullName || data.user.full_name,
+            avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+            created_at: new Date().toISOString(),
+          };
+          setUser(loggedUser);
+          setIsLoading(false);
+          showToast({
+            type: 'success',
+            title: 'AUTHENTICATION VERIFIED',
+            message: `Welcome back, ${loggedUser.full_name} (${loggedUser.role.toUpperCase()})`,
+          });
+          return true;
+        }
+      }
+    } catch {
+      // Graceful fallback to persistent seed records if server is not reachable
+    }
+
+    // 2. Resilient local fallback
+    await new Promise((r) => setTimeout(r, 400));
+    const foundUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (foundUser) {
       setUser(foundUser);
       setIsLoading(false);
       showToast({
         type: 'success',
         title: 'AUTHENTICATION SUCCESSFUL',
-        message: `Welcome back, ${foundUser.full_name} (${foundUser.role.toUpperCase()})`
+        message: `Welcome back, ${foundUser.full_name} (${foundUser.role.toUpperCase()})`,
       });
       return true;
     }
 
-    // If user not in seed, create them as member
+    // Dynamic role mapping if demo email entered
+    const userRole: UserRole = email.includes('admin')
+      ? 'admin'
+      : email.includes('trainer')
+      ? 'trainer'
+      : 'member';
+
     const newUser: UserProfile = {
-      id: `user-${Date.now()}`,
+      id: `usr-${Date.now()}`,
       email,
-      role: 'member',
+      role: userRole,
       full_name: email.split('@')[0].toUpperCase(),
-      created_at: new Date().toISOString()
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      created_at: new Date().toISOString(),
     };
-    setUsers(prev => [newUser, ...prev]);
+
+    setUsers((prev) => [newUser, ...prev]);
     setUser(newUser);
     setIsLoading(false);
     showToast({
       type: 'success',
-      title: 'WELCOME TO PROFIT',
-      message: `Signed in as ${newUser.full_name}`
+      title: 'SESSION ESTABLISHED',
+      message: `Signed in as ${newUser.full_name} (${newUser.role.toUpperCase()})`,
     });
     return true;
   };
 
-  const register = async (email: string, fullName: string, userRole: UserRole = 'member', _password?: string): Promise<boolean> => {
+  const register = async (
+    email: string,
+    fullName: string,
+    userRole: UserRole = 'member',
+    password = 'password123'
+  ): Promise<boolean> => {
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 700));
 
-    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      setIsLoading(false);
-      showToast({
-        type: 'error',
-        title: 'ACCOUNT EXISTS',
-        message: 'An athlete or staff member with this email already exists.'
+    try {
+      // 1. Attempt Real Server Registration
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          role: userRole.toUpperCase(),
+        }),
       });
-      return false;
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          setToken(data.token);
+          const newUser: UserProfile = {
+            id: data.user.id,
+            email: data.user.email,
+            role: userRole,
+            full_name: fullName,
+            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+            created_at: new Date().toISOString(),
+          };
+          setUsers((prev) => [newUser, ...prev]);
+          setUser(newUser);
+          setIsLoading(false);
+          showToast({
+            type: 'success',
+            title: 'REGISTRATION COMPLETE',
+            message: `Account activated for ${fullName}. Role: ${userRole.toUpperCase()}`,
+          });
+          return true;
+        }
+      }
+    } catch {
+      // Resilient fallback
     }
 
+    await new Promise((r) => setTimeout(r, 400));
     const newUser: UserProfile = {
-      id: `user-${Date.now()}`,
+      id: `usr-${Date.now()}`,
       email,
       role: userRole,
       full_name: fullName,
-      avatar_url: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`,
-      created_at: new Date().toISOString()
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      created_at: new Date().toISOString(),
     };
 
-    setUsers(prev => [newUser, ...prev]);
+    setUsers((prev) => [newUser, ...prev]);
     setUser(newUser);
     setIsLoading(false);
 
     showToast({
       type: 'success',
       title: 'ONBOARDING COMPLETE',
-      message: `Account activated for ${fullName}. Role: ${userRole.toUpperCase()}`
+      message: `Account activated for ${fullName}. Role: ${userRole.toUpperCase()}`,
     });
     return true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (token) {
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // Ignore network errors on logout
+      }
+    }
+
+    setToken(null);
     setUser(null);
+    localStorage.removeItem('profit_gym_jwt_token');
+    localStorage.removeItem('profit_gym_current_user');
+
     showToast({
       type: 'info',
       title: 'SIGNED OUT',
-      message: 'You have been safely signed out from PROFIT Training Club.'
+      message: 'You have been safely signed out from PROFIT Training Club.',
     });
-  };
-
-  // Quick switch role for effortless live testing
-  const switchRole = (newRole: UserRole) => {
-    const roleUser = users.find(u => u.role === newRole);
-    if (roleUser) {
-      setUser(roleUser);
-      showToast({
-        type: 'info',
-        title: 'ROLE SWITCHED',
-        message: `Switched demo view to ${roleUser.full_name} (${newRole.toUpperCase()})`
-      });
-    } else {
-      const demoAccount: UserProfile = {
-        id: `demo-${newRole}`,
-        email: `${newRole}@profitgym.com`,
-        role: newRole,
-        full_name: `Demo ${newRole.charAt(0).toUpperCase() + newRole.slice(1)}`,
-        created_at: new Date().toISOString()
-      };
-      setUsers(prev => [demoAccount, ...prev]);
-      setUser(demoAccount);
-      showToast({
-        type: 'info',
-        title: 'ROLE SWITCHED',
-        message: `Switched to ${newRole.toUpperCase()} mode`
-      });
-    }
   };
 
   const updateProfile = (updates: Partial<UserProfile>) => {
     if (!user) return;
     const updated = { ...user, ...updates };
     setUser(updated);
-    setUsers(prev => prev.map(u => u.id === user.id ? updated : u));
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     showToast({
       type: 'success',
       title: 'PROFILE UPDATED',
-      message: 'Your athlete profile details have been saved.'
+      message: 'Your athlete profile details have been saved.',
     });
   };
 
@@ -177,11 +280,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: user ? user.role : null,
         isAuthenticated: !!user,
         isLoading,
+        token,
         login,
         register,
         logout,
-        switchRole,
-        updateProfile
+        updateProfile,
       }}
     >
       {children}

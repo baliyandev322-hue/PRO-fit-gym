@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { processStripePayment } from '@/lib/stripe';
+import { executeRazorpayCheckout } from '@/lib/razorpay';
 import { useNotifications } from '@/context/NotificationContext';
 import confetti from 'canvas-confetti';
 import type { MembershipPlan } from '@/types';
@@ -30,6 +31,7 @@ export const MemberMembershipPage: React.FC = () => {
   const { showToast } = useNotifications();
 
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<MembershipPlan | null>(null);
+  const [paymentGateway, setPaymentGateway] = useState<'razorpay' | 'card'>('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardNumber, setCardNumber] = useState('4242 4242 4242 4242');
   const [cardExpiry, setCardExpiry] = useState('12/28');
@@ -41,14 +43,73 @@ export const MemberMembershipPage: React.FC = () => {
   const currentMembership = getMemberMembership(user.id);
   const userPayments = payments.filter(p => p.member_id === user.id);
 
+  const getPlanPriceINR = (plan: MembershipPlan) => {
+    if (plan.id.includes('starter')) return 14900;
+    if (plan.id.includes('elite')) return 39900;
+    return 24900;
+  };
+
   const handleOpenCheckout = (plan: MembershipPlan) => {
     setSelectedPlanForCheckout(plan);
     setPaymentError(null);
   };
 
+  const handleExecuteRazorpay = async () => {
+    if (!selectedPlanForCheckout) return;
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    const priceINR = getPlanPriceINR(selectedPlanForCheckout);
+
+    try {
+      const result = await executeRazorpayCheckout({
+        planId: selectedPlanForCheckout.id,
+        planName: selectedPlanForCheckout.name,
+        amountInRupees: priceINR,
+        user: {
+          id: user.id,
+          fullName: user.full_name,
+          email: user.email,
+          phone: (user as any).phone || '+91 98765 43210'
+        }
+      });
+
+      setIsProcessing(false);
+
+      if (result.success) {
+        await purchaseMembership(selectedPlanForCheckout.id, 'RAZORPAY_UPI');
+        setSelectedPlanForCheckout(null);
+
+        // Confetti celebration
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#ccff00', '#ffffff', '#00e5ff']
+        });
+
+        showToast({
+          type: 'success',
+          title: 'RAZORPAY VERIFIED (HMAC-SHA256)',
+          message: `Payment ${result.paymentId || 'completed'} settled. ${selectedPlanForCheckout.name} pass activated!`
+        });
+      } else {
+        setPaymentError(result.error || 'Payment failed or was cancelled.');
+      }
+    } catch (err: any) {
+      setIsProcessing(false);
+      setPaymentError(err.message || 'Payment processing error');
+    }
+  };
+
   const handleExecutePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPlanForCheckout) return;
+
+    if (paymentGateway === 'razorpay') {
+      return handleExecuteRazorpay();
+    }
 
     setIsProcessing(true);
     setPaymentError(null);
@@ -67,10 +128,9 @@ export const MemberMembershipPage: React.FC = () => {
     setIsProcessing(false);
 
     if (result.success) {
-      await purchaseMembership(selectedPlanForCheckout.id);
+      await purchaseMembership(selectedPlanForCheckout.id, 'STRIPE_CARD');
       setSelectedPlanForCheckout(null);
 
-      // Trigger athletic celebratory confetti
       confetti({
         particleCount: 100,
         spread: 70,
@@ -80,7 +140,7 @@ export const MemberMembershipPage: React.FC = () => {
 
       showToast({
         type: 'success',
-        title: 'PAYMENT VERIFIED (STRIPE)',
+        title: 'PAYMENT VERIFIED (CARD)',
         message: `Transaction ${result.transactionId} settled. Plan activated!`
       });
     } else {
@@ -282,10 +342,10 @@ export const MemberMembershipPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ================= STRIPE CHECKOUT MODAL ================= */}
+      {/* ================= PAYMENT CHECKOUT MODAL (RAZORPAY & CARDS) ================= */}
       {selectedPlanForCheckout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
-          <div className="bg-gym-surface border border-gym-border rounded-sm max-w-md w-full p-6 relative shadow-card animate-in fade-in zoom-in-95">
+          <div className="bg-gym-surface border border-gym-border rounded-sm max-w-lg w-full p-6 relative shadow-card animate-in fade-in zoom-in-95">
             <button
               onClick={() => setSelectedPlanForCheckout(null)}
               className="absolute top-4 right-4 text-gym-muted hover:text-white text-sm"
@@ -296,18 +356,53 @@ export const MemberMembershipPage: React.FC = () => {
             <div className="flex items-center gap-2 mb-1">
               <Lock className="w-4 h-4 text-gym-lime" />
               <span className="text-[11px] font-heading font-black uppercase text-gym-lime tracking-wider">
-                STRIPE SECURE 256-BIT CHECKOUT
+                PROFIT SECURE PAYMENT GATEWAY &bull; 256-BIT ENCRYPTED
               </span>
             </div>
 
             <h3 className="font-heading text-2xl font-black uppercase text-gym-primary tracking-wide">
               {selectedPlanForCheckout.name} Membership
             </h3>
-            <div className="flex items-baseline gap-2 mb-4 pb-3 border-b border-gym-border">
-              <span className="font-heading text-3xl font-black text-gym-lime">
-                ${selectedPlanForCheckout.price}.00
+
+            {/* Price display in INR & USD */}
+            <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-gym-border">
+              <div>
+                <span className="font-heading text-3xl font-black text-gym-lime">
+                  ₹{getPlanPriceINR(selectedPlanForCheckout).toLocaleString()}
+                </span>
+                <span className="text-xs text-gym-secondary ml-1 font-mono">INR</span>
+              </div>
+              <span className="text-xs text-gym-muted">
+                (${selectedPlanForCheckout.price}.00 USD equivalent)
               </span>
-              <span className="text-xs text-gym-secondary">USD / month (Renews automatically)</span>
+            </div>
+
+            {/* Gateway Selector Tabs */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setPaymentGateway('razorpay')}
+                className={`py-2 px-3 text-xs font-heading font-bold uppercase rounded border transition-all flex items-center justify-center gap-1.5 ${
+                  paymentGateway === 'razorpay'
+                    ? 'bg-gym-lime text-gym-black border-gym-lime shadow-lime-glow'
+                    : 'bg-gym-black text-gym-secondary border-gym-border hover:text-white'
+                }`}
+              >
+                <span>⚡ Razorpay (UPI & INR)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentGateway('card')}
+                className={`py-2 px-3 text-xs font-heading font-bold uppercase rounded border transition-all flex items-center justify-center gap-1.5 ${
+                  paymentGateway === 'card'
+                    ? 'bg-gym-lime text-gym-black border-gym-lime shadow-lime-glow'
+                    : 'bg-gym-black text-gym-secondary border-gym-border hover:text-white'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Credit / Debit Card</span>
+              </button>
             </div>
 
             {paymentError && (
@@ -317,90 +412,134 @@ export const MemberMembershipPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleExecutePayment} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                  Cardholder Name
-                </label>
-                <input
-                  type="text"
-                  defaultValue={user.full_name}
-                  required
-                  className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary text-xs focus:outline-none focus:border-gym-lime"
-                />
-              </div>
+            {paymentGateway === 'razorpay' ? (
+              /* RAZORPAY UPI & INDIAN RAILS TAB */
+              <div className="space-y-4">
+                <div className="p-3.5 bg-gym-black rounded border border-gym-border space-y-2">
+                  <span className="text-[11px] font-heading font-bold uppercase text-gym-lime block">
+                    Supported Payment Rails (India):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 text-[10px] font-mono text-gym-secondary">
+                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">UPI (GPay / PhonePe / Paytm)</span>
+                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">Scan & Pay QR</span>
+                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">RuPay / Visa / MC</span>
+                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">50+ NetBanking Banks</span>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                  Card Number (Test Stripe Cards Accepted)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    placeholder="4242 4242 4242 4242"
-                    required
-                    className="w-full py-2 pl-3 pr-10 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
-                  />
-                  <CreditCard className="w-4 h-4 text-gym-muted absolute right-3 top-2.5" />
+                <div className="p-3 bg-gym-black rounded border border-gym-border text-[11px] text-gym-muted leading-relaxed">
+                  Razorpay server order will be signed with <strong className="text-white">HMAC-SHA256</strong>. Upon instant completion, your sanctuary membership will be extended by 30 days and synced to the front desk turnstiles.
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlanForCheckout(null)}
+                    className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExecuteRazorpay}
+                    disabled={isProcessing}
+                    className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <span>Pay ₹{getPlanPriceINR(selectedPlanForCheckout).toLocaleString()} via Razorpay</span>
+                    )}
+                  </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            ) : (
+              /* CARD CHECKOUT TAB */
+              <form onSubmit={handleExecutePayment} className="space-y-4">
                 <div>
                   <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                    Expiration
+                    Cardholder Name
                   </label>
                   <input
                     type="text"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value)}
-                    placeholder="MM/YY"
+                    defaultValue={user.full_name}
                     required
-                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
+                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary text-xs focus:outline-none focus:border-gym-lime"
                   />
                 </div>
+
                 <div>
                   <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                    CVC / CVV
+                    Card Number (Visa / Mastercard / Amex)
                   </label>
-                  <input
-                    type="text"
-                    value={cardCvc}
-                    onChange={(e) => setCardCvc(e.target.value)}
-                    placeholder="CVC"
-                    required
-                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="4242 4242 4242 4242"
+                      required
+                      className="w-full py-2 pl-3 pr-10 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
+                    />
+                    <CreditCard className="w-4 h-4 text-gym-muted absolute right-3 top-2.5" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-3 bg-gym-black rounded border border-gym-border text-[11px] text-gym-muted leading-relaxed">
-                By clicking pay, you authorize PROFIT Training Club to charge your card <strong className="text-white">${selectedPlanForCheckout.price}.00</strong>. Your digital membership pass and locker rights will be updated immediately.
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                      Expiration
+                    </label>
+                    <input
+                      type="text"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(e.target.value)}
+                      placeholder="MM/YY"
+                      required
+                      className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                      CVC / CVV
+                    </label>
+                    <input
+                      type="text"
+                      value={cardCvc}
+                      onChange={(e) => setCardCvc(e.target.value)}
+                      placeholder="CVC"
+                      required
+                      className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
+                    />
+                  </div>
+                </div>
 
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlanForCheckout(null)}
-                  className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isProcessing}
-                  className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <span>Pay ${selectedPlanForCheckout.price}.00 via Stripe</span>
-                  )}
-                </button>
-              </div>
-            </form>
+                <div className="p-3 bg-gym-black rounded border border-gym-border text-[11px] text-gym-muted leading-relaxed">
+                  By clicking pay, you authorize PROFIT Training Club to charge your card <strong className="text-white">${selectedPlanForCheckout.price}.00 USD</strong>.
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlanForCheckout(null)}
+                    className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <span>Pay ${selectedPlanForCheckout.price}.00 via Card</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

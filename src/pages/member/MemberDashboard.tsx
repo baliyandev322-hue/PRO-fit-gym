@@ -11,7 +11,12 @@ import {
   CheckCircle2, 
   AlertCircle,
   Flame,
-  Award
+  Award,
+  UserCheck,
+  Bell,
+  Mail,
+  ShieldCheck,
+  Receipt
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -19,10 +24,12 @@ import {
   Area, 
   XAxis, 
   YAxis, 
-  Tooltip 
+  Tooltip, 
+  CartesianGrid 
 } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { QRCodeSVG } from 'qrcode.react';
 
 export const MemberDashboard: React.FC = () => {
@@ -33,8 +40,9 @@ export const MemberDashboard: React.FC = () => {
     getMemberWorkouts, 
     getMemberProgress,
     recordAttendance,
-    plans 
+    payments 
   } = useGymData();
+  const { notifications, unreadCount } = useNotifications();
 
   const [showQRModal, setShowQRModal] = useState(false);
   const [checkInStatus, setCheckInStatus] = useState<{ success: boolean; message: string } | null>(null);
@@ -44,20 +52,26 @@ export const MemberDashboard: React.FC = () => {
   const membership = getMemberMembership(user.id);
   const attendanceHistory = getMemberAttendance(user.id);
   const workoutPlans = getMemberWorkouts(user.id);
-  const activeWorkout = workoutPlans.find(w => w.is_active) || workoutPlans[0];
+  const activeWorkout = workoutPlans.find((w) => w.is_active) || workoutPlans[0];
   const progressHistory = getMemberProgress(user.id);
+  const userPayments = payments.filter((p) => p.member_id === user.id);
 
   // Quick stats
   const thisMonthVisits = attendanceHistory.length;
   const daysRemaining = membership?.days_remaining ?? 18;
+  const attendanceRate = Math.min(100, Math.round((thisMonthVisits / 24) * 100)); // Target: 24 sessions
 
-  // Chart data for attendance & weight
+  // Time of day greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  // Chart data for attendance & volume
   const chartData = [
-    { name: 'Week 1', visits: 4, weight: 80.2 },
-    { name: 'Week 2', visits: 6, weight: 79.8 },
-    { name: 'Week 3', visits: 5, weight: 79.5 },
-    { name: 'Week 4', visits: 6, weight: 79.1 },
-    { name: 'Current', visits: thisMonthVisits > 20 ? 7 : 5, weight: 78.8 },
+    { name: 'Week 1', visits: 4, volume: 12400 },
+    { name: 'Week 2', visits: 6, volume: 14800 },
+    { name: 'Week 3', visits: 5, volume: 15200 },
+    { name: 'Week 4', visits: 6, volume: 16900 },
+    { name: 'Current', visits: thisMonthVisits > 20 ? 7 : 5, volume: 17850 },
   ];
 
   const handleQuickCheckIn = () => {
@@ -67,8 +81,8 @@ export const MemberDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* ================= HERO MEMBER STATUS STRIP ================= */}
-      <div className="bg-gradient-to-r from-gym-surface to-gym-black border border-gym-border rounded-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+      {/* ================= 1. PERSONALIZED WELCOME BANNER ================= */}
+      <div className="bg-gradient-to-r from-gym-surface via-gym-surface to-gym-black border border-gym-border rounded-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="flex items-center gap-4 z-10">
           <div className="relative">
             <img
@@ -80,17 +94,19 @@ export const MemberDashboard: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
+              <span className="text-xs uppercase font-heading font-black text-gym-lime tracking-widest">
+                {greeting},
+              </span>
               <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-gym-primary tracking-wide">
                 {user.full_name}
               </h2>
-              <span className="px-2 py-0.5 text-[10px] font-heading font-black uppercase tracking-wider rounded bg-gym-lime/10 text-gym-lime border border-gym-lime/20">
-                {membership?.plan?.name || 'Performance'} Tier
-              </span>
             </div>
-            <p className="text-xs text-gym-secondary mt-0.5 flex items-center gap-2">
-              <span>Member ID: <strong className="text-gym-primary font-mono">{user.id.substring(0, 12)}</strong></span>
+            <p className="text-xs text-gym-secondary mt-1 flex flex-wrap items-center gap-2">
+              <span>Member ID: <strong className="text-gym-primary font-mono">{user.id.substring(0, 10)}</strong></span>
               <span>&bull;</span>
-              <span>Coach: <strong className="text-gym-primary">{user.assigned_trainer_name || 'Marcus Drake'}</strong></span>
+              <span className="text-gym-lime font-bold">{membership?.plan?.name || 'Performance'} Tier</span>
+              <span>&bull;</span>
+              <span>Sanctuary: <strong>NoHo Flagship 01</strong></span>
             </p>
           </div>
         </div>
@@ -102,30 +118,29 @@ export const MemberDashboard: React.FC = () => {
               setCheckInStatus(null);
               setShowQRModal(true);
             }}
-            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-sm font-heading uppercase font-bold text-sm bg-gym-lime text-gym-black hover:bg-gym-lime-hover shadow-lime-glow transition-all"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-sm font-heading uppercase font-bold text-xs sm:text-sm bg-gym-lime text-gym-black hover:bg-gym-lime-hover shadow-lime-glow transition-all"
           >
             <QrCode className="w-4 h-4" />
-            <span>Digital Gym Pass / Check-In</span>
+            <span>Digital Gate Pass / Scan</span>
           </button>
           <Link
             to="/member/workouts"
-            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-sm font-heading uppercase font-bold text-sm bg-gym-surface hover:bg-gym-surface-hover text-gym-primary border border-gym-border transition-all"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-sm font-heading uppercase font-bold text-xs sm:text-sm bg-gym-surface hover:bg-gym-surface-hover text-gym-primary border border-gym-border transition-all"
           >
             <Dumbbell className="w-4 h-4 text-gym-lime" />
-            <span>Today's Workout</span>
+            <span>Today's Split</span>
           </Link>
         </div>
 
-        {/* Architectural Glow Effect */}
         <div className="absolute right-0 top-0 w-80 h-full bg-gradient-to-l from-gym-lime/5 to-transparent pointer-events-none"></div>
       </div>
 
-      {/* ================= 4 ESSENTIAL METRIC CARDS ================= */}
+      {/* ================= 2. 4 ESSENTIAL METRIC CARDS ================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Attendance */}
-        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm relative overflow-hidden">
+        {/* Attendance Summary */}
+        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm">
           <div className="flex items-center justify-between text-gym-muted mb-2">
-            <span className="text-xs uppercase font-heading font-bold tracking-wider">Attendance (Month)</span>
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider">Attendance (Month)</span>
             <Calendar className="w-4 h-4 text-gym-lime" />
           </div>
           <div className="flex items-baseline gap-2">
@@ -134,16 +149,20 @@ export const MemberDashboard: React.FC = () => {
             </span>
             <span className="text-xs text-gym-secondary font-medium">Visits Logged</span>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-gym-lime">
-            <Flame className="w-3.5 h-3.5" />
-            <span className="font-semibold">Consistent 4x / week pace</span>
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <span className="text-gym-lime font-semibold flex items-center gap-1">
+              <Flame className="w-3.5 h-3.5" /> {attendanceRate}% of target
+            </span>
+            <Link to="/member/attendance" className="text-gym-muted hover:text-white">
+              View Log →
+            </Link>
           </div>
         </div>
 
-        {/* Card 2: Membership Expiry */}
-        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm relative overflow-hidden">
+        {/* Membership Status & Expiry */}
+        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm">
           <div className="flex items-center justify-between text-gym-muted mb-2">
-            <span className="text-xs uppercase font-heading font-bold tracking-wider">Membership Status</span>
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider">Membership Status</span>
             <CreditCard className="w-4 h-4 text-gym-lime" />
           </div>
           <div className="flex items-baseline gap-2">
@@ -160,33 +179,33 @@ export const MemberDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Today's Workout */}
-        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm relative overflow-hidden">
+        {/* Current Workout Split */}
+        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm">
           <div className="flex items-center justify-between text-gym-muted mb-2">
-            <span className="text-xs uppercase font-heading font-bold tracking-wider">Active Split</span>
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider">Current Split</span>
             <Dumbbell className="w-4 h-4 text-gym-lime" />
           </div>
           <div className="truncate">
             <span className="font-heading text-2xl font-black text-gym-primary block truncate">
-              {activeWorkout?.title || 'Push Day'}
+              {activeWorkout?.title || 'Push Day (CNS)'}
             </span>
             <span className="text-xs text-gym-secondary font-medium">
               Category: {activeWorkout?.category || 'Push'}
             </span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs">
-            <span className="text-gym-muted">5 Exercises scheduled</span>
+            <span className="text-gym-muted">{activeWorkout?.exercises?.length || 5} movements</span>
             <Link to="/member/workouts" className="text-gym-lime hover:underline font-bold">
               Log Sets →
             </Link>
           </div>
         </div>
 
-        {/* Card 4: Strength Index PR */}
-        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm relative overflow-hidden">
+        {/* Personal Record Benchmark */}
+        <div className="bg-gym-surface border border-gym-border p-5 rounded-sm">
           <div className="flex items-center justify-between text-gym-muted mb-2">
-            <span className="text-xs uppercase font-heading font-bold tracking-wider">Personal Record</span>
-            <Award className="w-4 h-4 text-gym-lime" />
+            <span className="text-[11px] font-heading font-bold uppercase tracking-wider">Personal Record</span>
+            <Award className="w-4 h-4 text-amber-400" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="font-heading text-4xl font-black text-gym-primary">
@@ -194,26 +213,30 @@ export const MemberDashboard: React.FC = () => {
             </span>
             <span className="text-xs text-gym-secondary font-medium">Deadlift 1RM</span>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-400">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span className="font-semibold">+7.5kg increase this month</span>
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" /> +15kg vs baseline
+            </span>
+            <Link to="/member/progress" className="text-gym-muted hover:text-white">
+              1RM Lab →
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* ================= CHARTS & WORKOUT OVERVIEW ================= */}
+      {/* ================= 3. CHARTS & CURRENT WORKOUT PLAN ================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Attendance & Volume Chart (2 Cols) */}
         <div className="lg:col-span-2 bg-gym-surface border border-gym-border rounded-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="font-heading text-lg font-black uppercase tracking-wider text-gym-primary">
-                TRAINING FREQUENCY & BODY WEIGHT
+                TRAINING FREQUENCY & ACCUMULATED VOLUME
               </h3>
-              <p className="text-xs text-gym-secondary">Weekly sessions and bodyweight stabilization</p>
+              <p className="text-xs text-gym-secondary">Weekly sessions and mechanical tonnage in kilograms</p>
             </div>
-            <span className="text-xs bg-gym-black border border-gym-border px-3 py-1 rounded text-gym-secondary font-mono">
-              Last 30 Days
+            <span className="text-xs bg-gym-black border border-gym-border px-3 py-1 rounded text-gym-lime font-mono">
+              30-Day Periodization
             </span>
           </div>
 
@@ -222,10 +245,11 @@ export const MemberDashboard: React.FC = () => {
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="limeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ccff00" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#ccff00" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#ccff00" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ccff00" stopOpacity={0} />
                   </linearGradient>
                 </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#23252a" />
                 <XAxis dataKey="name" stroke="#676c78" fontSize={11} tickLine={false} />
                 <YAxis stroke="#676c78" fontSize={11} tickLine={false} />
                 <Tooltip
@@ -234,7 +258,7 @@ export const MemberDashboard: React.FC = () => {
                     border: '1px solid #23252a',
                     borderRadius: '2px',
                     color: '#f5f6f8',
-                    fontSize: '12px'
+                    fontSize: '12px',
                   }}
                 />
                 <Area
@@ -242,7 +266,7 @@ export const MemberDashboard: React.FC = () => {
                   dataKey="visits"
                   name="Gym Visits"
                   stroke="#ccff00"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#limeGradient)"
                 />
@@ -251,23 +275,23 @@ export const MemberDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Assigned Workout Quick-List (1 Col) */}
+        {/* Current Workout Program Quick-List (1 Col) */}
         <div className="bg-gym-surface border border-gym-border rounded-sm p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="font-heading text-lg font-black uppercase tracking-wider text-gym-primary">
-                PROGRAM EXERCISES
+                ASSIGNED SPLIT
               </h3>
-              <span className="text-xs text-gym-lime font-bold uppercase font-heading">
+              <span className="text-xs text-gym-lime font-bold uppercase font-heading bg-gym-black px-2 py-0.5 rounded border border-gym-border">
                 {activeWorkout?.category}
               </span>
             </div>
 
             <p className="text-xs text-gym-secondary mb-4 leading-relaxed">
-              {activeWorkout?.notes || 'Focus on clean eccentric control and dynamic lockout.'}
+              {activeWorkout?.notes || 'Focus on clean eccentric control. Maintain 2s pause at bottom.'}
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {activeWorkout?.exercises?.slice(0, 4).map((ex, idx) => (
                 <div
                   key={ex.id || idx}
@@ -293,54 +317,118 @@ export const MemberDashboard: React.FC = () => {
             to="/member/workouts"
             className="mt-6 w-full py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-center rounded-sm text-xs font-heading font-bold uppercase tracking-wider text-gym-primary flex items-center justify-center gap-1.5 transition-colors"
           >
-            <span>Open Complete Workout Routine</span>
+            <span>Launch Complete Session Logger</span>
             <ChevronRight className="w-3.5 h-3.5 text-gym-lime" />
           </Link>
         </div>
       </div>
 
-      {/* ================= RECENT ACTIVITY & ATTENDANCE LOG ================= */}
-      <div className="bg-gym-surface border border-gym-border rounded-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading text-lg font-black uppercase tracking-wider text-gym-primary">
-            RECENT CHECK-IN ACTIVITY
-          </h3>
-          <Link
-            to="/member/attendance"
-            className="text-xs text-gym-lime hover:underline font-bold uppercase tracking-wider font-heading"
-          >
-            Full Attendance History →
-          </Link>
-        </div>
+      {/* ================= 4. MASTER COACH & PAYMENT STATEMENTS ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Assigned Master Coach Card */}
+        <div className="bg-gym-surface border border-gym-border rounded-sm p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-heading text-lg font-black uppercase tracking-wider text-gym-primary flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-gym-lime" />
+                ASSIGNED MASTER COACH
+              </h3>
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                ON DUTY
+              </span>
+            </div>
 
-        <div className="divide-y divide-gym-border/40">
-          {attendanceHistory.slice(0, 5).map((att) => (
-            <div key={att.id} className="py-3 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gym-black border border-gym-border flex items-center justify-center text-gym-lime">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-bold text-gym-primary">{att.gym_location}</div>
-                  <div className="text-gym-muted text-[11px]">Method: {att.method.toUpperCase()}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-gym-secondary font-medium">
-                  {new Date(att.check_in_time).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                </div>
-                <div className="text-gym-muted text-[11px] font-mono">
-                  {new Date(att.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
+            <div className="flex items-center gap-4 mb-4">
+              <img
+                src="https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=400&q=80"
+                alt="Marcus Drake"
+                className="w-16 h-16 rounded-full object-cover border-2 border-gym-lime shadow-lime-glow"
+              />
+              <div>
+                <h4 className="font-heading text-xl font-black uppercase text-gym-primary">
+                  {user.assigned_trainer_name || 'Marcus Drake'}
+                </h4>
+                <span className="text-xs text-gym-lime font-mono block">
+                  CSCS Head Strength Specialist
+                </span>
+                <span className="text-[11px] text-gym-muted block mt-0.5">
+                  USAW Level 2 &bull; EXOS Performance
+                </span>
               </div>
             </div>
-          ))}
+
+            <div className="p-3 bg-gym-black rounded border border-gym-border text-xs text-gym-secondary leading-relaxed">
+              <span className="text-gym-lime font-heading font-bold uppercase text-[10px] block mb-1">
+                COACH'S DIRECTIVE THIS CYCLE:
+              </span>
+              "Solid acceleration on heavy pulls. Maintain 3-second tempo on squat eccentric to reinforce hip drive."
+            </div>
+          </div>
+
+          <div className="pt-4 mt-4 border-t border-gym-border flex items-center justify-between text-xs text-gym-muted">
+            <span>Next Assessment: Nov 04, 2026</span>
+            <span className="text-gym-lime font-semibold">1-on-1 Session Included</span>
+          </div>
+        </div>
+
+        {/* Recent Invoices & Billing Summary */}
+        <div className="bg-gym-surface border border-gym-border rounded-sm p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-heading text-lg font-black uppercase tracking-wider text-gym-primary flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-gym-lime" />
+                BILLING STATEMENTS & INVOICES
+              </h3>
+              <Link to="/member/payments" className="text-xs text-gym-lime hover:underline font-bold uppercase font-heading">
+                All Statements →
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              {userPayments.slice(0, 3).map((p) => (
+                <div
+                  key={p.id}
+                  className="p-3 bg-gym-black rounded border border-gym-border flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <span className="font-bold text-white block uppercase">
+                      {p.plan_name || 'Membership'}
+                    </span>
+                    <span className="text-[10px] text-gym-muted font-mono">
+                      {new Date(p.created_at).toLocaleDateString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-heading font-black text-sm text-gym-lime block">
+                      ${p.amount}.00 USD
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-semibold uppercase">
+                      {p.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-4 mt-4 border-t border-gym-border flex items-center justify-between text-xs text-gym-muted">
+            <span className="flex items-center gap-1.5 text-gym-secondary">
+              <ShieldCheck className="w-3.5 h-3.5 text-gym-lime" /> Stripe Encrypted Billing
+            </span>
+            <Link to="/member/membership" className="text-gym-lime font-bold hover:underline">
+              Manage Tier →
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* ================= DIGITAL GYM PASS / QR MODAL ================= */}
+      {/* ================= 5. DIGITAL GYM PASS / QR MODAL ================= */}
       {showQRModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
           <div className="bg-gym-surface border border-gym-border rounded-sm max-w-sm w-full p-6 relative shadow-card animate-in fade-in zoom-in-95">
             <button
               onClick={() => setShowQRModal(false)}
@@ -372,13 +460,15 @@ export const MemberDashboard: React.FC = () => {
                 <div>Expires: <strong className="text-white">{membership?.expiry_date || '2026-10-28'}</strong></div>
               </div>
 
-              {/* Instant Check-In Action for Demo Testing */}
+              {/* Instant Check-In Action */}
               {checkInStatus ? (
-                <div className={`p-3 rounded text-xs mb-3 ${
-                  checkInStatus.success 
-                    ? 'bg-gym-lime/10 border border-gym-lime/30 text-gym-lime' 
-                    : 'bg-gym-danger/10 border border-gym-danger/30 text-red-400'
-                }`}>
+                <div
+                  className={`p-3 rounded text-xs mb-3 ${
+                    checkInStatus.success
+                      ? 'bg-gym-lime/10 border border-gym-lime/30 text-gym-lime'
+                      : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                  }`}
+                >
                   {checkInStatus.message}
                 </div>
               ) : (

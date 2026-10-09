@@ -15,7 +15,10 @@ import {
   ShieldCheck, 
   User, 
   Layers, 
-  CalendarCheck
+  CalendarCheck,
+  Receipt,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { NotificationDropdown } from '@/components/common/NotificationDropdown';
@@ -34,7 +37,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { to: '/member/attendance', icon: QrCode, label: 'QR Attendance' },
     { to: '/member/workouts', icon: Dumbbell, label: 'Workouts' },
     { to: '/member/progress', icon: TrendingUp, label: 'Progress & 1RM' },
-    { to: '/member/membership', icon: CreditCard, label: 'Membership' },
+    { to: '/member/membership', icon: CreditCard, label: 'Membership Tier' },
+    { to: '/member/payments', icon: Receipt, label: 'Billing Statements' },
     { to: '/member/profile', icon: User, label: 'Athlete Profile' },
   ];
 
@@ -52,7 +56,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     { to: '/admin/memberships', icon: Layers, label: 'Membership Plans' },
     { to: '/admin/attendance', icon: QrCode, label: 'QR Check-In Terminal' },
     { to: '/admin/workouts', icon: Dumbbell, label: 'Workout Catalog' },
-    { to: '/admin/payments', icon: CreditCard, label: 'Stripe Ledger' },
+    { to: '/admin/payments', icon: CreditCard, label: 'Payment Ledger' },
+    { to: '/admin/trials', icon: Sparkles, label: 'Trial Leads' },
+    { to: '/admin/messages', icon: MessageSquare, label: 'Inquiries' },
     { to: '/admin/settings', icon: Settings, label: 'Facility Settings' },
   ];
 

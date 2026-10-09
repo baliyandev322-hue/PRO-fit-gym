@@ -96,28 +96,28 @@ export const AdminSettingsPage: React.FC = () => {
           <div className="bg-gym-surface border border-gym-border rounded-sm p-5">
             <div className="flex items-center justify-between mb-2">
               <span className="font-heading font-bold uppercase text-xs text-gym-primary flex items-center gap-2">
-                <Database className="w-4 h-4 text-emerald-400" /> SUPABASE DATABASE
+                <Database className="w-4 h-4 text-emerald-400" /> POSTGRESQL & PRISMA ORM
               </span>
               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                 CONNECTED
               </span>
             </div>
             <p className="text-xs text-gym-secondary">
-              PostgreSQL schema active with 10 tables and Row Level Security (RLS) enforcement.
+              Relational PostgreSQL database active with 19 Prisma models, foreign keys, and indexes.
             </p>
           </div>
 
           <div className="bg-gym-surface border border-gym-border rounded-sm p-5">
             <div className="flex items-center justify-between mb-2">
               <span className="font-heading font-bold uppercase text-xs text-gym-primary flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-cyan-400" /> STRIPE CHECKOUT API
+                <CreditCard className="w-4 h-4 text-gym-lime" /> RAZORPAY PAYMENT GATEWAY
               </span>
-              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">
+              <span className="text-[10px] font-mono text-gym-lime bg-gym-lime/10 px-2 py-0.5 rounded border border-gym-lime/30">
                 ACTIVE
               </span>
             </div>
             <p className="text-xs text-gym-secondary">
-              Instant PCI DSS level 1 checkout and automatic subscription status activation.
+              HMAC-SHA256 server-verified orders, Indian UPI/Cards/Netbanking & Instant Membership Activation.
             </p>
           </div>
         </div>
