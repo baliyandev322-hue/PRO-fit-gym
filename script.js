@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Backend REST API Configuration (Local environment or cloud deployment)
   const API_BASE =
     (window.PROFIT_CONFIG && window.PROFIT_CONFIG.API_URL) ||
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
       ? 'http://localhost:5000/api'
       : '/api');
 

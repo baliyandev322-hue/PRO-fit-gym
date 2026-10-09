@@ -22,8 +22,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5500,ht
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (such as mobile apps, curl, or Postman)
-      if (!origin) return callback(null, true);
+      // Allow requests with no origin or file:// origin (such as mobile apps, curl, Postman, local file://)
+      if (!origin || origin === 'null') return callback(null, true);
       const normalizedOrigin = origin.replace(/\/$/, '');
       if (allowedOrigins.indexOf(normalizedOrigin) !== -1 || process.env.NODE_ENV !== 'production') {
         return callback(null, true);
