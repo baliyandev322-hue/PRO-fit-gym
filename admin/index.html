@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>PROFIT Training Club | Operations Desk</title>
+
+  <!-- Google Athletic Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+  <!-- ==================== 1. LOGIN VIEW ==================== -->
+  <div class="admin-auth-wrapper" id="authSection">
+    <div class="admin-login-card">
+      <div class="login-brand">
+        <span class="brand-name">PRO<span class="brand-accent">FIT</span></span>
+        <span class="portal-badge">STAFF OPERATIONS // RESTRICTED ACCESS</span>
+      </div>
+
+      <div class="login-error-banner" id="loginErrorMsg" role="alert"></div>
+
+      <form class="login-form" id="adminLoginForm" novalidate>
+        <div class="form-group">
+          <label for="loginEmail" class="form-label">Staff Email *</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="e.g. admin@profitgym.com" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword" class="form-label">Password *</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="Enter administrative password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
+          <span>Sign In to Roster Desk</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <p style="text-align: center; margin-top: 1.25rem; font-size: 0.78rem; color: var(--color-text-muted);">
+          Protected under 256-bit encryption. Unauthorized attempts logged.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 2. MAIN DASHBOARD VIEW ==================== -->
+  <div class="admin-app hidden" id="dashboardSection">
+    
+    <!-- Top Sticky Navigation Bar -->
+    <header class="admin-header">
+      <div class="admin-header-left">
+        <a href="../index.html" class="admin-header-brand">
+          PRO<span class="brand-accent">FIT</span> <span style="font-size: 0.8em; color: var(--color-text-secondary); font-weight: 600;">// DESK</span>
+        </a>
+        <div class="admin-system-status">
+          <span class="status-pulse-dot" aria-hidden="true"></span>
+          <span>ROSTER ACTIVE</span>
+        </div>
+      </div>
+
+      <div class="admin-header-right">
+        <div class="admin-user-pill" id="adminUserPill">
+          Logged in as: <strong id="adminUserName">Master Coach</strong>
+        </div>
+        <a href="../index.html" class="btn-header-action" target="_blank" rel="noopener">View Site ↗</a>
+        <button type="button" class="btn-header-action btn-logout" id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="admin-container">
+      
+      <!-- Section Title & Overview -->
+      <div class="admin-section-header">
+        <h1 class="admin-section-title">FACILITY OPERATIONS & DISPATCH</h1>
+        <p class="admin-section-desc">Real-time bookings, trial authorizations, and athlete intake logs.</p>
+      </div>
+
+      <!-- Live KPI Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card highlight">
+          <div class="metric-label">TOTAL BOOKINGS</div>
+          <div class="metric-value" id="metricTotal">0</div>
+          <div class="metric-meta" id="metricTotalMeta">Coached + Trials</div>
+        </div>
+
+        <div class="metric-card pending">
+          <div class="metric-label">PENDING ACTION</div>
+          <div class="metric-value" id="metricPending" style="color: var(--status-pending);">0</div>
+          <div class="metric-meta">Requires verification</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">CONFIRMED ATHLETES</div>
+          <div class="metric-value" id="metricConfirmed" style="color: var(--status-confirmed);">0</div>
+          <div class="metric-meta">Floor pass granted</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">CANCELLED / COMPLETED</div>
+          <div class="metric-value" id="metricArchived">0</div>
+          <div class="metric-meta" id="metricArchivedMeta">0 Cancelled / 0 Done</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">MEMBERSHIP RESERVATIONS</div>
+          <div class="metric-value" id="metricMemberships">0</div>
+          <div class="metric-meta">Tier admissions</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">CONCIERGE INQUIRIES</div>
+          <div class="metric-value" id="metricContacts">0</div>
+          <div class="metric-meta">Facility requests</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="admin-tabs-nav">
+        <button type="button" class="tab-btn active" data-tab="bookings">Bookings & 7-Day Trials</button>
+        <button type="button" class="tab-btn" data-tab="memberships">Tier Reservations</button>
+        <button type="button" class="tab-btn" data-tab="contacts">Concierge Messages</button>
+      </div>
+
+      <!-- Search & Filters Toolbar -->
+      <div class="admin-toolbar">
+        <div class="toolbar-search">
+          <input type="text" id="searchInput" placeholder="Search by athlete name, email, phone, or reference code..." aria-label="Search records">
+        </div>
+
+        <div class="toolbar-filters">
+          <select id="statusFilter" class="admin-select" aria-label="Filter by status">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Completed">Completed</option>
+          </select>
+
+          <select id="typeFilter" class="admin-select" aria-label="Filter by booking type">
+            <option value="">All Types</option>
+            <option value="coached_session">Coached Session</option>
+            <option value="trial_pass">7-Day Trial Pass</option>
+          </select>
+
+          <button type="button" class="btn-refresh" id="refreshBtn" title="Reload live data">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Data Table View -->
+      <div class="table-responsive">
+        <table class="admin-table" id="dataTable">
+          <thead id="tableHead">
+            <!-- Dynamically populated based on active tab -->
+          </thead>
+          <tbody id="tableBody">
+            <!-- Dynamically populated with rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State Container -->
+      <div class="empty-table-state hidden" id="emptyState">
+        <div class="empty-title">NO RECORDS LOCATED</div>
+        <p>No submissions match the current search filters or database is empty.</p>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="pagination-wrap">
+        <div id="paginationInfo">Showing 0 of 0 records</div>
+        <div class="pagination-btns">
+          <button type="button" class="btn-page" id="prevPageBtn" disabled>‹ Previous</button>
+          <button type="button" class="btn-page" id="nextPageBtn" disabled>Next ›</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==================== 3. RECORD DETAILS MODAL ==================== -->
+  <div class="admin-modal-backdrop" id="detailModal">
+    <div class="admin-modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+        <div>
+          <span style="font-size: 0.72rem; letter-spacing: 0.1em; color: var(--color-lime); font-weight: 700; text-transform: uppercase;">RECORD INSPECTOR</span>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; margin: 0; text-transform: uppercase;" id="modalRecordTitle">BOOKING DETAILS</h2>
+        </div>
+        <button type="button" class="btn-action-icon" id="closeModalBtn" style="font-size: 1.1rem; padding: 0.25rem 0.65rem;">✕</button>
+      </div>
+
+      <div id="modalDetailsContent">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="admin-toast" id="adminToast" role="alert" aria-live="polite"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

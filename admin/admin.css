@@ -1,0 +1,748 @@
+/* ==========================================================================
+   PROFIT Training Club - Private Admin Dashboard Stylesheet
+   Inherits design system tokens from style.css
+   Aesthetic: Premium, Athletic, Editorial, Grounded Dark Theme
+   ========================================================================== */
+
+:root {
+  --admin-sidebar-width: 260px;
+  --status-pending: #f59e0b;
+  --status-pending-bg: rgba(245, 158, 11, 0.12);
+  --status-confirmed: #10b981;
+  --status-confirmed-bg: rgba(16, 185, 129, 0.12);
+  --status-cancelled: #ef4444;
+  --status-cancelled-bg: rgba(239, 68, 68, 0.12);
+  --status-completed: #3b82f6;
+  --status-completed-bg: rgba(59, 130, 246, 0.12);
+}
+
+/* Page Foundation */
+body.admin-body {
+  background-color: var(--color-black, #0d0e10);
+  color: var(--color-text-primary, #f5f6f8);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   1. AUTHENTICATION / LOGIN VIEW
+   ========================================================================== */
+.admin-auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: radial-gradient(circle at 50% 20%, rgba(204, 255, 0, 0.05) 0%, rgba(13, 14, 16, 1) 70%);
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--color-surface, #141518);
+  border: 1px solid var(--color-border, #23252a);
+  padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.admin-login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--color-lime, #ccff00);
+}
+
+.login-brand {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.login-brand .brand-name {
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: var(--color-text-primary, #f5f6f8);
+  display: block;
+}
+
+.login-brand .brand-accent {
+  color: var(--color-lime, #ccff00);
+}
+
+.login-brand .portal-badge {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #676c78);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.25rem 0.65rem;
+  border-radius: 2px;
+}
+
+.login-form .form-group {
+  margin-bottom: 1.35rem;
+}
+
+.login-form .form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary, #9aa0ac);
+  margin-bottom: 0.45rem;
+}
+
+.login-form .form-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background-color: #0d0e10;
+  border: 1px solid var(--color-border, #23252a);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.login-form .form-input:focus {
+  outline: none;
+  border-color: var(--color-lime, #ccff00);
+}
+
+.login-error-banner {
+  background-color: var(--status-cancelled-bg);
+  border: 1px solid var(--status-cancelled);
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  display: none;
+}
+
+.login-error-banner.active {
+  display: block;
+}
+
+/* ==========================================================================
+   2. DASHBOARD MAIN APP LAYOUT
+   ========================================================================== */
+.admin-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.admin-header {
+  background-color: var(--color-surface, #141518);
+  border-bottom: 1px solid var(--color-border, #23252a);
+  padding: 0.9rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.admin-header-brand {
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-decoration: none;
+}
+
+.admin-header-brand .brand-accent {
+  color: var(--color-lime, #ccff00);
+}
+
+.admin-system-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0.25rem 0.65rem;
+  border-radius: 2px;
+}
+
+.status-pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.admin-user-pill {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary, #9aa0ac);
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--color-border, #23252a);
+  border-radius: 2px;
+}
+
+.admin-user-pill strong {
+  color: #fff;
+}
+
+.btn-header-action {
+  background: transparent;
+  border: 1px solid var(--color-border, #23252a);
+  color: var(--color-text-secondary, #9aa0ac);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-header-action:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: #4b5563;
+}
+
+.btn-logout:hover {
+  border-color: var(--status-cancelled);
+  color: #fca5a5;
+}
+
+/* ==========================================================================
+   3. METRICS / KPI GRID
+   ========================================================================== */
+.admin-container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.admin-section-header {
+  margin-bottom: 1.75rem;
+}
+
+.admin-section-title {
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.35rem 0;
+  text-transform: uppercase;
+}
+
+.admin-section-desc {
+  color: var(--color-text-secondary, #9aa0ac);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.25rem;
+}
+
+.metric-card {
+  background-color: var(--color-surface, #141518);
+  border: 1px solid var(--color-border, #23252a);
+  padding: 1.4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card.highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background-color: var(--color-lime, #ccff00);
+}
+
+.metric-card.pending::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background-color: var(--status-pending);
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted, #676c78);
+  margin-bottom: 0.4rem;
+}
+
+.metric-value {
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 2.4rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.metric-meta {
+  font-size: 0.76rem;
+  color: var(--color-text-secondary, #9aa0ac);
+}
+
+/* ==========================================================================
+   4. NAVIGATION TABS & TOOLBAR
+   ========================================================================== */
+.admin-tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-border, #23252a);
+  margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary, #9aa0ac);
+  padding: 0.85rem 1.4rem;
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: #fff;
+}
+
+.tab-btn.active {
+  color: var(--color-lime, #ccff00);
+  border-bottom-color: var(--color-lime, #ccff00);
+}
+
+/* Toolbar */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  background-color: var(--color-surface, #141518);
+  padding: 1rem;
+  border: 1px solid var(--color-border, #23252a);
+}
+
+.toolbar-search {
+  flex: 1;
+  min-width: 260px;
+  position: relative;
+}
+
+.toolbar-search input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background-color: #0d0e10;
+  border: 1px solid var(--color-border, #23252a);
+  color: #fff;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.toolbar-search input:focus {
+  outline: none;
+  border-color: var(--color-lime, #ccff00);
+}
+
+.toolbar-filters {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.admin-select {
+  padding: 0.65rem 1rem;
+  background-color: #0d0e10;
+  border: 1px solid var(--color-border, #23252a);
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.admin-select:focus {
+  outline: none;
+  border-color: var(--color-lime, #ccff00);
+}
+
+.btn-refresh {
+  background-color: transparent;
+  border: 1px solid var(--color-border, #23252a);
+  color: var(--color-text-secondary, #9aa0ac);
+  padding: 0.65rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-refresh:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+/* ==========================================================================
+   5. DATA TABLE & STATUS BADGES
+   ========================================================================== */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border, #23252a);
+  background-color: var(--color-surface, #141518);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.admin-table th {
+  background-color: #101114;
+  padding: 0.9rem 1rem;
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #9aa0ac);
+  border-bottom: 1px solid var(--color-border, #23252a);
+}
+
+.admin-table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.ref-badge {
+  font-family: monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-lime, #ccff00);
+  background: rgba(204, 255, 0, 0.06);
+  padding: 0.25rem 0.5rem;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.type-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary, #9aa0ac);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.status-badge.Pending {
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending);
+}
+
+.status-badge.Confirmed {
+  background-color: var(--status-confirmed-bg);
+  color: var(--status-confirmed);
+}
+
+.status-badge.Cancelled {
+  background-color: var(--status-cancelled-bg);
+  color: var(--status-cancelled);
+}
+
+.status-badge.Completed {
+  background-color: var(--status-completed-bg);
+  color: var(--status-completed);
+}
+
+.status-badge.New {
+  background-color: rgba(204, 255, 0, 0.15);
+  color: var(--color-lime, #ccff00);
+}
+
+.status-badge.Read {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #d1d5db;
+}
+
+.status-badge.Replied {
+  background-color: var(--status-confirmed-bg);
+  color: var(--status-confirmed);
+}
+
+/* Quick Action Controls */
+.actions-cell {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.btn-action-icon {
+  background-color: transparent;
+  border: 1px solid var(--color-border, #23252a);
+  color: var(--color-text-secondary, #9aa0ac);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-action-icon:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: #6b7280;
+}
+
+.btn-confirm-action:hover {
+  border-color: var(--status-confirmed);
+  color: var(--status-confirmed);
+}
+
+.btn-cancel-action:hover {
+  border-color: var(--status-cancelled);
+  color: var(--status-cancelled);
+}
+
+/* Pagination */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #9aa0ac);
+}
+
+.pagination-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-page {
+  background: var(--color-surface, #141518);
+  border: 1px solid var(--color-border, #23252a);
+  color: #fff;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-page:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   6. EMPTY, LOADING & MODAL STATES
+   ========================================================================== */
+.empty-table-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  color: var(--color-text-muted, #676c78);
+}
+
+.empty-title {
+  font-family: var(--font-heading, 'Barlow Condensed', sans-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #9aa0ac);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+/* Modal Overlay */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.admin-modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.admin-modal-card {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--color-surface, #141518);
+  border: 1px solid var(--color-border, #23252a);
+  padding: 2rem;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+}
+
+.modal-detail-label {
+  color: var(--color-text-muted, #676c78);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.modal-detail-val {
+  color: #fff;
+  font-weight: 500;
+  text-align: right;
+  max-width: 60%;
+}
+
+.modal-notes-box {
+  background: #0d0e10;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border, #23252a);
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #9aa0ac);
+  white-space: pre-wrap;
+}
+
+/* Toast Notifications */
+.admin-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background-color: var(--color-surface, #141518);
+  border: 1px solid var(--color-lime, #ccff00);
+  color: #fff;
+  padding: 0.85rem 1.4rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  z-index: 1050;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.admin-toast.active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.admin-toast.error {
+  border-color: var(--status-cancelled);
+  color: #fca5a5;
+}
+
+/* Hidden Utility */
+.hidden {
+  display: none !important;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .admin-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .admin-container {
+    padding: 1rem;
+  }
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar-filters {
+    flex-wrap: wrap;
+  }
+}

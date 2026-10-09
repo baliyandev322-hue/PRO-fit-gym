@@ -1758,6 +1758,7 @@
             <li><a href="#tools" class="footer-link">Performance Tools</a></li>
             <li><a href="#faq" class="footer-link">Frequently Asked Questions</a></li>
             <li><a href="#contact" class="footer-link">Contact & Location</a></li>
+            <li><a href="admin/index.html" class="footer-link" style="color: var(--color-lime); opacity: 0.85;">Staff Operations ↗</a></li>
           </ul>
         </div>
 
@@ -2006,6 +2007,14 @@
     </div>
   </div>
 
+  <!-- Global Application Config (Allows setting deployed backend URL in production) -->
+  <script>
+    window.PROFIT_CONFIG = window.PROFIT_CONFIG || {
+      API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000/api'
+        : '/api'
+    };
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

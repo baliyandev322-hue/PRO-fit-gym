@@ -8,6 +8,23 @@
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
+  // Backend REST API Configuration (Local environment or cloud deployment)
+  const API_BASE =
+    (window.PROFIT_CONFIG && window.PROFIT_CONFIG.API_URL) ||
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000/api'
+      : '/api');
+
+  const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   /* ==========================================================================
      1. APPLICATION DATA DICTIONARIES
      ========================================================================== */
@@ -714,23 +731,49 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = '<span>Verifying Floor Capacity...</span>';
       }
 
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Submit Admission Reservation</span><span class="btn-arrow" aria-hidden="true">→</span>';
-        }
-
-        if (memFeedback) {
-          memFeedback.className = 'modal-feedback success';
-          memFeedback.innerHTML = `
-            <strong>ADMISSION RESERVATION RECORDED:</strong><br>
-            A provisional spot on our 300-member floor roster has been reserved for <strong>${name.value.trim()}</strong> under the <strong>${planName} Tier</strong>.<br><br>
-            Our concierge desk will dispatch confirmation via <strong>${contactPref}</strong> within 4 business hours to finalize keycard issuance. No automated credit card charges occurred.
-          `;
-        }
-
-        membershipEnquiryForm.reset();
-      }, 700);
+      fetch(`${API_BASE}/memberships`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tier: planName,
+          fullName: name.value.trim(),
+          email: email.value.trim(),
+          phone: phone.value.trim(),
+          contactPreference: contactPref,
+          notes: document.getElementById('memNotes') ? document.getElementById('memNotes').value.trim() : '',
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.message || 'Unable to register membership request at this time.');
+          }
+          return data;
+        })
+        .then((data) => {
+          if (memFeedback) {
+            const refCode = (data.data && data.data.reference) || data.reference || 'PRO-MB-CONFIRMED';
+            memFeedback.className = 'modal-feedback success';
+            memFeedback.innerHTML = `
+              <strong>ADMISSION RESERVATION RECORDED [${escapeHtml(refCode)}]:</strong><br>
+              A provisional spot on our 300-member floor roster has been reserved for <strong>${escapeHtml(name.value.trim())}</strong> under the <strong>${escapeHtml(planName)} Tier</strong>.<br><br>
+              Our concierge desk will dispatch confirmation via <strong>${escapeHtml(contactPref)}</strong> within 4 business hours to finalize keycard issuance. No automated credit card charges occurred.
+            `;
+          }
+          membershipEnquiryForm.reset();
+        })
+        .catch((err) => {
+          if (memFeedback) {
+            memFeedback.className = 'modal-feedback error';
+            memFeedback.innerHTML = `<strong>RESERVATION ERROR:</strong><br>${escapeHtml(err.message)}`;
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Submit Admission Reservation</span><span class="btn-arrow" aria-hidden="true">→</span>';
+          }
+        });
     });
   }
 
@@ -923,33 +966,68 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = '<span>Confirming Roster Availability...</span>';
       }
 
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Confirm Coaching Request</span><span class="btn-arrow" aria-hidden="true">→</span>';
-        }
+      fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'coached_session',
+          fullName: name.value.trim(),
+          email: email.value.trim(),
+          phone: phone.value.trim(),
+          program: program.value,
+          trainer: trainer.value,
+          date: date.value,
+          time: time.value,
+          notes: notes ? notes.value.trim() : '',
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.message || 'Unable to schedule coached session at this time.');
+          }
+          return data;
+        })
+        .then((data) => {
+          const refCode = (data.data && data.data.bookingReference) || data.bookingReference || 'PRO-PT-CONFIRMED';
+          if (bookingFeedback) {
+            bookingFeedback.className = 'booking-feedback success';
+            bookingFeedback.innerHTML = `
+              <strong>COACHING RESERVATION DISPATCHED [${escapeHtml(refCode)}]:</strong><br>
+              Your session request has been forwarded directly to the Master Coaching Floor Desk.<br>
+              <div class="booking-summary-box">
+                <div class="summary-row"><span>Booking Reference:</span> <strong style="color: var(--color-lime); font-family: monospace;">${escapeHtml(refCode)}</strong></div>
+                <div class="summary-row"><span>Athlete:</span> <strong>${escapeHtml(name.value.trim())}</strong></div>
+                <div class="summary-row"><span>Discipline:</span> <strong>${escapeHtml(program.value)}</strong></div>
+                <div class="summary-row"><span>Assigned Coach:</span> <strong>${escapeHtml(trainer.value)}</strong></div>
+                <div class="summary-row"><span>Date & Time:</span> <strong>${escapeHtml(date.value)} // ${escapeHtml(time.value)}</strong></div>
+                <div class="summary-row"><span>Status:</span> <strong style="color: var(--color-lime);">Provisional Hold (Platform Reserved)</strong></div>
+              </div>
+              <p style="margin-top: 0.85rem; font-size: 0.82rem; color: var(--color-text-secondary);">
+                Our Floor Manager will contact you at <strong>${escapeHtml(phone.value.trim())}</strong> to verify movement pre-screening. No fees are charged prior to your initial walkthrough.
+              </p>
+            `;
+            bookingFeedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
 
-        if (bookingFeedback) {
-          bookingFeedback.className = 'booking-feedback success';
-          bookingFeedback.innerHTML = `
-            <strong>COACHING RESERVATION DISPATCHED:</strong><br>
-            Your session request has been forwarded directly to the Master Coaching Floor Desk.<br>
-            <div class="booking-summary-box">
-              <div class="summary-row"><span>Athlete:</span> <strong>${name.value.trim()}</strong></div>
-              <div class="summary-row"><span>Discipline:</span> <strong>${program.value}</strong></div>
-              <div class="summary-row"><span>Assigned Coach:</span> <strong>${trainer.value}</strong></div>
-              <div class="summary-row"><span>Date & Time:</span> <strong>${date.value} // ${time.value}</strong></div>
-              <div class="summary-row"><span>Status:</span> <strong style="color: var(--color-lime);">Provisional Hold (Platform Reserved)</strong></div>
-            </div>
-            <p style="margin-top: 0.85rem; font-size: 0.82rem; color: var(--color-text-secondary);">
-              Our Floor Manager will contact you at <strong>${phone.value.trim()}</strong> to verify movement pre-screening. No fees are charged prior to your initial walkthrough.
-            </p>
-          `;
-          bookingFeedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        ptBookingForm.reset();
-      }, 700);
+          ptBookingForm.reset();
+        })
+        .catch((err) => {
+          if (bookingFeedback) {
+            bookingFeedback.className = 'booking-feedback error';
+            bookingFeedback.innerHTML = `
+              <strong>BOOKING SUBMISSION FAILED:</strong><br>
+              ${escapeHtml(err.message)}
+            `;
+            bookingFeedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Schedule Coached Session</span><span class="btn-arrow" aria-hidden="true">→</span>';
+          }
+        });
     });
   }
 
@@ -1389,23 +1467,52 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = '<span>Issuing Provisional Pass...</span>';
       }
 
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Issue 7-Day Trial Pass</span><span class="btn-arrow" aria-hidden="true">→</span>';
-        }
+      fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'trial_pass',
+          fullName: name.value.trim(),
+          email: email.value.trim(),
+          phone: phone.value.trim(),
+          date: date.value,
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.message || 'Unable to issue trial pass at this time.');
+          }
+          return data;
+        })
+        .then((data) => {
+          const refCode = (data.data && data.data.bookingReference) || data.bookingReference || 'PRO-TR-CONFIRMED';
+          if (trialFeedback) {
+            trialFeedback.className = 'modal-feedback success';
+            trialFeedback.innerHTML = `
+              <strong>PROVISIONAL TRIAL PASS ISSUED [${escapeHtml(refCode)}]:</strong><br>
+              A 7-day facility keycard pass has been generated for <strong>${escapeHtml(name.value.trim())}</strong> commencing on <strong>${escapeHtml(date.value)}</strong>.<br><br>
+              Please present your reference code <strong>${escapeHtml(refCode)}</strong> and government photo ID at our Concierge Desk (740 Broadway, NoHo) for facility safety walkthrough and pass activation.
+            `;
+          }
 
-        if (trialFeedback) {
-          trialFeedback.className = 'modal-feedback success';
-          trialFeedback.innerHTML = `
-            <strong>PROVISIONAL TRIAL PASS ISSUED:</strong><br>
-            A 7-day facility keycard pass has been generated for <strong>${name.value.trim()}</strong> commencing on <strong>${date.value}</strong>.<br><br>
-            Please present a government-issued photo ID at our Concierge Desk (740 Broadway, NoHo) for your 15-minute facility safety walkthrough and pass activation.
-          `;
-        }
-
-        trialForm.reset();
-      }, 700);
+          trialForm.reset();
+        })
+        .catch((err) => {
+          if (trialFeedback) {
+            trialFeedback.className = 'modal-feedback error';
+            trialFeedback.innerHTML = `
+              <strong>PASS ISSUANCE FAILED:</strong><br>
+              ${escapeHtml(err.message)}
+            `;
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Issue 7-Day Trial Pass</span><span class="btn-arrow" aria-hidden="true">→</span>';
+          }
+        });
     });
   }
 
@@ -1475,24 +1582,54 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = '<span>Transmitting Dispatch...</span>';
       }
 
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Submit Inquiry & Reserve Slot</span>';
-        }
+      fetch(`${API_BASE}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: name.value.trim(),
+          email: email.value.trim(),
+          phone: phone.value.trim(),
+          objective: objective.value,
+          message: document.getElementById('messageBox') ? document.getElementById('messageBox').value.trim() : '',
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.message || 'Unable to transmit concierge inquiry at this time.');
+          }
+          return data;
+        })
+        .then((data) => {
+          const refCode = (data.data && data.data.reference) || data.reference || 'PRO-CT-CONFIRMED';
+          if (contactStatusMsg) {
+            contactStatusMsg.className = 'form-status-msg success';
+            contactStatusMsg.innerHTML = `
+              <strong>DISPATCH TRANSMITTED TO CONCIERGE [${escapeHtml(refCode)}]:</strong><br>
+              Thank you, <strong>${escapeHtml(name.value.trim())}</strong>. Your inquiry regarding <em>${escapeHtml(objective.value)}</em> has been logged in our NoHo facility register.<br>
+              Our floor supervisor will contact you at <strong>${escapeHtml(phone.value.trim())}</strong> or <strong>${escapeHtml(email.value.trim())}</strong> within 4 business hours.
+            `;
+            contactStatusMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
 
-        if (contactStatusMsg) {
-          contactStatusMsg.className = 'form-status-msg success';
-          contactStatusMsg.innerHTML = `
-            <strong>DISPATCH TRANSMITTED TO CONCIERGE:</strong><br>
-            Thank you, <strong>${name.value.trim()}</strong>. Your inquiry regarding <em>${objective.value}</em> has been logged in our NoHo facility register.<br>
-            Our floor supervisor will contact you at <strong>${phone.value.trim()}</strong> or <strong>${email.value.trim()}</strong> within 4 business hours.
-          `;
-          contactStatusMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        contactForm.reset();
-      }, 600);
+          contactForm.reset();
+        })
+        .catch((err) => {
+          if (contactStatusMsg) {
+            contactStatusMsg.className = 'form-status-msg error';
+            contactStatusMsg.innerHTML = `
+              <strong>TRANSMISSION FAILED:</strong><br>
+              ${escapeHtml(err.message)}
+            `;
+            contactStatusMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Submit Inquiry & Reserve Slot</span>';
+          }
+        });
     });
   }
 
