@@ -1978,10 +1978,14 @@
   <!-- Global Application Config (Allows setting deployed backend URL in production) -->
   <script>
     window.PROFIT_CONFIG = window.PROFIT_CONFIG || {
-      API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
-        ? 'http://localhost:5000/api'
-        : '/api'
+      // API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
+      //   ? 'http://localhost:5000/api'
+      //   : '/api'
+      API_URL: window.location.hostname === 'localhost' || window.location.protocol === 'file:'
+  ? 'http://localhost:5000/api'
+  : 'https://profitgym-api.onrender.com/api'
     };
+
   </script>
   <script src="script.js"></script>
 </body>
