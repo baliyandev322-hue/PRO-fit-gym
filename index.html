@@ -26,12 +26,22 @@
         <span class="brand-sub">TRAINING CLUB</span>
       </a>
 
-      <!-- Primary Navigation (5 Clean Destinations) -->
+      <!-- Primary Navigation (Clean Destinations & Services) -->
       <nav class="main-nav" id="mainNav" aria-label="Primary navigation">
         <ul class="nav-links" id="navLinks">
           <li><a href="#about" class="nav-link">About</a></li>
           <li><a href="#programs" class="nav-link">Programs</a></li>
           <li><a href="#plans" class="nav-link">Memberships</a></li>
+          <li class="dropdown-item">
+            <a href="#services" class="nav-link dropdown-toggle" onclick="event.preventDefault();">Services</a>
+            <ul class="dropdown-menu">
+              <li><a href="#programs">Disciplines</a></li>
+              <li><a href="#plans">Pricing</a></li>
+              <li><a href="#gallery">Facility Gallery</a></li>
+              <li><a href="#tools">Performance Lab</a></li>
+              <li><a href="#faq">FAQ</a></li>
+            </ul>
+          </li>
           <li><a href="#trainers" class="nav-link">Trainers</a></li>
           <li><a href="#contact" class="nav-link">Contact</a></li>
         </ul>
@@ -57,9 +67,41 @@
   <main>
     <!-- ==================== 2. CINEMATIC HERO SECTION ==================== -->
     <section class="hero" id="home">
-      <!-- High-Contrast Gym Photography with Parallax & Dark Scrim -->
+      <!-- High-Contrast Gym Video Crossfade Backdrop & Dark Scrim -->
       <div class="hero-backdrop" id="heroBackdrop">
+        <!-- Persistent Fallback Image Layer (Prevents black flashes / flickering) -->
         <div class="hero-image" id="heroImage" role="img" aria-label="Dark athletic strength training facility with calibrated plates"></div>
+
+        <!-- Video 1: Plays first while Video 2 preloads -->
+        <video
+          id="heroVideo1"
+          class="hero-video is-active"
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          aria-hidden="true"
+        >
+          <source src="workout-1.mp4" type="video/mp4">
+          <source src="workout-1.webm" type="video/webm">
+          <source src="https://upload.wikimedia.org/wikipedia/commons/transcoded/d/d2/Power_Lifting_Competition_%28989710%29.webm/Power_Lifting_Competition_%28989710%29.webm.480p.vp9.webm" type="video/webm">
+        </video>
+
+        <!-- Video 2: Preloads in background, crossfades in near end of Video 1 -->
+        <video
+          id="heroVideo2"
+          class="hero-video"
+          muted
+          playsinline
+          preload="auto"
+          aria-hidden="true"
+        >
+          <source src="workout-2.mp4" type="video/mp4">
+          <source src="workout-2.webm" type="video/webm">
+          <source src="https://upload.wikimedia.org/wikipedia/commons/transcoded/e/eb/Half_rack_resistance_exercise_workout.webm/Half_rack_resistance_exercise_workout.webm.480p.vp9.webm" type="video/webm">
+        </video>
+
+        <!-- High-Contrast Dark Film Scrim Overlay -->
         <div class="hero-scrim"></div>
       </div>
 
@@ -89,19 +131,7 @@
             </a>
           </div>
 
-          <!-- Direct Access Sub-Strip -->
-          <div class="hero-quick-links hero-animate" style="--delay: 600ms;">
-            <span class="quick-links-label">DIRECT ACCESS:</span>
-            <a href="#programs" class="quick-link">Disciplines</a>
-            <span class="quick-dot">•</span>
-            <a href="#plans" class="quick-link">Pricing</a>
-            <span class="quick-dot">•</span>
-            <a href="#gallery" class="quick-link">Facility Gallery</a>
-            <span class="quick-dot">•</span>
-            <a href="#tools" class="quick-link">Performance Lab</a>
-            <span class="quick-dot">•</span>
-            <a href="#faq" class="quick-link">FAQ</a>
-          </div>
+          <!-- (Direct Access links moved to Navbar Services dropdown) -->
 
         </div>
       </div>

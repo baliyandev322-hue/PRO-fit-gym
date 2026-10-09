@@ -216,6 +216,57 @@ img {
   color: var(--color-text-primary);
 }
 
+/* Dropdown Menu */
+.dropdown-item {
+  position: relative;
+}
+
+.dropdown-item::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 15px; /* bridges the gap for hover */
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 15px);
+  left: -15px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity var(--transition-default), transform var(--transition-default), visibility var(--transition-default);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  padding: 0.75rem 0;
+  z-index: 100;
+}
+
+.dropdown-item:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-menu li a {
+  display: block;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-default), color var(--transition-default);
+}
+
+.dropdown-menu li a:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-lime);
+}
+
 /* Header Actions */
 .header-actions {
   display: flex;
@@ -273,14 +324,18 @@ img {
   overflow: hidden;
 }
 
-/* Realistic Gym Photography & Dark Scrim */
+/* Realistic Gym Background Video & Dark Scrim */
 .hero-backdrop {
   position: absolute;
   inset: 0;
   z-index: 1;
+  overflow: hidden;
+  background-color: var(--color-black);
 }
 
 .hero-image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   /* Authentic, high-contrast, moody gym training environment */
@@ -288,6 +343,29 @@ img {
   background-size: cover;
   background-position: center right;
   filter: contrast(1.15) brightness(0.65);
+  z-index: 1;
+}
+
+/* Layered Video Elements for Crossfading */
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: contrast(1.15) brightness(0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+  z-index: 2;
+}
+
+/* Only the active video is rendered at full opacity and brought to front */
+.hero-video.is-active {
+  opacity: 1;
+  z-index: 3;
 }
 
 /* Dark Film Scrim for Maximum Text Contrast (Natural Vignette, No Fluffy Gradients) */
@@ -301,6 +379,7 @@ img {
     rgba(13, 14, 16, 0.45) 80%,
     rgba(13, 14, 16, 0.2) 100%
   );
+  z-index: 4;
 }
 
 /* Hero Content Area */
