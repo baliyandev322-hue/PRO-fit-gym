@@ -14,15 +14,40 @@ export const ForgotPasswordPage: React.FC = () => {
     if (!email) return;
 
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setIsLoading(false);
-    setIsSent(true);
 
-    showToast({
-      type: 'info',
-      title: 'SECURITY DISPATCH',
-      message: `Password reset instructions have been routed to ${email}.`
-    });
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      setIsLoading(false);
+
+      if (res.ok && data.success) {
+        setIsSent(true);
+        showToast({
+          type: 'info',
+          title: 'SECURITY DISPATCH',
+          message: data.message || `Password reset instructions have been routed to ${email}.`
+        });
+      } else {
+        showToast({
+          type: 'error',
+          title: 'REQUEST FAILED',
+          message: data.message || 'Could not process password reset request.'
+        });
+      }
+    } catch {
+      setIsLoading(false);
+      showToast({
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: 'Could not reach authentication server.'
+      });
+    }
   };
 
   return (

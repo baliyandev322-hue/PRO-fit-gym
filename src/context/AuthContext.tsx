@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserProfile, UserRole } from '@/types';
-import { SEED_USERS, getLocalData, setLocalData } from '@/lib/supabase';
 import { useNotifications } from './NotificationContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -11,8 +10,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;
-  login: (email: string, password?: string) => Promise<boolean>;
-  register: (email: string, fullName: string, role?: UserRole, password?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, fullName: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
 }
@@ -20,221 +19,205 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<UserProfile[]>(() => {
-    return getLocalData<UserProfile[]>('users', SEED_USERS);
-  });
-
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('profit_gym_jwt_token');
   });
 
+  // Security Rule: A fresh browser session MUST NOT automatically authenticate as a seed user.
+  // We only restore from localStorage if both token AND saved user exist.
   const [user, setUser] = useState<UserProfile | null>(() => {
+    const savedToken = localStorage.getItem('profit_gym_jwt_token');
     const savedUser = localStorage.getItem('profit_gym_current_user');
-    if (savedUser) {
+    if (savedToken && savedUser) {
       try {
         return JSON.parse(savedUser);
       } catch {
-        return SEED_USERS[0];
+        return null;
       }
     }
-    return SEED_USERS[0];
+    return null;
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(!!token);
   const { showToast } = useNotifications();
 
+  // Persist session to local storage when state changes
   useEffect(() => {
-    setLocalData('users', users);
-  }, [users]);
-
-  useEffect(() => {
-    if (user) {
+    if (user && token) {
       localStorage.setItem('profit_gym_current_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('profit_gym_current_user');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (token) {
       localStorage.setItem('profit_gym_jwt_token', token);
     } else {
+      localStorage.removeItem('profit_gym_current_user');
       localStorage.removeItem('profit_gym_jwt_token');
     }
-  }, [token]);
+  }, [user, token]);
 
-  // Restore session via API if token exists
+  // Restore & verify session cryptographically via server
   useEffect(() => {
-    const verifyStoredToken = async () => {
-      if (!token) return;
+    const verifySession = async () => {
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
-            setUser((prev) => ({
-              ...prev,
-              ...data.user,
+            const verifiedUser: UserProfile = {
+              id: data.user.id,
+              email: data.user.email,
               role: (data.user.role || 'MEMBER').toLowerCase() as UserRole,
-              full_name: data.user.fullName || data.user.full_name || prev?.full_name,
-            }));
+              full_name: data.user.fullName || data.user.full_name || 'Athlete',
+              avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+              phone: data.user.phone,
+              created_at: data.user.createdAt || new Date().toISOString(),
+            };
+            setUser(verifiedUser);
           }
+        } else if (res.status === 401) {
+          // Token is expired or rejected by server: wipe untrusted session
+          setToken(null);
+          setUser(null);
+          localStorage.removeItem('profit_gym_jwt_token');
+          localStorage.removeItem('profit_gym_current_user');
         }
-      } catch {
-        // Server offline; local state retained
+      } catch (err) {
+        // Network offline: retain cached verified session
+      } finally {
+        setIsLoading(false);
       }
     };
-    verifyStoredToken();
+
+    verifySession();
   }, [token]);
 
-  const login = async (email: string, password = 'password123'): Promise<boolean> => {
+  /**
+   * Genuine Server-side Password Verification Login
+   * NEVER bypasses password verification or fabricates a fake session.
+   */
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
 
     try {
-      // 1. Attempt Real Server Authentication via /api/auth/login
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) {
-          setToken(data.token);
-          const loggedUser: UserProfile = {
-            id: data.user.id,
-            email: data.user.email,
-            role: (data.user.role || 'MEMBER').toLowerCase() as UserRole,
-            full_name: data.user.fullName || data.user.full_name,
-            avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-            created_at: new Date().toISOString(),
-          };
-          setUser(loggedUser);
-          setIsLoading(false);
-          showToast({
-            type: 'success',
-            title: 'AUTHENTICATION VERIFIED',
-            message: `Welcome back, ${loggedUser.full_name} (${loggedUser.role.toUpperCase()})`,
-          });
-          return true;
-        }
-      }
-    } catch {
-      // Graceful fallback to persistent seed records if server is not reachable
-    }
+      const data = await res.json().catch(() => ({}));
 
-    // 2. Resilient local fallback
-    await new Promise((r) => setTimeout(r, 400));
-    const foundUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (foundUser) {
-      setUser(foundUser);
+      if (!res.ok || !data.success) {
+        setIsLoading(false);
+        showToast({
+          type: 'error',
+          title: 'AUTHENTICATION FAILED',
+          message: data.message || 'Invalid email or password credentials.',
+        });
+        return false;
+      }
+
+      setToken(data.token);
+      const loggedUser: UserProfile = {
+        id: data.user.id,
+        email: data.user.email,
+        role: (data.user.role || 'MEMBER').toLowerCase() as UserRole,
+        full_name: data.user.fullName || data.user.full_name || 'Athlete',
+        avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        created_at: new Date().toISOString(),
+      };
+      setUser(loggedUser);
       setIsLoading(false);
+
       showToast({
         type: 'success',
-        title: 'AUTHENTICATION SUCCESSFUL',
-        message: `Welcome back, ${foundUser.full_name} (${foundUser.role.toUpperCase()})`,
+        title: 'AUTHENTICATION VERIFIED',
+        message: `Welcome back, ${loggedUser.full_name} (${loggedUser.role.toUpperCase()})`,
       });
       return true;
+    } catch (err: any) {
+      setIsLoading(false);
+      showToast({
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: 'Could not connect to authentication server. Please check your backend connection.',
+      });
+      return false;
     }
-
-    // Dynamic role mapping if demo email entered
-    const userRole: UserRole = email.includes('admin')
-      ? 'admin'
-      : email.includes('trainer')
-      ? 'trainer'
-      : 'member';
-
-    const newUser: UserProfile = {
-      id: `usr-${Date.now()}`,
-      email,
-      role: userRole,
-      full_name: email.split('@')[0].toUpperCase(),
-      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      created_at: new Date().toISOString(),
-    };
-
-    setUsers((prev) => [newUser, ...prev]);
-    setUser(newUser);
-    setIsLoading(false);
-    showToast({
-      type: 'success',
-      title: 'SESSION ESTABLISHED',
-      message: `Signed in as ${newUser.full_name} (${newUser.role.toUpperCase()})`,
-    });
-    return true;
   };
 
+  /**
+   * Real Server Registration — Strictly Restricted to Member Role
+   * Public users cannot grant themselves Admin or Trainer privileges.
+   */
   const register = async (
     email: string,
     fullName: string,
-    userRole: UserRole = 'member',
-    password = 'password123'
+    password: string
   ): Promise<boolean> => {
     setIsLoading(true);
 
     try {
-      // 1. Attempt Real Server Registration
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           password,
-          fullName,
-          role: userRole.toUpperCase(),
+          fullName: fullName.trim(),
+          role: 'MEMBER', // Enforced server-side & client-side
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) {
-          setToken(data.token);
-          const newUser: UserProfile = {
-            id: data.user.id,
-            email: data.user.email,
-            role: userRole,
-            full_name: fullName,
-            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-            created_at: new Date().toISOString(),
-          };
-          setUsers((prev) => [newUser, ...prev]);
-          setUser(newUser);
-          setIsLoading(false);
-          showToast({
-            type: 'success',
-            title: 'REGISTRATION COMPLETE',
-            message: `Account activated for ${fullName}. Role: ${userRole.toUpperCase()}`,
-          });
-          return true;
-        }
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        setIsLoading(false);
+        showToast({
+          type: 'error',
+          title: 'REGISTRATION FAILED',
+          message: data.message || 'Could not complete registration.',
+        });
+        return false;
       }
-    } catch {
-      // Resilient fallback
+
+      if (data.token) {
+        setToken(data.token);
+        const newUser: UserProfile = {
+          id: data.user.id,
+          email: data.user.email,
+          role: 'member',
+          full_name: fullName.trim(),
+          avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          created_at: new Date().toISOString(),
+        };
+        setUser(newUser);
+        setIsLoading(false);
+
+        showToast({
+          type: 'success',
+          title: 'REGISTRATION COMPLETE',
+          message: `Welcome to PROFIT Training Club, ${fullName}!`,
+        });
+        return true;
+      }
+
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      showToast({
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: 'Could not connect to registration server. Please try again.',
+      });
+      return false;
     }
-
-    await new Promise((r) => setTimeout(r, 400));
-    const newUser: UserProfile = {
-      id: `usr-${Date.now()}`,
-      email,
-      role: userRole,
-      full_name: fullName,
-      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      created_at: new Date().toISOString(),
-    };
-
-    setUsers((prev) => [newUser, ...prev]);
-    setUser(newUser);
-    setIsLoading(false);
-
-    showToast({
-      type: 'success',
-      title: 'ONBOARDING COMPLETE',
-      message: `Account activated for ${fullName}. Role: ${userRole.toUpperCase()}`,
-    });
-    return true;
   };
 
   const logout = async () => {
@@ -245,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           headers: { Authorization: `Bearer ${token}` },
         });
       } catch {
-        // Ignore network errors on logout
+        // Ignore network failure on logout
       }
     }
 
@@ -265,11 +248,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const updated = { ...user, ...updates };
     setUser(updated);
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     showToast({
       type: 'success',
       title: 'PROFILE UPDATED',
-      message: 'Your athlete profile details have been saved.',
+      message: 'Your athlete profile details have been updated.',
     });
   };
 
@@ -278,7 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         role: user ? user.role : null,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!token,
         isLoading,
         token,
         login,

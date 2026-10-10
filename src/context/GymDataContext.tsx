@@ -23,6 +23,8 @@ import {
 import { useNotifications } from './NotificationContext';
 import { useAuth } from './AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 interface GymDataContextType {
   plans: MembershipPlan[];
   memberships: Membership[];
@@ -216,6 +218,18 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setAttendance(prev => [newRecord, ...prev]);
 
+    // Asynchronously synchronize with backend API
+    fetch(`${API_URL}/attendance/check-in`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        memberId,
+        memberName,
+        location: gymLocation,
+        method
+      })
+    }).catch(() => {});
+
     addNotification({
       user_id: memberId,
       title: 'Gym Check-In Confirmed',
@@ -245,6 +259,13 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     setWorkoutPlans(prev => [newPlan, ...prev]);
 
+    // Asynchronously sync with backend API
+    fetch(`${API_URL}/workouts/plans`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(planData)
+    }).catch(() => {});
+
     addNotification({
       user_id: planData.member_id,
       title: 'New Workout Assigned',
@@ -268,6 +289,13 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       completed_at: new Date().toISOString()
     };
     setWorkoutLogs(prev => [newLog, ...prev]);
+
+    // Asynchronously sync with backend API
+    fetch(`${API_URL}/workouts/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData)
+    }).catch(() => {});
 
     showToast({
       type: 'success',

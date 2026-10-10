@@ -13,12 +13,13 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { QRScannerModal } from '@/components/common/QRScannerModal';
 
 export const MemberAttendancePage: React.FC = () => {
   const { user } = useAuth();
   const { getMemberAttendance, recordAttendance } = useGymData();
   const [filterPeriod, setFilterPeriod] = useState<'all' | 'today' | 'week' | 'month'>('all');
-  const [isScanning, setIsScanning] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
 
   if (!user) return null;
@@ -42,17 +43,28 @@ export const MemberAttendancePage: React.FC = () => {
     return true;
   });
 
-  const handleSimulateScan = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      const res = recordAttendance(user.id, user.full_name, 'NYC - NoHo Flagship (Sanctuary 01)', 'qr_scan');
-      setScanResult(res);
-      setIsScanning(false);
-    }, 700);
+  const handleQRScanSuccess = (decodedText: string) => {
+    setShowScannerModal(false);
+    let location = 'NYC - NoHo Flagship (Sanctuary 01)';
+    if (decodedText.includes('PROFIT_GYM_SANCTUARY_CHECKIN:')) {
+      const parts = decodedText.split(':');
+      if (parts[1]) location = parts[1];
+    }
+    const res = recordAttendance(user.id, user.full_name, location, 'qr_scan');
+    setScanResult(res);
   };
 
   return (
     <div className="space-y-6">
+      {/* Real Optical Camera Scanner Modal */}
+      <QRScannerModal
+        isOpen={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onScanSuccess={handleQRScanSuccess}
+        title="SCAN FACILITY TURNSTILE SCREEN"
+        instruction="Point your camera at the screen located at the front desk or gate terminal"
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -65,18 +77,11 @@ export const MemberAttendancePage: React.FC = () => {
         </div>
 
         <button
-          onClick={handleSimulateScan}
-          disabled={isScanning}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm font-heading uppercase font-bold text-xs bg-gym-lime text-gym-black hover:bg-gym-lime-hover shadow-lime-glow transition-all disabled:opacity-50"
+          onClick={() => setShowScannerModal(true)}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm font-heading uppercase font-bold text-xs bg-gym-lime text-gym-black hover:bg-gym-lime-hover shadow-lime-glow transition-all"
         >
-          {isScanning ? (
-            <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <>
-              <Camera className="w-4 h-4" />
-              <span>Scan Facility QR / Check-In</span>
-            </>
-          )}
+          <Camera className="w-4 h-4" />
+          <span>Scan Facility QR / Check-In</span>
         </button>
       </div>
 

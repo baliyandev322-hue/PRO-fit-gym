@@ -31,6 +31,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { QRScannerModal } from '@/components/common/QRScannerModal';
 
 export const MemberDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -45,6 +46,7 @@ export const MemberDashboard: React.FC = () => {
   const { notifications, unreadCount } = useNotifications();
 
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [checkInStatus, setCheckInStatus] = useState<{ success: boolean; message: string } | null>(null);
 
   if (!user) return null;
@@ -472,17 +474,49 @@ export const MemberDashboard: React.FC = () => {
                   {checkInStatus.message}
                 </div>
               ) : (
-                <button
-                  onClick={handleQuickCheckIn}
-                  className="w-full py-3 bg-gym-lime text-gym-black font-heading font-black uppercase tracking-wider text-xs rounded-sm hover:bg-gym-lime-hover shadow-lime-glow transition-all"
-                >
-                  Simulate Turnstile Gate Scan
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setShowQRModal(false);
+                      setShowCameraScanner(true);
+                    }}
+                    className="w-full py-2.5 bg-gym-lime text-gym-black font-heading font-black uppercase tracking-wider text-xs rounded-sm hover:bg-gym-lime-hover shadow-lime-glow transition-all flex items-center justify-center gap-2"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Point Camera at Facility Screen</span>
+                  </button>
+
+                  <button
+                    onClick={handleQuickCheckIn}
+                    className="w-full py-2.5 bg-gym-black hover:bg-gym-surface-hover text-gym-primary border border-gym-border font-heading font-bold uppercase tracking-wider text-xs rounded-sm transition-all"
+                  >
+                    Quick Check-In Simulation
+                  </button>
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Optical Camera Scanner Modal */}
+      <QRScannerModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onScanSuccess={(decoded) => {
+          setShowCameraScanner(false);
+          let loc = 'NYC - NoHo Flagship (Sanctuary 01)';
+          if (decoded.includes('PROFIT_GYM_SANCTUARY_CHECKIN:')) {
+            const parts = decoded.split(':');
+            if (parts[1]) loc = parts[1];
+          }
+          const res = recordAttendance(user.id, user.full_name, loc, 'qr_scan');
+          setCheckInStatus(res);
+          setShowQRModal(true);
+        }}
+        title="SCAN SANCTUARY TURNSTILE"
+        instruction="Hold phone up to the QR code displayed on the front-desk display"
+      />
     </div>
   );
 };

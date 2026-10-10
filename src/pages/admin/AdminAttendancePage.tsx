@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useGymData } from '@/context/GymDataContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { QRScannerModal } from '@/components/common/QRScannerModal';
 
 export const AdminAttendancePage: React.FC = () => {
   const { attendance, recordAttendance } = useGymData();
@@ -21,6 +22,7 @@ export const AdminAttendancePage: React.FC = () => {
   const [manualMemberId, setManualMemberId] = useState('user-member-1');
   const [manualMemberName, setManualMemberName] = useState('Alex Vance');
   const [manualResult, setManualResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [showReceptionScanner, setShowReceptionScanner] = useState(false);
 
   // Rotate QR Token periodically for security
   const handleRegenerateToken = () => {
@@ -32,8 +34,32 @@ export const AdminAttendancePage: React.FC = () => {
     setManualResult(res);
   };
 
+  const handleReceptionScanSuccess = (decoded: string) => {
+    setShowReceptionScanner(false);
+    // Parse athlete info from QR code
+    let athleteName = manualMemberName;
+    let athleteId = manualMemberId;
+    if (decoded.includes('ATHLETE:') || decoded.includes('user-member')) {
+      const parts = decoded.split(':');
+      if (parts[1]) athleteId = parts[1];
+      if (parts[2]) athleteName = parts[2];
+    }
+    const res = recordAttendance(athleteId, athleteName, selectedLocation, 'qr_scan');
+    setManualResult(res);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Front-Desk Reception Camera Scanner Modal */}
+      <QRScannerModal
+        isOpen={showReceptionScanner}
+        onClose={() => setShowReceptionScanner(false)}
+        onScanSuccess={handleReceptionScanSuccess}
+        title="RECEPTION CAMERA SCANNER CONSOLE"
+        instruction="Hold member mobile barcode or keytag pass in front of reception camera"
+        simulateSampleData="ATHLETE:user-member-1:Alex Vance"
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -150,13 +176,25 @@ export const AdminAttendancePage: React.FC = () => {
                 </div>
               )}
 
-              <button
-                onClick={handleManualScan}
-                className="w-full py-3 bg-gym-lime text-gym-black font-heading font-black uppercase tracking-wider text-xs rounded shadow-lime-glow hover:bg-gym-lime-hover transition-all flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Simulate Gate Scan & Attendance Log</span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowReceptionScanner(true)}
+                  className="py-3 px-3 bg-gym-surface hover:bg-gym-surface-hover border border-gym-lime text-gym-lime font-heading font-black uppercase tracking-wider text-xs rounded transition-all flex items-center justify-center gap-2"
+                >
+                  <Scan className="w-4 h-4" />
+                  <span>Launch Camera Scanner</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleManualScan}
+                  className="py-3 px-3 bg-gym-lime text-gym-black font-heading font-black uppercase tracking-wider text-xs rounded shadow-lime-glow hover:bg-gym-lime-hover transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Execute Gate Unlock</span>
+                </button>
+              </div>
             </div>
           </div>
 

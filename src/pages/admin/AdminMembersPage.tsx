@@ -15,13 +15,11 @@ import {
   ShieldCheck,
   CreditCard
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
 import type { UserProfile, MembershipStatus } from '@/types';
 
 export const AdminMembersPage: React.FC = () => {
-  const { users, setUsers } = useAuth() as any; // From AuthContext
   const { memberships, plans } = useGymData();
   const { showToast } = useNotifications();
 

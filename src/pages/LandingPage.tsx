@@ -114,7 +114,14 @@ export const LandingPage: React.FC = () => {
 
   const handleTrialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trialName || !trialEmail || !trialPhone) return;
+    if (!trialName.trim() || !trialEmail.trim() || !trialPhone.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'MISSING FIELDS',
+        message: 'Please provide your full name, email address, and phone number.'
+      });
+      return;
+    }
 
     setIsSubmittingTrial(true);
 
@@ -123,16 +130,26 @@ export const LandingPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: trialName,
-          email: trialEmail,
-          phone: trialPhone,
+          fullName: trialName.trim(),
+          email: trialEmail.trim(),
+          phone: trialPhone.trim(),
           discipline: trialDiscipline,
           preferredDate: trialDate,
-          notes: trialNotes
+          notes: trialNotes.trim()
         })
       });
 
       const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        setIsSubmittingTrial(false);
+        showToast({
+          type: 'error',
+          title: 'SUBMISSION REJECTED',
+          message: data.message || 'The desk could not process your trial pass request. Please check your details.'
+        });
+        return;
+      }
 
       setIsSubmittingTrial(false);
       setShowTrialModal(false);
@@ -147,28 +164,34 @@ export const LandingPage: React.FC = () => {
       showToast({
         type: 'success',
         title: 'TRIAL PASS CONFIRMED',
-        message: `Complimentary pass issued for ${trialName}! Our concierge team will reach out at ${trialPhone}.`
+        message: `Complimentary pass issued for ${trialName.trim()}! Ref: ${data.reference || data.trial?.reference || 'TR-PROFIT'}.`
       });
 
       setTrialName('');
       setTrialEmail('');
       setTrialPhone('');
       setTrialNotes('');
+      setTrialDate('');
     } catch (err) {
       setIsSubmittingTrial(false);
-      setShowTrialModal(false);
-
       showToast({
-        type: 'success',
-        title: 'TRIAL PASS RESERVED',
-        message: `Pass reserved for ${trialName}. Front desk will contact you shortly!`
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: 'Unable to reach the sanctuary server. Please check your internet connection or call our desk directly.'
       });
     }
   };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactName || !contactEmail || !contactMessage) return;
+    if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'INCOMPLETE INQUIRY',
+        message: 'Name, email address, and message are required fields.'
+      });
+      return;
+    }
 
     setIsSubmittingContact(true);
 
@@ -177,22 +200,32 @@ export const LandingPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: contactName,
-          email: contactEmail,
-          phone: contactPhone,
+          fullName: contactName.trim(),
+          email: contactEmail.trim(),
+          phone: contactPhone.trim(),
           subject: contactSubject,
-          message: contactMessage
+          message: contactMessage.trim()
         })
       });
 
       const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        setIsSubmittingContact(false);
+        showToast({
+          type: 'error',
+          title: 'DISPATCH FAILED',
+          message: data.message || 'Server rejected message. Please check the provided information.'
+        });
+        return;
+      }
 
       setIsSubmittingContact(false);
 
       showToast({
         type: 'success',
         title: 'INQUIRY TRANSMITTED',
-        message: `Thank you ${contactName}. Concierge desk will reply to ${contactEmail} within 2 hours.`
+        message: `Thank you, ${contactName.trim()}. Ref: ${data.reference || 'CT-PROFIT'}. Concierge desk will reply within 2 hours.`
       });
 
       setContactName('');
@@ -202,9 +235,9 @@ export const LandingPage: React.FC = () => {
     } catch (err) {
       setIsSubmittingContact(false);
       showToast({
-        type: 'success',
-        title: 'MESSAGE LOGGED',
-        message: `Thank you ${contactName}. Your inquiry has been received.`
+        type: 'error',
+        title: 'NETWORK FAILURE',
+        message: 'Could not connect to the operations server. Please check your connection and try again.'
       });
     }
   };

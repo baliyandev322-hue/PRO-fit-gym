@@ -97,6 +97,8 @@ app.use('/api/trials', require('./routes/trials'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/workouts', require('./routes/workouts'));
 
 
 // 404 Handler for undefined API routes

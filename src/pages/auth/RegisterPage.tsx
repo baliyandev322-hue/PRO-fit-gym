@@ -12,31 +12,23 @@ export const RegisterPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('member');
   const [selectedPlanId, setSelectedPlanId] = useState(initialPlan);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register } = useAuth();
-  const { plans, purchaseMembership } = useGymData();
+  const { purchaseMembership, plans } = useGymData();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email) return;
+    if (!fullName || !email || !password) return;
 
     setIsSubmitting(true);
-    const success = await register(email, fullName, role, password);
+    const success = await register(email, fullName, password);
     
     if (success) {
-      if (role === 'member') {
-        // Automatically activate chosen membership
-        await purchaseMembership(selectedPlanId);
-        navigate('/member/dashboard');
-      } else if (role === 'trainer') {
-        navigate('/trainer/dashboard');
-      } else {
-        navigate('/admin/dashboard');
-      }
+      await purchaseMembership(selectedPlanId);
+      navigate('/member/dashboard', { replace: true });
     }
     setIsSubmitting(false);
   };
@@ -52,7 +44,7 @@ export const RegisterPage: React.FC = () => {
               PRO<span className="text-gym-lime">FIT</span>
             </span>
             <span className="block text-xs uppercase tracking-widest text-gym-secondary font-bold -mt-1">
-              ATHLETE & STAFF ONBOARDING
+              ATHLETE MEMBERSHIP ONBOARDING
             </span>
           </Link>
           <p className="text-xs text-gym-muted uppercase tracking-wider">
@@ -62,32 +54,17 @@ export const RegisterPage: React.FC = () => {
 
         <div className="mt-8 bg-gym-surface border border-gym-border py-8 px-6 shadow-card rounded sm:px-10">
           <form className="space-y-5" onSubmit={handleSubmit}>
-            {/* Role Selector */}
-            <div>
-              <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
-                Account Type / Designation
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { r: 'member' as UserRole, label: 'Athlete Member', icon: Dumbbell },
-                  { r: 'trainer' as UserRole, label: 'Coach / Trainer', icon: UserCheck },
-                  { r: 'admin' as UserRole, label: 'Facility Admin', icon: ShieldCheck }
-                ].map(({ r, label, icon: Icon }) => (
-                  <button
-                    type="button"
-                    key={r}
-                    onClick={() => setRole(r)}
-                    className={`p-3 rounded border text-left transition-all flex flex-col items-center gap-1.5 text-center ${
-                      role === r
-                        ? 'bg-gym-lime/10 border-gym-lime text-gym-lime shadow-lime-glow'
-                        : 'bg-gym-black border-gym-border text-gym-secondary hover:border-gym-border-subtle'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-xs font-heading uppercase font-bold">{label}</span>
-                  </button>
-                ))}
+            {/* Account Designation Badge */}
+            <div className="p-3 bg-gym-black rounded border border-gym-border flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Dumbbell className="w-4 h-4 text-gym-lime" />
+                <span className="text-xs font-heading uppercase font-bold text-gym-primary">
+                  Athlete Membership Account
+                </span>
               </div>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-gym-lime/10 text-gym-lime border border-gym-lime/30 rounded">
+                Standard Athlete
+              </span>
             </div>
 
             {/* Full Name */}
@@ -150,9 +127,8 @@ export const RegisterPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Plan selection if member */}
-            {role === 'member' && (
-              <div className="pt-2">
+            {/* Plan selection */}
+            <div className="pt-2">
                 <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
                   Select Initial Membership Tier
                 </label>
@@ -187,7 +163,6 @@ export const RegisterPage: React.FC = () => {
                   ))}
                 </div>
               </div>
-            )}
 
             <button
               type="submit"

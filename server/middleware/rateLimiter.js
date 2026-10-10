@@ -21,7 +21,7 @@ const formSubmitLimiter = rateLimit({
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Max 10 login attempts per IP per 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 10 : 100, // Max 10 in production, 100 in dev
   standardHeaders: true,
   legacyHeaders: false,
   message: {

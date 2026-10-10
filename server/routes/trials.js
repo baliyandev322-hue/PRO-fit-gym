@@ -56,17 +56,41 @@ router.get('/', async (req, res) => {
           orderBy: { createdAt: 'desc' }
         });
         if (trials && trials.length > 0) {
-          return res.status(200).json({ success: true, count: trials.length, trials });
+          return res.status(200).json({ success: true, count: trials.length, trials, data: trials });
         }
       } catch (err) {
         console.warn('Prisma trial lookup deferred:', err.message);
       }
     }
 
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const mongoBookings = await Booking.find({ type: 'trial_pass' }).sort({ createdAt: -1 });
+        if (mongoBookings && mongoBookings.length > 0) {
+          const formatted = mongoBookings.map(b => ({
+            id: b._id.toString(),
+            reference: b.bookingReference,
+            fullName: b.fullName,
+            email: b.email,
+            phone: b.phone,
+            discipline: b.program,
+            preferredDate: b.date,
+            notes: b.notes,
+            status: b.status,
+            createdAt: b.createdAt
+          }));
+          return res.status(200).json({ success: true, count: formatted.length, trials: formatted, data: formatted });
+        }
+      } catch (mongoErr) {
+        console.warn('MongoDB trial lookup deferred:', mongoErr.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       count: devTrialRequests.length,
-      trials: devTrialRequests
+      trials: devTrialRequests,
+      data: devTrialRequests
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Failed to retrieve trial requests' });

@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -15,20 +16,28 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
+    setErrorMessage(null);
     setIsSubmitting(true);
     const success = await login(email, password);
     setIsSubmitting(false);
 
     if (success) {
-      if (email.includes('admin')) {
-        navigate('/admin/dashboard');
-      } else if (email.includes('trainer')) {
-        navigate('/trainer/dashboard');
-      } else {
-        navigate(from === '/login' ? '/member/dashboard' : from);
+      try {
+        const saved = JSON.parse(localStorage.getItem('profit_gym_current_user') || '{}');
+        if (saved.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else if (saved.role === 'trainer') {
+          navigate('/trainer/dashboard', { replace: true });
+        } else {
+          navigate(from === '/login' ? '/member/dashboard' : from, { replace: true });
+        }
+      } catch {
+        navigate('/member/dashboard', { replace: true });
       }
+    } else {
+      setErrorMessage('Invalid credentials. Please verify your email and password.');
     }
   };
 
@@ -56,6 +65,11 @@ export const LoginPage: React.FC = () => {
 
         {/* Login Card */}
         <div className="mt-8 bg-gym-surface border border-gym-border py-8 px-6 shadow-card rounded sm:px-10">
+          {errorMessage && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-sm">
+              {errorMessage}
+            </div>
+          )}
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">

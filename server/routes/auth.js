@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { verifyAuth } = require('../middleware/auth');
@@ -57,75 +58,58 @@ router.post('/register', authLimiter, async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const normalizedRole = role.toUpperCase();
-
-    if (!['MEMBER', 'TRAINER', 'ADMIN'].includes(normalizedRole)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid role specified. Must be MEMBER, TRAINER, or ADMIN.',
-      });
-    }
+    
+    // Security Rule: Public self-registration is strictly restricted to MEMBER role.
+    // ADMIN and TRAINER accounts cannot be self-provisioned via public signup.
+    const normalizedRole = 'MEMBER';
 
     const passwordHash = await bcrypt.hash(password, 12);
 
     if (prisma) {
-      const existing = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-
-      if (existing) {
-        return res.status(409).json({
-          success: false,
-          message: 'An account with this email address already exists.',
+      try {
+        const existing = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
         });
-      }
 
-      // Create User with associated role profile
-      const user = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          passwordHash,
-          fullName,
-          phone,
-          role: normalizedRole,
-          ...(normalizedRole === 'MEMBER' && {
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            message: 'An account with this email address already exists.',
+          });
+        }
+
+        // Create User with associated role profile
+        const user = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            passwordHash,
+            fullName,
+            phone,
+            role: normalizedRole,
             memberProfile: {
               create: {
                 qrPassToken: `QR_${Date.now()}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
               },
             },
-          }),
-          ...(normalizedRole === 'TRAINER' && {
-            trainerProfile: {
-              create: {
-                specialty: 'Master Strength Specialist',
-                certifications: ['CSCS', 'USAW'],
-              },
-            },
-          }),
-          ...(normalizedRole === 'ADMIN' && {
-            adminProfile: {
-              create: {
-                department: 'Executive Operations',
-              },
-            },
-          }),
-        },
-      });
+          },
+        });
 
-      const token = signToken(user);
+        const token = signToken(user);
 
-      return res.status(201).json({
-        success: true,
-        message: 'Registration successful.',
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-        },
-      });
+        return res.status(201).json({
+          success: true,
+          message: 'Registration successful.',
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+          },
+        });
+      } catch (prismaErr) {
+        console.warn('[Register Notice] Prisma PostgreSQL unavailable, falling back:', prismaErr.message);
+      }
     }
 
     // Local in-memory/mock fallback if DB server is offline
@@ -170,67 +154,153 @@ router.post('/login', authLimiter, async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // 1. Attempt Prisma PostgreSQL authentication
     if (prisma) {
-      const user = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-        include: {
-          memberProfile: true,
-          trainerProfile: true,
-          adminProfile: true,
-        },
-      });
-
-      if (!user || !user.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password credentials.',
+      try {
+        const user = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          include: {
+            memberProfile: true,
+            trainerProfile: true,
+            adminProfile: true,
+          },
         });
-      }
 
-      const isMatch = await bcrypt.compare(password, user.passwordHash);
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password credentials.',
-        });
+        if (user && user.isActive) {
+          const isMatch = await bcrypt.compare(password, user.passwordHash);
+          if (isMatch) {
+            const token = signToken(user);
+            return res.status(200).json({
+              success: true,
+              message: 'Authentication successful.',
+              token,
+              user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+                avatarUrl: user.avatarUrl,
+              },
+              admin: {
+                id: user.id,
+                email: user.email,
+                name: user.fullName,
+                role: user.role.toLowerCase(),
+              },
+            });
+          } else {
+            return res.status(401).json({
+              success: false,
+              message: 'Invalid email or password credentials.',
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[Auth Notice] Prisma PostgreSQL check deferred:', err.message);
       }
+    }
 
-      const token = signToken(user);
+    // 2. Attempt MongoDB Atlas authentication
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const Admin = require('../models/Admin');
+        const adminDoc = await Admin.findOne({ email: normalizedEmail }).select('+password');
+        if (adminDoc && adminDoc.isActive) {
+          const isMatch = await adminDoc.comparePassword(password);
+          if (isMatch) {
+            const token = signToken({
+              id: adminDoc._id.toString(),
+              email: adminDoc.email,
+              fullName: adminDoc.name,
+              role: 'ADMIN',
+            });
+            return res.status(200).json({
+              success: true,
+              message: 'Authentication successful.',
+              token,
+              user: {
+                id: adminDoc._id.toString(),
+                email: adminDoc.email,
+                fullName: adminDoc.name,
+                role: 'ADMIN',
+              },
+              admin: {
+                id: adminDoc._id.toString(),
+                email: adminDoc.email,
+                name: adminDoc.name,
+                role: adminDoc.role || 'admin',
+              },
+            });
+          } else {
+            return res.status(401).json({
+              success: false,
+              message: 'Invalid email or password credentials.',
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[Auth Notice] MongoDB check error:', err.message);
+      }
+    }
+
+    // 3. Known Seed Accounts (Development & Offline Resilience)
+    // CRITICAL SECURITY RULE: Password MUST match 'password123' exactly.
+    // Never bypass password verification merely because email exists!
+    const SEED_CREDENTIALS = {
+      'admin@profitgym.com': {
+        id: 'usr_admin_01',
+        name: 'Dev Baliyan',
+        role: 'ADMIN',
+        validPasswords: ['password123']
+      },
+      'trainer@profitgym.com': {
+        id: 'usr_trainer_01',
+        name: 'Marcus Drake',
+        role: 'TRAINER',
+        validPasswords: ['password123']
+      },
+      'alex.vance@athlete.com': {
+        id: 'usr_member_01',
+        name: 'Alex Vance',
+        role: 'MEMBER',
+        validPasswords: ['password123']
+      },
+      'member@profitgym.com': {
+        id: 'usr_member_02',
+        name: 'Jordan Bell',
+        role: 'MEMBER',
+        validPasswords: ['password123']
+      }
+    };
+
+    const seedAccount = SEED_CREDENTIALS[normalizedEmail];
+    if (seedAccount && seedAccount.validPasswords.includes(password)) {
+      const verifiedUser = {
+        id: seedAccount.id,
+        email: normalizedEmail,
+        fullName: seedAccount.name,
+        role: seedAccount.role,
+      };
+      const token = signToken(verifiedUser);
 
       return res.status(200).json({
         success: true,
         message: 'Authentication successful.',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          avatarUrl: user.avatarUrl,
+        user: verifiedUser,
+        admin: {
+          id: verifiedUser.id,
+          email: verifiedUser.email,
+          name: verifiedUser.fullName,
+          role: verifiedUser.role.toLowerCase(),
         },
       });
     }
 
-    // Development resilient verification
-    const role = normalizedEmail.includes('admin')
-      ? 'ADMIN'
-      : normalizedEmail.includes('trainer')
-      ? 'TRAINER'
-      : 'MEMBER';
-
-    const fallbackUser = {
-      id: `usr_${Date.now()}`,
-      email: normalizedEmail,
-      fullName: normalizedEmail.split('@')[0].toUpperCase(),
-      role,
-    };
-    const token = signToken(fallbackUser);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Authentication successful.',
-      token,
-      user: fallbackUser,
+    // If password does not match or user is not found, reject
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password credentials.',
     });
   } catch (error) {
     console.error('[Login Error]', error);
@@ -282,12 +352,24 @@ router.get('/me', verifyAuth, async (req, res) => {
       return res.status(200).json({
         success: true,
         user,
+        admin: {
+          id: user.id,
+          email: user.email,
+          name: user.fullName,
+          role: user.role.toLowerCase(),
+        },
       });
     }
 
     return res.status(200).json({
       success: true,
       user: req.user,
+      admin: {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.fullName,
+        role: (req.user.role || 'ADMIN').toLowerCase(),
+      },
     });
   } catch (error) {
     console.error('[/me Error]', error);
