@@ -1,10 +1,12 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const WorkoutPlan = require('../models/WorkoutPlan');
 const { verifyAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Memory store fallback for workouts
-let inMemoryPlans = [
+// Memory store fallback for seed workouts
+const defaultSeedPlans = [
   {
     id: 'plan-push-power',
     member_id: 'user-member-1',
@@ -61,90 +63,113 @@ let inMemoryPlans = [
         instructions: 'Pin elbows to sides. Full lockout and squeeze at bottom.'
       }
     ]
-  },
-  {
-    id: 'plan-pull-posterior',
-    member_id: 'user-member-1',
-    trainer_id: 'user-trainer-1',
-    trainer_name: 'Marcus Drake',
-    title: 'Pull Day: Posterior Chain & Lats',
-    category: 'Pull',
-    is_active: false,
-    created_at: new Date().toISOString(),
-    notes: 'Heavy compound deadlifts followed by vertical and horizontal pulling.',
-    exercises: [
-      {
-        id: 'ex-05',
-        plan_id: 'plan-pull-posterior',
-        exercise_name: 'Conventional Deadlift',
-        sets: 4,
-        reps: 6,
-        target_weight_kg: 160,
-        rest_seconds: 180,
-        order_index: 1,
-        instructions: 'Pull slack out of the bar before lift-off. Neutral cervical spine.'
-      },
-      {
-        id: 'ex-06',
-        plan_id: 'plan-pull-posterior',
-        exercise_name: 'Weighted Pull-Ups',
-        sets: 4,
-        reps: 8,
-        target_weight_kg: 15,
-        rest_seconds: 90,
-        order_index: 2,
-        instructions: 'Full dead-hang to chin cleanly over the bar.'
-      }
-    ]
   }
 ];
 
-let inMemoryLogs = [
-  {
-    id: 'log-001',
-    member_id: 'user-member-1',
-    exercise_name: 'Barbell Bench Press',
-    actual_sets: 4,
-    actual_reps: 8,
-    actual_weight_kg: 90,
-    completed_at: new Date(Date.now() - 86400000).toISOString(),
-    notes: 'Hit all reps with solid pause on chest.'
-  }
-];
+let inMemoryPlans = [...defaultSeedPlans];
+let inMemoryLogs = [];
 
 /**
  * @route   GET /api/workouts/plans
- * @desc    Get all workout plans
+ * @desc    Get all workout plans from MongoDB Atlas
  * @access  Public / Authenticated
  */
-router.get('/plans', (req, res) => {
-  return res.status(200).json({
-    success: true,
-    data: inMemoryPlans
-  });
+router.get('/plans', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const dbPlans = await WorkoutPlan.find({ isActive: true }).sort({ createdAt: -1 });
+      if (dbPlans && dbPlans.length > 0) {
+        return res.status(200).json({
+          success: true,
+          data: dbPlans.map(p => ({
+            id: p._id.toString(),
+            member_id: p.memberId,
+            trainer_id: p.trainerId,
+            trainer_name: p.trainerName,
+            title: p.title,
+            category: p.category,
+            is_active: p.isActive,
+            notes: p.notes,
+            created_at: p.createdAt,
+            exercises: p.exercises.map((ex, i) => ({
+              id: ex._id?.toString() || `ex_${i}`,
+              exercise_name: ex.exerciseName,
+              sets: ex.sets,
+              reps: ex.reps,
+              target_weight_kg: ex.targetWeightKg,
+              rest_seconds: ex.restSeconds,
+              order_index: ex.orderIndex,
+              instructions: ex.instructions
+            }))
+          }))
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: inMemoryPlans
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch workout plans' });
+  }
 });
 
 /**
  * @route   GET /api/workouts/plans/:memberId
- * @desc    Get assigned workout plans for an athlete
+ * @desc    Get assigned workout plans for an athlete from MongoDB Atlas
  * @access  Public / Authenticated
  */
-router.get('/plans/:memberId', (req, res) => {
-  const { memberId } = req.params;
-  const plans = inMemoryPlans.filter(p => p.member_id === memberId);
+router.get('/plans/:memberId', async (req, res) => {
+  try {
+    const { memberId } = req.params;
 
-  return res.status(200).json({
-    success: true,
-    data: plans.length > 0 ? plans : inMemoryPlans
-  });
+    if (mongoose.connection.readyState === 1) {
+      const dbPlans = await WorkoutPlan.find({ memberId, isActive: true }).sort({ createdAt: -1 });
+      if (dbPlans && dbPlans.length > 0) {
+        return res.status(200).json({
+          success: true,
+          data: dbPlans.map(p => ({
+            id: p._id.toString(),
+            member_id: p.memberId,
+            trainer_id: p.trainerId,
+            trainer_name: p.trainerName,
+            title: p.title,
+            category: p.category,
+            is_active: p.isActive,
+            notes: p.notes,
+            created_at: p.createdAt,
+            exercises: p.exercises.map((ex, i) => ({
+              id: ex._id?.toString() || `ex_${i}`,
+              exercise_name: ex.exerciseName,
+              sets: ex.sets,
+              reps: ex.reps,
+              target_weight_kg: ex.targetWeightKg,
+              rest_seconds: ex.restSeconds,
+              order_index: ex.orderIndex,
+              instructions: ex.instructions
+            }))
+          }))
+        });
+      }
+    }
+
+    const filtered = inMemoryPlans.filter(p => p.member_id === memberId);
+    return res.status(200).json({
+      success: true,
+      data: filtered.length > 0 ? filtered : inMemoryPlans
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch member workout plans' });
+  }
 });
 
 /**
  * @route   POST /api/workouts/plans
- * @desc    Create and assign a workout plan
+ * @desc    Create and assign a workout plan into MongoDB Atlas
  * @access  Private (Trainer/Admin)
  */
-router.post('/plans', (req, res) => {
+router.post('/plans', async (req, res) => {
   try {
     const { title, category, member_id, trainer_id, trainer_name, exercises, notes } = req.body;
 
@@ -155,20 +180,36 @@ router.post('/plans', (req, res) => {
       });
     }
 
-    const newPlanId = `plan_${Date.now()}`;
-    const formattedExercises = exercises.map((ex, index) => ({
-      id: `ex_${Date.now()}_${index}`,
-      plan_id: newPlanId,
-      exercise_name: ex.exercise_name || 'Exercise',
-      sets: Number(ex.sets) || 3,
-      reps: Number(ex.reps) || 10,
-      target_weight_kg: Number(ex.target_weight_kg) || 0,
-      rest_seconds: Number(ex.rest_seconds) || 60,
-      order_index: index + 1,
-      instructions: ex.instructions || ''
-    }));
+    if (mongoose.connection.readyState === 1) {
+      const newPlan = await WorkoutPlan.create({
+        title,
+        category: category || 'Push',
+        memberId: member_id || 'user-member-1',
+        trainerId: trainer_id || 'user-trainer-1',
+        trainerName: trainer_name || 'Marcus Drake',
+        notes: notes || '',
+        isActive: true,
+        exercises: exercises.map((ex, idx) => ({
+          exerciseName: ex.exercise_name || ex.exerciseName || 'Exercise',
+          sets: Number(ex.sets) || 3,
+          reps: Number(ex.reps) || 10,
+          targetWeightKg: Number(ex.target_weight_kg || ex.targetWeightKg) || 0,
+          restSeconds: Number(ex.rest_seconds || ex.restSeconds) || 60,
+          orderIndex: idx + 1,
+          instructions: ex.instructions || ''
+        }))
+      });
 
-    const newPlan = {
+      return res.status(201).json({
+        success: true,
+        message: `Workout plan "${title}" successfully assigned!`,
+        plan: newPlan
+      });
+    }
+
+    // Fallback if database is booting
+    const newPlanId = `plan_${Date.now()}`;
+    const fallbackPlan = {
       id: newPlanId,
       member_id: member_id || 'user-member-1',
       trainer_id: trainer_id || 'user-trainer-1',
@@ -178,15 +219,24 @@ router.post('/plans', (req, res) => {
       is_active: true,
       created_at: new Date().toISOString(),
       notes: notes || '',
-      exercises: formattedExercises
+      exercises: exercises.map((ex, index) => ({
+        id: `ex_${Date.now()}_${index}`,
+        plan_id: newPlanId,
+        exercise_name: ex.exercise_name || 'Exercise',
+        sets: Number(ex.sets) || 3,
+        reps: Number(ex.reps) || 10,
+        target_weight_kg: Number(ex.target_weight_kg) || 0,
+        rest_seconds: Number(ex.rest_seconds) || 60,
+        order_index: index + 1,
+        instructions: ex.instructions || ''
+      }))
     };
-
-    inMemoryPlans.unshift(newPlan);
+    inMemoryPlans.unshift(fallbackPlan);
 
     return res.status(201).json({
       success: true,
       message: `Workout plan "${title}" successfully assigned!`,
-      plan: newPlan
+      plan: fallbackPlan
     });
   } catch (error) {
     console.error('[Create Workout Plan Error]', error);

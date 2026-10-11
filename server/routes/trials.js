@@ -6,16 +6,7 @@ const { generateReference } = require('../utils/referenceGenerator');
 
 const router = express.Router();
 
-// Prisma client initialization with graceful fallback
-let prisma;
-try {
-  const { PrismaClient } = require('@prisma/client');
-  prisma = new PrismaClient();
-} catch (err) {
-  console.warn('[Prisma Warning] Prisma Client loading deferred in trials route:', err.message);
-}
-
-// In-memory dev trial leads storage
+// In-memory dev trial leads storage fallback
 const devTrialRequests = [
   {
     id: 'trial-001',
@@ -45,44 +36,27 @@ const devTrialRequests = [
 
 /**
  * @route   GET /api/trials
- * @desc    Get all trial session leads (Admin / Staff)
+ * @desc    Get all trial session leads from MongoDB Atlas (Admin / Staff)
  * @access  Public / Staff
  */
 router.get('/', async (req, res) => {
   try {
-    if (prisma) {
-      try {
-        const trials = await prisma.trialRequest.findMany({
-          orderBy: { createdAt: 'desc' }
-        });
-        if (trials && trials.length > 0) {
-          return res.status(200).json({ success: true, count: trials.length, trials, data: trials });
-        }
-      } catch (err) {
-        console.warn('Prisma trial lookup deferred:', err.message);
-      }
-    }
-
     if (mongoose.connection.readyState === 1) {
-      try {
-        const mongoBookings = await Booking.find({ type: 'trial_pass' }).sort({ createdAt: -1 });
-        if (mongoBookings && mongoBookings.length > 0) {
-          const formatted = mongoBookings.map(b => ({
-            id: b._id.toString(),
-            reference: b.bookingReference,
-            fullName: b.fullName,
-            email: b.email,
-            phone: b.phone,
-            discipline: b.program,
-            preferredDate: b.date,
-            notes: b.notes,
-            status: b.status,
-            createdAt: b.createdAt
-          }));
-          return res.status(200).json({ success: true, count: formatted.length, trials: formatted, data: formatted });
-        }
-      } catch (mongoErr) {
-        console.warn('MongoDB trial lookup deferred:', mongoErr.message);
+      const mongoBookings = await Booking.find({ type: 'trial_pass' }).sort({ createdAt: -1 });
+      if (mongoBookings && mongoBookings.length > 0) {
+        const formatted = mongoBookings.map(b => ({
+          id: b._id.toString(),
+          reference: b.bookingReference,
+          fullName: b.fullName,
+          email: b.email,
+          phone: b.phone,
+          discipline: b.program,
+          preferredDate: b.date,
+          notes: b.notes,
+          status: b.status,
+          createdAt: b.createdAt
+        }));
+        return res.status(200).json({ success: true, count: formatted.length, trials: formatted, data: formatted });
       }
     }
 
@@ -99,7 +73,7 @@ router.get('/', async (req, res) => {
 
 /**
  * @route   POST /api/trials
- * @desc    Submit a request for complimentary trial workout & biomechanics audit
+ * @desc    Submit a request for complimentary trial workout & persist into MongoDB Atlas
  * @access  Public (Rate Limited)
  */
 router.post('/', formSubmitLimiter, async (req, res) => {
@@ -115,74 +89,38 @@ router.post('/', formSubmitLimiter, async (req, res) => {
 
     const reference = generateReference('TR');
 
-    // 1. Try Prisma persistence
-    if (prisma) {
-      try {
-        const savedTrial = await prisma.trialRequest.create({
-          data: {
-            fullName,
-            email,
-            phone,
-            discipline,
-            preferredDate: preferredDate ? new Date(preferredDate) : null,
-            notes: notes || null,
-            status: 'NEW'
-          }
-        });
-
-        return res.status(201).json({
-          success: true,
-          message: 'Trial pass application confirmed! Concierge pass issued.',
-          data: {
-            id: savedTrial.id,
-            reference,
-            fullName: savedTrial.fullName,
-            email: savedTrial.email,
-            discipline: savedTrial.discipline,
-            status: savedTrial.status,
-            createdAt: savedTrial.createdAt
-          }
-        });
-      } catch (err) {
-        console.warn('Prisma trial insert fallback:', err.message);
-      }
-    }
-
-    // 2. Try MongoDB Booking persistence if available
+    // Persist into MongoDB Atlas Booking collection
     if (mongoose.connection.readyState === 1) {
-      try {
-        const mongoBooking = await Booking.create({
-          bookingReference: reference,
-          type: 'trial_pass',
-          fullName,
-          email,
-          phone,
-          program: discipline,
-          trainer: 'Master Coach on Duty',
-          date: preferredDate || new Date().toISOString().split('T')[0],
-          time: '10:00 AM',
-          notes: notes || 'Complimentary Trial Lead',
-          status: 'Confirmed'
-        });
+      const mongoBooking = await Booking.create({
+        bookingReference: reference,
+        type: 'trial_pass',
+        fullName,
+        email,
+        phone,
+        program: discipline,
+        trainer: 'Master Coach on Duty',
+        date: preferredDate || new Date().toISOString().split('T')[0],
+        time: '10:00 AM',
+        notes: notes || 'Complimentary Trial Lead',
+        status: 'Confirmed'
+      });
 
-        return res.status(201).json({
-          success: true,
-          message: 'Trial pass application confirmed! Concierge pass issued.',
-          data: {
-            reference: mongoBooking.bookingReference,
-            fullName: mongoBooking.fullName,
-            email: mongoBooking.email,
-            discipline,
-            status: 'NEW',
-            createdAt: mongoBooking.createdAt
-          }
-        });
-      } catch (err) {
-        console.warn('Mongo trial booking fallback:', err.message);
-      }
+      return res.status(201).json({
+        success: true,
+        message: 'Trial pass application confirmed! Concierge pass issued.',
+        data: {
+          id: mongoBooking._id.toString(),
+          reference: mongoBooking.bookingReference,
+          fullName: mongoBooking.fullName,
+          email: mongoBooking.email,
+          discipline,
+          status: 'NEW',
+          createdAt: mongoBooking.createdAt
+        }
+      });
     }
 
-    // 3. Resilient In-Memory fallback
+    // Resilient In-Memory fallback
     const fallbackTrial = {
       id: `trial-${Date.now()}`,
       reference,

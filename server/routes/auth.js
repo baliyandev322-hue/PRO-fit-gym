@@ -1,22 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const { verifyAuth } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiter');
+const User = require('../models/User');
+const Admin = require('../models/Admin');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_dev_secret_key_change_in_production_938472';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-// Prisma client initialization with graceful handling
-let prisma;
-try {
-  const { PrismaClient } = require('@prisma/client');
-  prisma = new PrismaClient();
-} catch (err) {
-  console.warn('[Prisma Warning] Prisma Client loading deferred:', err.message);
-}
 
 /**
  * Helper to generate JWT token
@@ -24,10 +16,10 @@ try {
 const signToken = (user) => {
   return jwt.sign(
     {
-      id: user.id,
+      id: user.id || user._id?.toString(),
       email: user.email,
       role: (user.role || 'MEMBER').toUpperCase(),
-      fullName: user.fullName || user.full_name,
+      fullName: user.fullName || user.full_name || user.name,
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
@@ -36,12 +28,12 @@ const signToken = (user) => {
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register a new athlete, coach, or administrator with bcrypt password hashing
+ * @desc    Register a new athlete (Strictly MEMBER role) into MongoDB Atlas
  * @access  Public (Rate Limited)
  */
 router.post('/register', authLimiter, async (req, res) => {
   try {
-    const { email, password, fullName, role = 'MEMBER', phone } = req.body;
+    const { email, password, fullName, phone } = req.body;
 
     if (!email || !password || !fullName) {
       return res.status(400).json({
@@ -60,59 +52,42 @@ router.post('/register', authLimiter, async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     
     // Security Rule: Public self-registration is strictly restricted to MEMBER role.
-    // ADMIN and TRAINER accounts cannot be self-provisioned via public signup.
     const normalizedRole = 'MEMBER';
 
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    if (prisma) {
-      try {
-        const existing = await prisma.user.findUnique({
-          where: { email: normalizedEmail },
+    if (mongoose.connection.readyState === 1) {
+      const existing = await User.findOne({ email: normalizedEmail });
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: 'An account with this email address already exists.',
         });
-
-        if (existing) {
-          return res.status(409).json({
-            success: false,
-            message: 'An account with this email address already exists.',
-          });
-        }
-
-        // Create User with associated role profile
-        const user = await prisma.user.create({
-          data: {
-            email: normalizedEmail,
-            passwordHash,
-            fullName,
-            phone,
-            role: normalizedRole,
-            memberProfile: {
-              create: {
-                qrPassToken: `QR_${Date.now()}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-              },
-            },
-          },
-        });
-
-        const token = signToken(user);
-
-        return res.status(201).json({
-          success: true,
-          message: 'Registration successful.',
-          token,
-          user: {
-            id: user.id,
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role,
-          },
-        });
-      } catch (prismaErr) {
-        console.warn('[Register Notice] Prisma PostgreSQL unavailable, falling back:', prismaErr.message);
       }
+
+      // Create new Athlete in MongoDB Atlas
+      const newUser = await User.create({
+        fullName,
+        email: normalizedEmail,
+        password, // Encrypted by User schema pre-save hook
+        role: normalizedRole,
+        phone,
+      });
+
+      const token = signToken(newUser);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Registration successful.',
+        token,
+        user: {
+          id: newUser._id.toString(),
+          email: newUser.email,
+          fullName: newUser.fullName,
+          role: newUser.role,
+        },
+      });
     }
 
-    // Local in-memory/mock fallback if DB server is offline
+    // In-memory fallback if database is currently booting
     const mockUser = {
       id: `usr_${Date.now()}`,
       email: normalizedEmail,
@@ -138,7 +113,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
 /**
  * @route   POST /api/auth/login
- * @desc    Authenticate user credentials and return JWT session token
+ * @desc    Authenticate user credentials against MongoDB Atlas and return JWT session token
  * @access  Public (Rate Limited)
  */
 router.post('/login', authLimiter, async (req, res) => {
@@ -154,38 +129,27 @@ router.post('/login', authLimiter, async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // 1. Attempt Prisma PostgreSQL authentication
-    if (prisma) {
+    // 1. Attempt MongoDB Atlas User authentication (Athletes / Trainers)
+    if (mongoose.connection.readyState === 1) {
       try {
-        const user = await prisma.user.findUnique({
-          where: { email: normalizedEmail },
-          include: {
-            memberProfile: true,
-            trainerProfile: true,
-            adminProfile: true,
-          },
-        });
-
-        if (user && user.isActive) {
-          const isMatch = await bcrypt.compare(password, user.passwordHash);
+        const userDoc = await User.findOne({ email: normalizedEmail }).select('+password');
+        if (userDoc && userDoc.isActive) {
+          const isMatch = await userDoc.comparePassword(password);
           if (isMatch) {
-            const token = signToken(user);
+            userDoc.lastLogin = new Date();
+            await userDoc.save().catch(() => {});
+
+            const token = signToken(userDoc);
             return res.status(200).json({
               success: true,
               message: 'Authentication successful.',
               token,
               user: {
-                id: user.id,
-                email: user.email,
-                fullName: user.fullName,
-                role: user.role,
-                avatarUrl: user.avatarUrl,
-              },
-              admin: {
-                id: user.id,
-                email: user.email,
-                name: user.fullName,
-                role: user.role.toLowerCase(),
+                id: userDoc._id.toString(),
+                email: userDoc.email,
+                fullName: userDoc.fullName,
+                role: userDoc.role,
+                avatarUrl: userDoc.avatarUrl,
               },
             });
           } else {
@@ -196,39 +160,38 @@ router.post('/login', authLimiter, async (req, res) => {
           }
         }
       } catch (err) {
-        console.warn('[Auth Notice] Prisma PostgreSQL check deferred:', err.message);
+        console.warn('[Auth Notice] MongoDB User check error:', err.message);
       }
     }
 
-    // 2. Attempt MongoDB Atlas authentication
+    // 2. Attempt MongoDB Atlas Admin authentication
     if (mongoose.connection.readyState === 1) {
       try {
-        const Admin = require('../models/Admin');
         const adminDoc = await Admin.findOne({ email: normalizedEmail }).select('+password');
         if (adminDoc && adminDoc.isActive) {
           const isMatch = await adminDoc.comparePassword(password);
           if (isMatch) {
-            const token = signToken({
+            adminDoc.lastLogin = new Date();
+            await adminDoc.save().catch(() => {});
+
+            const verifiedAdmin = {
               id: adminDoc._id.toString(),
               email: adminDoc.email,
               fullName: adminDoc.name,
               role: 'ADMIN',
-            });
+            };
+            const token = signToken(verifiedAdmin);
+
             return res.status(200).json({
               success: true,
               message: 'Authentication successful.',
               token,
-              user: {
-                id: adminDoc._id.toString(),
-                email: adminDoc.email,
-                fullName: adminDoc.name,
-                role: 'ADMIN',
-              },
+              user: verifiedAdmin,
               admin: {
-                id: adminDoc._id.toString(),
-                email: adminDoc.email,
-                name: adminDoc.name,
-                role: adminDoc.role || 'admin',
+                id: verifiedAdmin.id,
+                email: verifiedAdmin.email,
+                name: verifiedAdmin.fullName,
+                role: 'admin',
               },
             });
           } else {
@@ -239,13 +202,12 @@ router.post('/login', authLimiter, async (req, res) => {
           }
         }
       } catch (err) {
-        console.warn('[Auth Notice] MongoDB check error:', err.message);
+        console.warn('[Auth Notice] MongoDB Admin check error:', err.message);
       }
     }
 
     // 3. Known Seed Accounts (Development & Offline Resilience)
     // CRITICAL SECURITY RULE: Password MUST match 'password123' exactly.
-    // Never bypass password verification merely because email exists!
     const SEED_CREDENTIALS = {
       'admin@profitgym.com': {
         id: 'usr_admin_01',
@@ -297,7 +259,7 @@ router.post('/login', authLimiter, async (req, res) => {
       });
     }
 
-    // If password does not match or user is not found, reject
+    // If credentials are invalid, strictly reject
     return res.status(401).json({
       success: false,
       message: 'Invalid email or password credentials.',
@@ -313,50 +275,58 @@ router.post('/login', authLimiter, async (req, res) => {
 
 /**
  * @route   GET /api/auth/me
- * @desc    Fetch current authenticated user profile
+ * @desc    Fetch current authenticated user profile from MongoDB Atlas
  * @access  Private
  */
 router.get('/me', verifyAuth, async (req, res) => {
   try {
-    if (prisma) {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { id: req.user.id },
-          select: {
-            id: true,
-            email: true,
-            fullName: true,
-            role: true,
-            phone: true,
-            avatarUrl: true,
-            createdAt: true,
-            memberProfile: {
-              include: {
-                memberships: {
-                  where: { status: 'ACTIVE' },
-                  include: { plan: true },
-                },
-              },
-            },
-            trainerProfile: true,
-            adminProfile: true,
+    if (mongoose.connection.readyState === 1) {
+      const user = await User.findOne({
+        $or: [{ _id: mongoose.isValidObjectId(req.user.id) ? req.user.id : null }, { email: req.user.email }]
+      });
+
+      if (user) {
+        return res.status(200).json({
+          success: true,
+          user: {
+            id: user._id.toString(),
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+            avatarUrl: user.avatarUrl,
+            phone: user.phone,
+            qrPassToken: user.qrPassToken,
+            assignedTrainerName: user.assignedTrainerName,
+          },
+          admin: {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.fullName,
+            role: user.role.toLowerCase(),
           },
         });
+      }
 
-        if (user) {
-          return res.status(200).json({
-            success: true,
-            user,
-            admin: {
-              id: user.id,
-              email: user.email,
-              name: user.fullName,
-              role: user.role.toLowerCase(),
-            },
-          });
-        }
-      } catch (prismaErr) {
-        console.warn('[/me Notice] Prisma lookup deferred:', prismaErr.message);
+      const admin = await Admin.findOne({
+        $or: [{ _id: mongoose.isValidObjectId(req.user.id) ? req.user.id : null }, { email: req.user.email }]
+      });
+
+      if (admin) {
+        return res.status(200).json({
+          success: true,
+          user: {
+            id: admin._id.toString(),
+            email: admin.email,
+            fullName: admin.name,
+            role: 'ADMIN',
+          },
+          admin: {
+            id: admin._id.toString(),
+            email: admin.email,
+            name: admin.name,
+            role: admin.role || 'admin',
+          },
+        });
       }
     }
 

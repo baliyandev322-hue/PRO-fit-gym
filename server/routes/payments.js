@@ -1,21 +1,34 @@
 const express = require('express');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
+const Razorpay = require('razorpay');
 const { verifyAuth } = require('../middleware/auth');
+const Payment = require('../models/Payment');
+const Membership = require('../models/Membership');
+const MembershipPlan = require('../models/MembershipPlan');
 
 const router = express.Router();
-
-// Prisma client initialization with graceful fallback
-let prisma;
-try {
-  const { PrismaClient } = require('@prisma/client');
-  prisma = new PrismaClient();
-} catch (err) {
-  console.warn('[Prisma Warning] Prisma Client loading deferred in payments route:', err.message);
-}
 
 // Razorpay credentials from environment
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_PROFIT_GYM_DEV_KEY';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'profit_gym_secret_dev_382910';
+const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || 'profit_gym_webhook_secret_dev_382910';
+
+// Initialize Razorpay SDK instance if keys are available
+let razorpayClient = null;
+try {
+  if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && !RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY')) {
+    razorpayClient = new Razorpay({
+      key_id: RAZORPAY_KEY_ID,
+      key_secret: RAZORPAY_KEY_SECRET,
+    });
+    console.log('[Payment Gateway] Razorpay live client initialized successfully.');
+  } else {
+    console.log('[Payment Gateway] Razorpay initialized in development / test sandbox mode.');
+  }
+} catch (err) {
+  console.warn('[Payment Gateway Warning] Razorpay client initialization error:', err.message);
+}
 
 // In-memory payment ledger fallback for dev mode when DB is booting
 let devPaymentsLedger = [
@@ -65,13 +78,14 @@ router.get('/config', (req, res) => {
   res.status(200).json({
     success: true,
     keyId: RAZORPAY_KEY_ID,
-    currency: 'INR'
+    currency: 'INR',
+    isSandbox: RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY')
   });
 });
 
 /**
  * @route   POST /api/payments/create-order
- * @desc    Create a Razorpay Order on server
+ * @desc    Create a Razorpay Order on server (with live Razorpay API integration)
  * @access  Private (Authenticated User)
  */
 router.post('/create-order', verifyAuth, async (req, res) => {
@@ -90,16 +104,16 @@ router.post('/create-order', verifyAuth, async (req, res) => {
     let planPrice = 24900;
     let planTitle = 'Performance Tier';
 
-    // Fetch plan from DB or catalog
-    if (prisma) {
+    // Fetch plan from MongoDB Atlas or catalog
+    if (mongoose.connection.readyState === 1) {
       try {
-        const dbPlan = await prisma.membershipPlan.findUnique({ where: { id: planId } });
+        const dbPlan = await MembershipPlan.findOne({ slug: planId });
         if (dbPlan) {
-          planPrice = dbPlan.price;
+          planPrice = dbPlan.priceInr || dbPlan.price;
           planTitle = dbPlan.name;
         }
       } catch (err) {
-        console.warn('DB plan lookup error, using catalog:', err.message);
+        console.warn('MongoDB plan lookup error, using catalog:', err.message);
       }
     }
 
@@ -114,55 +128,48 @@ router.post('/create-order', verifyAuth, async (req, res) => {
 
     let orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-    // If live/test Razorpay keys are configured, call Razorpay Orders API
-    if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET && !process.env.RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY')) {
+    // 1. Live Razorpay SDK order creation
+    if (razorpayClient) {
       try {
-        const authHeader = 'Basic ' + Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
-        const rzpResponse = await fetch('https://api.razorpay.com/v1/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': authHeader
-          },
-          body: JSON.stringify({
-            amount: amountInPaise,
-            currency: 'INR',
-            receipt: receiptId,
-            notes: {
-              userId,
-              planId,
-              planTitle,
-              userName
-            }
-          })
+        const rzpOrder = await razorpayClient.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: receiptId,
+          notes: {
+            userId: userId.toString(),
+            planId,
+            planTitle,
+            userName,
+            email: req.user.email
+          }
         });
-
-        if (rzpResponse.ok) {
-          const rzpData = await rzpResponse.json();
-          orderId = rzpData.id;
-        }
-      } catch (err) {
-        console.warn('Razorpay live order creation fallback to simulated order:', err.message);
+        orderId = rzpOrder.id;
+      } catch (rzpErr) {
+        console.error('[Razorpay API Error] Order creation failed:', rzpErr);
+        return res.status(500).json({
+          success: false,
+          message: `Razorpay Order creation failed: ${rzpErr.error?.description || rzpErr.message}`
+        });
       }
     }
 
-    // Record pending transaction in DB if available
-    if (prisma) {
+    // 2. Record pending transaction in MongoDB Atlas if available
+    if (mongoose.connection.readyState === 1) {
       try {
-        await prisma.payment.create({
-          data: {
-            userId,
-            planId,
-            amount: planPrice,
-            currency: 'INR',
-            status: 'PENDING',
-            gateway: 'RAZORPAY',
-            razorpayOrderId: orderId,
-            receiptNumber: receiptId
-          }
+        await Payment.create({
+          memberId: userId,
+          memberName: userName,
+          planId,
+          planName: planTitle,
+          amount: planPrice,
+          currency: 'INR',
+          status: 'PENDING',
+          gateway: 'RAZORPAY',
+          razorpayOrderId: orderId,
+          receiptNumber: receiptId
         });
       } catch (err) {
-        console.warn('Failed to insert pending payment in Prisma:', err.message);
+        console.warn('Failed to insert pending payment in MongoDB:', err.message);
       }
     }
 
@@ -190,7 +197,7 @@ router.post('/create-order', verifyAuth, async (req, res) => {
 
 /**
  * @route   POST /api/payments/verify
- * @desc    Verify Razorpay payment signature & activate membership
+ * @desc    Verify Razorpay payment signature & activate membership in MongoDB Atlas
  * @access  Private (Authenticated User)
  */
 router.post('/verify', verifyAuth, async (req, res) => {
@@ -213,19 +220,19 @@ router.post('/verify', verifyAuth, async (req, res) => {
     }
 
     // Server-side HMAC SHA256 Signature Verification
-    const expectedSignature = crypto
+    const generatedSignature = crypto
       .createHmac('sha256', RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
-    // In dev simulated mode, accept valid signature or dev token
+    // Strict validation for live production mode; fallback for dev simulation
+    const isSandbox = RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY');
     const isSignatureValid = 
-      razorpay_signature === expectedSignature || 
-      razorpay_signature?.startsWith('sig_dev_') ||
-      RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY');
+      razorpay_signature === generatedSignature || 
+      (isSandbox && (razorpay_signature?.startsWith('sig_dev_') || !razorpay_signature));
 
     if (!isSignatureValid) {
-      console.warn(`[SECURITY] Signature mismatch: expected ${expectedSignature}, received ${razorpay_signature}`);
+      console.warn(`[SECURITY] Signature mismatch: expected ${generatedSignature}, received ${razorpay_signature}`);
       return res.status(400).json({
         success: false,
         message: 'Payment verification failed: Signature mismatch. Potential tampering detected.'
@@ -237,55 +244,43 @@ router.post('/verify', verifyAuth, async (req, res) => {
     const now = new Date();
     const expiryDate = new Date(now.getTime() + (planMeta.durationDays || 30) * 86400000);
 
-    // Update / Activate Membership in Prisma Database
+    // Update / Activate Membership in MongoDB Database
     let updatedMembership = null;
-    if (prisma) {
+    if (mongoose.connection.readyState === 1) {
       try {
-        // Find existing membership or create new
-        const existingMem = await prisma.membership.findFirst({
-          where: { userId }
-        });
-
-        if (existingMem) {
-          updatedMembership = await prisma.membership.update({
-            where: { id: existingMem.id },
-            data: {
-              planId: planId || existingMem.planId,
-              status: 'ACTIVE',
-              startDate: now,
-              endDate: expiryDate,
-              autoRenew: true
-            }
-          });
-        } else {
-          updatedMembership = await prisma.membership.create({
-            data: {
-              userId,
-              planId: planId || 'plan-performance',
-              status: 'ACTIVE',
-              startDate: now,
-              endDate: expiryDate,
-              autoRenew: true
-            }
-          });
-        }
-
-        // Record completed Payment
-        await prisma.payment.create({
-          data: {
-            userId,
+        updatedMembership = await Membership.findOneAndUpdate(
+          { userId },
+          {
+            memberEmail: req.user?.email,
+            memberName: userName,
             planId: planId || 'plan-performance',
-            amount: planMeta.price,
-            currency: 'INR',
-            status: 'PAID',
-            gateway: 'RAZORPAY',
-            razorpayPaymentId: razorpay_payment_id,
-            razorpayOrderId: razorpay_order_id,
-            receiptNumber
-          }
+            planName: planMeta.name,
+            status: 'ACTIVE',
+            startDate: now,
+            expiryDate,
+            daysRemaining: planMeta.durationDays || 30,
+            price: planMeta.price,
+            autoRenew: true
+          },
+          { upsert: true, new: true }
+        );
+
+        // Record completed Payment in MongoDB
+        await Payment.create({
+          memberId: userId,
+          memberName: userName,
+          planId: planId || 'plan-performance',
+          planName: planMeta.name,
+          amount: planMeta.price,
+          currency: 'INR',
+          status: 'COMPLETED',
+          gateway: 'RAZORPAY',
+          razorpayPaymentId: razorpay_payment_id,
+          razorpayOrderId: razorpay_order_id,
+          receiptNumber
         });
       } catch (err) {
-        console.warn('Prisma membership activation error:', err.message);
+        console.warn('MongoDB membership activation error:', err.message);
       }
     }
 
@@ -329,8 +324,120 @@ router.post('/verify', verifyAuth, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/payments/webhook
+ * @desc    Razorpay Server-to-Server Webhook handler (Captures payment even if user closes browser)
+ * @access  Public (Protected via x-razorpay-signature HMAC-SHA256)
+ */
+router.post('/webhook', async (req, res) => {
+  try {
+    const webhookSignature = req.headers['x-razorpay-signature'];
+
+    if (!webhookSignature) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing x-razorpay-signature webhook header.'
+      });
+    }
+
+    // Verify webhook signature with secret using rawBody or stringified body
+    const payload = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
+    const expectedSignature = crypto
+      .createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
+      .update(payload)
+      .digest('hex');
+
+    const isValid = webhookSignature === expectedSignature || RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY');
+
+    if (!isValid) {
+      console.warn('[SECURITY] Razorpay webhook signature verification failed.');
+      return res.status(400).json({
+        success: false,
+        message: 'Webhook signature verification failed.'
+      });
+    }
+
+    const event = req.body.event;
+    console.log(`[Razorpay Webhook] Received validated event: ${event}`);
+
+    // Handle Payment Captured or Order Paid events
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = req.body.payload?.payment?.entity;
+      const notes = paymentEntity?.notes || {};
+      const userId = notes.userId;
+      const planId = notes.planId || 'plan-performance';
+      const planTitle = notes.planTitle || 'Performance Tier';
+      const amount = (paymentEntity?.amount || 2490000) / 100; // convert paise to INR
+
+      if (userId && mongoose.connection.readyState === 1) {
+        const now = new Date();
+        const expiryDate = new Date(now.getTime() + 30 * 86400000);
+
+        // 1. Activate Membership in MongoDB Atlas
+        await Membership.findOneAndUpdate(
+          { userId },
+          {
+            planId,
+            planName: planTitle,
+            status: 'ACTIVE',
+            startDate: now,
+            expiryDate,
+            daysRemaining: 30,
+            price: amount,
+            autoRenew: true
+          },
+          { upsert: true, new: true }
+        );
+
+        // 2. Persist Payment Record
+        await Payment.create({
+          memberId: userId,
+          memberName: notes.userName || 'Verified Athlete',
+          planId,
+          planName: planTitle,
+          amount,
+          currency: 'INR',
+          status: 'COMPLETED',
+          gateway: 'RAZORPAY',
+          razorpayPaymentId: paymentEntity?.id,
+          razorpayOrderId: paymentEntity?.order_id,
+          receiptNumber: `INV-WH-${Date.now().toString().slice(-6)}`
+        });
+
+        console.log(`[Razorpay Webhook] Membership successfully activated for user: ${userId}`);
+      }
+    } else if (event === 'payment.failed') {
+      const paymentEntity = req.body.payload?.payment?.entity;
+      const notes = paymentEntity?.notes || {};
+      const userId = notes.userId;
+
+      if (userId && mongoose.connection.readyState === 1) {
+        await Payment.create({
+          memberId: userId,
+          memberName: notes.userName || 'Athlete',
+          planId: notes.planId || 'plan-performance',
+          planName: notes.planTitle || 'Performance Tier',
+          amount: (paymentEntity?.amount || 0) / 100,
+          currency: 'INR',
+          status: 'FAILED',
+          gateway: 'RAZORPAY',
+          razorpayPaymentId: paymentEntity?.id,
+          razorpayOrderId: paymentEntity?.order_id,
+          receiptNumber: `FAIL-${Date.now().toString().slice(-6)}`
+        });
+      }
+    }
+
+    // Always respond with 200 OK to acknowledge receipt to Razorpay
+    return res.status(200).json({ status: 'ok', eventReceived: event });
+  } catch (error) {
+    console.error('[Razorpay Webhook Error]', error);
+    return res.status(500).json({ success: false, message: 'Server webhook processing error.' });
+  }
+});
+
+/**
  * @route   GET /api/payments/history
- * @desc    Get user or admin payment history
+ * @desc    Get user or admin payment history from MongoDB Atlas
  * @access  Private
  */
 router.get('/history', verifyAuth, async (req, res) => {
@@ -338,29 +445,22 @@ router.get('/history', verifyAuth, async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    if (prisma) {
+    if (mongoose.connection.readyState === 1) {
       try {
-        const query = userRole === 'ADMIN' ? {} : { userId };
-        const payments = await prisma.payment.findMany({
-          where: query,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            user: { select: { fullName: true, email: true } },
-            plan: true
-          }
-        });
+        const query = userRole === 'ADMIN' ? {} : { memberId: userId };
+        const payments = await Payment.find(query).sort({ createdAt: -1 });
 
         if (payments && payments.length > 0) {
           return res.status(200).json({
             success: true,
             payments: payments.map(p => ({
-              id: p.id,
-              razorpay_payment_id: p.razorpayPaymentId || p.id,
+              id: p._id.toString(),
+              razorpay_payment_id: p.razorpayPaymentId || p._id.toString(),
               razorpay_order_id: p.razorpayOrderId,
-              user_id: p.userId,
-              member_name: p.user?.fullName,
+              user_id: p.memberId,
+              member_name: p.memberName,
               plan_id: p.planId,
-              plan_name: p.plan?.name,
+              plan_name: p.planName,
               amount: p.amount,
               currency: p.currency,
               status: p.status,
@@ -370,7 +470,7 @@ router.get('/history', verifyAuth, async (req, res) => {
           });
         }
       } catch (err) {
-        console.warn('Prisma payment history lookup error, using memory ledger:', err.message);
+        console.warn('MongoDB payment history lookup error, using memory ledger:', err.message);
       }
     }
 
@@ -396,49 +496,68 @@ router.get('/history', verifyAuth, async (req, res) => {
  * @desc    Generate tax receipt / invoice breakdown
  * @access  Private
  */
-router.get('/invoice/:id', verifyAuth, (req, res) => {
-  const payment = devPaymentsLedger.find(p => p.id === req.params.id || p.razorpay_payment_id === req.params.id);
+router.get('/invoice/:id', verifyAuth, async (req, res) => {
+  try {
+    let payment = null;
 
-  if (!payment) {
-    return res.status(404).json({
-      success: false,
-      message: 'Invoice not found.'
-    });
-  }
-
-  const basePrice = Math.round(payment.amount / 1.18);
-  const gstAmount = payment.amount - basePrice;
-
-  return res.status(200).json({
-    success: true,
-    invoice: {
-      invoiceNumber: payment.receipt,
-      date: payment.created_at,
-      facility: {
-        name: 'PROFIT Training Club',
-        address: '428 Lafayette Street, NoHo, New York / Mumbai Sanctuary',
-        gstin: '27AABCP1337Q1Z5'
-      },
-      athlete: {
-        name: payment.member_name,
-        id: payment.user_id
-      },
-      item: {
-        description: `${payment.plan_name} (30 Days Unlimited Sanctuary Access)`,
-        basePrice,
-        gstRate: '18% GST',
-        gstAmount,
-        totalAmount: payment.amount,
-        currency: payment.currency
-      },
-      paymentGateway: {
-        gateway: 'Razorpay Payments India',
-        paymentId: payment.razorpay_payment_id,
-        orderId: payment.razorpay_order_id,
-        status: payment.status
-      }
+    if (mongoose.connection.readyState === 1) {
+      payment = await Payment.findOne({
+        $or: [
+          { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null },
+          { razorpayPaymentId: req.params.id },
+          { receiptNumber: req.params.id }
+        ]
+      });
     }
-  });
+
+    if (!payment) {
+      payment = devPaymentsLedger.find(p => p.id === req.params.id || p.razorpay_payment_id === req.params.id);
+    }
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found.'
+      });
+    }
+
+    const amount = payment.amount || 24900;
+    const basePrice = Math.round(amount / 1.18);
+    const gstAmount = amount - basePrice;
+
+    return res.status(200).json({
+      success: true,
+      invoice: {
+        invoiceNumber: payment.receiptNumber || payment.receipt || `INV-${Date.now()}`,
+        date: payment.createdAt || payment.created_at || new Date().toISOString(),
+        facility: {
+          name: 'PROFIT Training Club',
+          address: '428 Lafayette Street, NoHo, New York / Bandra Kurla Complex, Mumbai',
+          gstin: '27AABCP1337Q1Z5'
+        },
+        athlete: {
+          name: payment.memberName || payment.member_name || 'Valued Athlete',
+          id: payment.memberId || payment.user_id
+        },
+        item: {
+          description: `${payment.planName || payment.plan_name || 'Membership'} (30 Days Unlimited Sanctuary Access)`,
+          basePrice,
+          gstRate: '18% GST',
+          gstAmount,
+          totalAmount: amount,
+          currency: payment.currency || 'INR'
+        },
+        paymentGateway: {
+          gateway: 'Razorpay Payments India',
+          paymentId: payment.razorpayPaymentId || payment.razorpay_payment_id || 'pay_live_01',
+          orderId: payment.razorpayOrderId || payment.razorpay_order_id || 'order_live_01',
+          status: payment.status || 'PAID'
+        }
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to generate invoice' });
+  }
 });
 
 module.exports = router;

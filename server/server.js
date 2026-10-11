@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 
 // CORS Configuration
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5500,http://127.0.0.1:5500,https://profitgym-ten.vercel.app')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500,http://127.0.0.1:5500,https://profitgym-ten.vercel.app')
   .split(',')
   .map((origin) => origin.trim().replace(/\/$/, ''));
 
@@ -36,8 +36,13 @@ app.use(
   })
 );
 
-// Body parser with strict size limits to prevent payload abuse
-app.use(express.json({ limit: '50kb' }));
+// Body parser with strict size limits and rawBody capture for webhook signature verification
+app.use(express.json({ 
+  limit: '50kb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '50kb' }));
 
 // Connect to Database

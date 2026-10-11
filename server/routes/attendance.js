@@ -1,48 +1,16 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const Attendance = require('../models/Attendance');
 const { verifyAuth, verifyAdmin } = require('../middleware/auth');
 
 const router = express.Router();
-
-// Memory store fallback for attendance records when database boots
-let inMemoryAttendance = [
-  {
-    id: 'att-101',
-    memberId: 'user-member-1',
-    memberName: 'Alex Vance',
-    gymLocation: 'NYC - NoHo Flagship (Sanctuary 01)',
-    method: 'qr_scan',
-    date: new Date().toISOString().split('T')[0],
-    checkInTime: '08:45 AM',
-    timestamp: new Date().toISOString()
-  },
-  {
-    id: 'att-102',
-    memberId: 'user-member-2',
-    memberName: 'Elena Rostova',
-    gymLocation: 'NYC - NoHo Flagship (Sanctuary 01)',
-    method: 'qr_scan',
-    date: new Date().toISOString().split('T')[0],
-    checkInTime: '09:15 AM',
-    timestamp: new Date(Date.now() - 3600000).toISOString()
-  },
-  {
-    id: 'att-103',
-    memberId: 'user-member-3',
-    memberName: 'Jordan Bell',
-    gymLocation: 'NYC - NoHo Flagship (Sanctuary 01)',
-    method: 'manual',
-    date: new Date().toISOString().split('T')[0],
-    checkInTime: '06:30 AM',
-    timestamp: new Date(Date.now() - 7200000).toISOString()
-  }
-];
 
 // Configurable anti-duplicate cooldown window (in minutes)
 const DUPLICATE_COOLDOWN_MINUTES = 60;
 
 /**
  * @route   POST /api/attendance/check-in
- * @desc    Validate member QR scan and record entry
+ * @desc    Validate member QR scan and record entry into MongoDB Atlas
  * @access  Public or Authenticated
  */
 router.post('/check-in', async (req, res) => {
@@ -59,28 +27,56 @@ router.post('/check-in', async (req, res) => {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const timeFormatted = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const cooldownLimit = new Date(now.getTime() - DUPLICATE_COOLDOWN_MINUTES * 60 * 1000);
 
-    // Check for duplicate check-in within cooldown window
-    const recentRecord = inMemoryAttendance.find(r => {
-      if (r.memberId !== memberId) return false;
-      const recordTime = new Date(r.timestamp).getTime();
-      const diffMinutes = (now.getTime() - recordTime) / (1000 * 60);
-      return diffMinutes < DUPLICATE_COOLDOWN_MINUTES;
-    });
+    // 1. Check for duplicate check-in in MongoDB Atlas
+    if (mongoose.connection.readyState === 1) {
+      const recentMongo = await Attendance.findOne({
+        memberId,
+        timestamp: { $gte: cooldownLimit }
+      }).sort({ timestamp: -1 });
 
-    if (recentRecord) {
-      return res.status(409).json({
-        success: false,
-        message: `Duplicate check-in blocked. You already checked in today at ${recentRecord.checkInTime}. Please wait before scanning again.`,
-        lastCheckIn: recentRecord.checkInTime
+      if (recentMongo) {
+        return res.status(400).json({
+          success: false,
+          isDuplicate: true,
+          message: `Duplicate check-in blocked. You already checked in today at ${recentMongo.checkInTime}. Please wait before scanning again.`,
+          lastCheckIn: recentMongo.checkInTime
+        });
+      }
+
+      // Persist check-in into MongoDB Atlas
+      const createdRecord = await Attendance.create({
+        memberId,
+        memberName: memberName || 'Alex Vance',
+        gymLocation: location,
+        method,
+        date: todayStr,
+        checkInTime: timeFormatted,
+        timestamp: now,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: `Access granted! Welcome to ${location}, ${memberName || 'Alex Vance'}.`,
+        attendance: {
+          id: createdRecord._id.toString(),
+          memberId: createdRecord.memberId,
+          memberName: createdRecord.memberName,
+          gymLocation: createdRecord.gymLocation,
+          method: createdRecord.method,
+          date: createdRecord.date,
+          checkInTime: createdRecord.checkInTime,
+          timestamp: createdRecord.timestamp
+        }
       });
     }
 
-    // Record attendance
-    const newRecord = {
+    // Fallback if database is offline
+    const fallbackRecord = {
       id: `att_${Date.now()}`,
       memberId,
-      memberName: memberName || 'Verified Athlete',
+      memberName: memberName || 'Alex Vance',
       gymLocation: location,
       method,
       date: todayStr,
@@ -88,12 +84,10 @@ router.post('/check-in', async (req, res) => {
       timestamp: now.toISOString()
     };
 
-    inMemoryAttendance.unshift(newRecord);
-
     return res.status(201).json({
       success: true,
       message: `Access granted! Welcome to ${location}, ${memberName || 'Athlete'}.`,
-      attendance: newRecord
+      attendance: fallbackRecord
     });
   } catch (error) {
     console.error('[Attendance Check-in Error]', error);
@@ -106,56 +100,116 @@ router.post('/check-in', async (req, res) => {
 
 /**
  * @route   GET /api/attendance/today
- * @desc    Get all attendance events for today
+ * @desc    Get all attendance events for today from MongoDB Atlas
  * @access  Private (Staff/Admin)
  */
-router.get('/today', (req, res) => {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const records = inMemoryAttendance.filter(r => r.date === todayStr);
+router.get('/today', async (req, res) => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
 
-  return res.status(200).json({
-    success: true,
-    count: records.length,
-    data: records
-  });
+    if (mongoose.connection.readyState === 1) {
+      const records = await Attendance.find({ date: todayStr }).sort({ timestamp: -1 });
+      return res.status(200).json({
+        success: true,
+        count: records.length,
+        data: records.map(r => ({
+          id: r._id.toString(),
+          memberId: r.memberId,
+          memberName: r.memberName,
+          gymLocation: r.gymLocation,
+          method: r.method,
+          date: r.date,
+          checkInTime: r.checkInTime,
+          timestamp: r.timestamp
+        }))
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      data: []
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch today attendance' });
+  }
 });
 
 /**
  * @route   GET /api/attendance/history/:memberId
- * @desc    Get attendance history for specific member
+ * @desc    Get attendance history for specific member from MongoDB Atlas
  * @access  Public / Authenticated
  */
-router.get('/history/:memberId', (req, res) => {
-  const { memberId } = req.params;
-  const records = inMemoryAttendance.filter(r => r.memberId === memberId);
+router.get('/history/:memberId', async (req, res) => {
+  try {
+    const { memberId } = req.params;
 
-  return res.status(200).json({
-    success: true,
-    totalVisits: records.length,
-    data: records
-  });
+    if (mongoose.connection.readyState === 1) {
+      const records = await Attendance.find({ memberId }).sort({ timestamp: -1 });
+      return res.status(200).json({
+        success: true,
+        totalVisits: records.length,
+        data: records.map(r => ({
+          id: r._id.toString(),
+          memberId: r.memberId,
+          memberName: r.memberName,
+          gymLocation: r.gymLocation,
+          method: r.method,
+          date: r.date,
+          checkInTime: r.checkInTime,
+          timestamp: r.timestamp
+        }))
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      totalVisits: 0,
+      data: []
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch attendance history' });
+  }
 });
 
 /**
  * @route   GET /api/attendance/analytics
- * @desc    Get attendance trends and telemetry
+ * @desc    Get attendance trends and telemetry from MongoDB Atlas
  * @access  Private (Staff/Admin)
  */
-router.get('/analytics', (req, res) => {
-  const total = inMemoryAttendance.length;
-  const qrCount = inMemoryAttendance.filter(r => r.method === 'qr_scan').length;
-  const manualCount = total - qrCount;
+router.get('/analytics', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const total = await Attendance.countDocuments();
+      const todayCount = await Attendance.countDocuments({ date: todayStr });
+      const qrCount = await Attendance.countDocuments({ method: 'qr_scan' });
 
-  return res.status(200).json({
-    success: true,
-    analytics: {
-      totalVisits: total,
-      qrScanPercentage: total > 0 ? Math.round((qrCount / total) * 100) : 100,
-      peakHour: '06:00 PM - 08:00 PM',
-      currentFloorCapacityPercentage: 42,
-      todayCount: inMemoryAttendance.filter(r => r.date === new Date().toISOString().split('T')[0]).length
+      return res.status(200).json({
+        success: true,
+        analytics: {
+          totalVisits: total,
+          qrScanPercentage: total > 0 ? Math.round((qrCount / total) * 100) : 100,
+          peakHour: '06:00 PM - 08:00 PM',
+          currentFloorCapacityPercentage: 42,
+          todayCount
+        }
+      });
     }
-  });
+
+    return res.status(200).json({
+      success: true,
+      analytics: {
+        totalVisits: 0,
+        qrScanPercentage: 100,
+        peakHour: '06:00 PM - 08:00 PM',
+        currentFloorCapacityPercentage: 0,
+        todayCount: 0
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+  }
 });
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { NotificationProvider } from '@/context/NotificationContext';
@@ -6,38 +6,50 @@ import { GymDataProvider } from '@/context/GymDataContext';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-// Public Pages
-import { LandingPage } from '@/pages/LandingPage';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { RegisterPage } from '@/pages/auth/RegisterPage';
-import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
+// Sleek Brand Loader for lazy-loaded route transitions
+const PageLoader: React.FC = () => (
+  <div className="min-h-screen bg-gym-black flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-9 h-9 border-2 border-gym-lime border-t-transparent rounded-full animate-spin shadow-lime-glow"></div>
+      <span className="font-heading text-xs tracking-widest text-gym-secondary uppercase font-bold">
+        PRO<span className="text-gym-lime">FIT</span> LOADING...
+      </span>
+    </div>
+  </div>
+);
 
-// Member Pages
-import { MemberDashboard } from '@/pages/member/MemberDashboard';
-import { MemberAttendancePage } from '@/pages/member/MemberAttendancePage';
-import { MemberWorkoutsPage } from '@/pages/member/MemberWorkoutsPage';
-import { MemberProgressPage } from '@/pages/member/MemberProgressPage';
-import { MemberMembershipPage } from '@/pages/member/MemberMembershipPage';
-import { MemberPaymentsPage } from '@/pages/member/MemberPaymentsPage';
-import { MemberProfilePage } from '@/pages/member/MemberProfilePage';
+// Public Pages (Code-split)
+const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 
-// Trainer Pages
-import { TrainerDashboard } from '@/pages/trainer/TrainerDashboard';
-import { TrainerMembersPage } from '@/pages/trainer/TrainerMembersPage';
-import { TrainerWorkoutsPage } from '@/pages/trainer/TrainerWorkoutsPage';
-import { TrainerAttendancePage } from '@/pages/trainer/TrainerAttendancePage';
+// Member Pages (Code-split)
+const MemberDashboard = lazy(() => import('@/pages/member/MemberDashboard').then(m => ({ default: m.MemberDashboard })));
+const MemberAttendancePage = lazy(() => import('@/pages/member/MemberAttendancePage').then(m => ({ default: m.MemberAttendancePage })));
+const MemberWorkoutsPage = lazy(() => import('@/pages/member/MemberWorkoutsPage').then(m => ({ default: m.MemberWorkoutsPage })));
+const MemberProgressPage = lazy(() => import('@/pages/member/MemberProgressPage').then(m => ({ default: m.MemberProgressPage })));
+const MemberMembershipPage = lazy(() => import('@/pages/member/MemberMembershipPage').then(m => ({ default: m.MemberMembershipPage })));
+const MemberPaymentsPage = lazy(() => import('@/pages/member/MemberPaymentsPage').then(m => ({ default: m.MemberPaymentsPage })));
+const MemberProfilePage = lazy(() => import('@/pages/member/MemberProfilePage').then(m => ({ default: m.MemberProfilePage })));
 
-// Admin Pages
-import { AdminDashboard } from '@/pages/admin/AdminDashboard';
-import { AdminMembersPage } from '@/pages/admin/AdminMembersPage';
-import { AdminTrainersPage } from '@/pages/admin/AdminTrainersPage';
-import { AdminMembershipsPage } from '@/pages/admin/AdminMembershipsPage';
-import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
-import { AdminAttendancePage } from '@/pages/admin/AdminAttendancePage';
-import { AdminWorkoutsPage } from '@/pages/admin/AdminWorkoutsPage';
-import { AdminTrialsPage } from '@/pages/admin/AdminTrialsPage';
-import { AdminMessagesPage } from '@/pages/admin/AdminMessagesPage';
-import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
+// Trainer Pages (Code-split)
+const TrainerDashboard = lazy(() => import('@/pages/trainer/TrainerDashboard').then(m => ({ default: m.TrainerDashboard })));
+const TrainerMembersPage = lazy(() => import('@/pages/trainer/TrainerMembersPage').then(m => ({ default: m.TrainerMembersPage })));
+const TrainerWorkoutsPage = lazy(() => import('@/pages/trainer/TrainerWorkoutsPage').then(m => ({ default: m.TrainerWorkoutsPage })));
+const TrainerAttendancePage = lazy(() => import('@/pages/trainer/TrainerAttendancePage').then(m => ({ default: m.TrainerAttendancePage })));
+
+// Admin Pages (Code-split)
+const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminMembersPage = lazy(() => import('@/pages/admin/AdminMembersPage').then(m => ({ default: m.AdminMembersPage })));
+const AdminTrainersPage = lazy(() => import('@/pages/admin/AdminTrainersPage').then(m => ({ default: m.AdminTrainersPage })));
+const AdminMembershipsPage = lazy(() => import('@/pages/admin/AdminMembershipsPage').then(m => ({ default: m.AdminMembershipsPage })));
+const AdminPaymentsPage = lazy(() => import('@/pages/admin/AdminPaymentsPage').then(m => ({ default: m.AdminPaymentsPage })));
+const AdminAttendancePage = lazy(() => import('@/pages/admin/AdminAttendancePage').then(m => ({ default: m.AdminAttendancePage })));
+const AdminWorkoutsPage = lazy(() => import('@/pages/admin/AdminWorkoutsPage').then(m => ({ default: m.AdminWorkoutsPage })));
+const AdminTrialsPage = lazy(() => import('@/pages/admin/AdminTrialsPage').then(m => ({ default: m.AdminTrialsPage })));
+const AdminMessagesPage = lazy(() => import('@/pages/admin/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })));
+const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 export const App: React.FC = () => {
   return (
@@ -45,7 +57,8 @@ export const App: React.FC = () => {
       <NotificationProvider>
         <AuthProvider>
           <GymDataProvider>
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -118,7 +131,8 @@ export const App: React.FC = () => {
               {/* Catch-all redirect to Landing */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </GymDataProvider>
+          </Suspense>
+        </GymDataProvider>
         </AuthProvider>
       </NotificationProvider>
     </BrowserRouter>
