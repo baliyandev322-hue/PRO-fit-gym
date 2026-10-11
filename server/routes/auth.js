@@ -319,46 +319,45 @@ router.post('/login', authLimiter, async (req, res) => {
 router.get('/me', verifyAuth, async (req, res) => {
   try {
     if (prisma) {
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: {
-          id: true,
-          email: true,
-          fullName: true,
-          role: true,
-          phone: true,
-          avatarUrl: true,
-          createdAt: true,
-          memberProfile: {
-            include: {
-              memberships: {
-                where: { status: 'ACTIVE' },
-                include: { plan: true },
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            role: true,
+            phone: true,
+            avatarUrl: true,
+            createdAt: true,
+            memberProfile: {
+              include: {
+                memberships: {
+                  where: { status: 'ACTIVE' },
+                  include: { plan: true },
+                },
               },
             },
+            trainerProfile: true,
+            adminProfile: true,
           },
-          trainerProfile: true,
-          adminProfile: true,
-        },
-      });
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: 'User profile not found.',
         });
-      }
 
-      return res.status(200).json({
-        success: true,
-        user,
-        admin: {
-          id: user.id,
-          email: user.email,
-          name: user.fullName,
-          role: user.role.toLowerCase(),
-        },
-      });
+        if (user) {
+          return res.status(200).json({
+            success: true,
+            user,
+            admin: {
+              id: user.id,
+              email: user.email,
+              name: user.fullName,
+              role: user.role.toLowerCase(),
+            },
+          });
+        }
+      } catch (prismaErr) {
+        console.warn('[/me Notice] Prisma lookup deferred:', prismaErr.message);
+      }
     }
 
     return res.status(200).json({
