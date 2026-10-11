@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, 
@@ -20,36 +20,45 @@ export const TrainerDashboard: React.FC = () => {
 
   if (!user) return null;
 
-  // Mock list of assigned athletes to Marcus Drake
-  const assignedAthletes = [
-    {
-      id: 'user-member-1',
-      name: 'Alex Vance',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      tier: 'Performance Tier',
-      status: 'Active',
-      lastCheckIn: 'Today, 2:30 PM',
-      focus: 'Deadlift & Posterior Chain 1RM'
-    },
-    {
-      id: 'user-member-2',
-      name: 'Elena Rostova',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
-      tier: 'Elite VIP Tier',
-      status: 'Active',
-      lastCheckIn: 'Today, 1:15 PM',
-      focus: 'Olympic Clean & Jerk technique'
-    },
-    {
-      id: 'user-member-3',
-      name: 'Jordan Bell',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
-      tier: 'Starter Tier',
-      status: 'Expiring Soon',
-      lastCheckIn: 'Yesterday',
-      focus: 'Hypertrophy baseline'
-    }
-  ];
+  const [assignedAthletes, setAssignedAthletes] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAthletes = async () => {
+      try {
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const res = await fetch('/api/admin/members', {
+          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setAssignedAthletes(data.data.map((m: any) => ({
+            id: m.id,
+            name: m.full_name,
+            avatar: m.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+            tier: m.tier,
+            status: m.status === 'active' ? 'Active' : 'Expired',
+            lastCheckIn: 'Today',
+            focus: 'Hypertrophy & Strength'
+          })));
+        } else {
+          setAssignedAthletes([
+            {
+              id: 'user-member-1',
+              name: 'Alex Vance',
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+              tier: 'Performance Tier',
+              status: 'Active',
+              lastCheckIn: 'Today, 2:30 PM',
+              focus: 'Deadlift & Posterior Chain 1RM'
+            }
+          ]);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch assigned athletes:', err);
+      }
+    };
+    fetchAthletes();
+  }, []);
 
   return (
     <div className="space-y-6">

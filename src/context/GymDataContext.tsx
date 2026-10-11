@@ -96,6 +96,65 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => { setLocalData('progressRecords', progressRecords); }, [progressRecords]);
   useEffect(() => { setLocalData('payments', payments); }, [payments]);
 
+  // Synchronize live data from MongoDB Atlas on mount and auth state change
+  useEffect(() => {
+    const syncWithBackend = async () => {
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 1. Fetch live turnstile attendance from MongoDB Atlas
+      fetch(`${API_URL}/attendance`, { headers })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            setAttendance(data.data);
+          }
+        })
+        .catch(() => {});
+
+      // 2. Fetch live workout plans from MongoDB Atlas
+      fetch(`${API_URL}/workouts/plans`, { headers })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            setWorkoutPlans(data.data);
+          }
+        })
+        .catch(() => {});
+
+      // 3. Fetch live payment transactions from MongoDB Atlas
+      if (token) {
+        fetch(`${API_URL}/payments/history`, { headers })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && Array.isArray(data.payments) && data.payments.length > 0) {
+              setPayments(data.payments.map((p: any) => ({
+                id: p.id || `pay-${Date.now()}`,
+                member_id: p.user_id,
+                member_name: p.member_name,
+                plan_id: p.plan_id,
+                plan_name: p.plan_name,
+                amount: p.amount,
+                currency: p.currency || 'INR',
+                status: (p.status || 'paid').toLowerCase(),
+                stripe_payment_intent_id: p.razorpay_payment_id || p.id,
+                receipt_url: '#',
+                created_at: p.created_at || new Date().toISOString()
+              })));
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    syncWithBackend();
+  }, [user]);
+
   // Plans Management
   const createPlan = (newPlan: Omit<MembershipPlan, 'id'>) => {
     const id = `plan-${Date.now()}`;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Search, 
@@ -33,65 +33,66 @@ export const AdminMembersPage: React.FC = () => {
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newPlanId, setNewPlanId] = useState('plan-performance');
+  const [memberList, setMemberList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Synthetic list of members combined with membership status
-  const memberList = [
-    {
-      id: 'user-member-1',
-      full_name: 'Alex Vance',
-      email: 'alex.vance@athlete.com',
-      phone: '+1 (212) 555-0192',
-      tier: 'Performance Tier',
-      status: 'active' as MembershipStatus,
-      daysLeft: 18,
-      trainer: 'Marcus Drake',
-      joined: '2026-08-15'
-    },
-    {
-      id: 'user-member-2',
-      full_name: 'Elena Rostova',
-      email: 'elena.rostova@athlete.com',
-      phone: '+1 (212) 555-0144',
-      tier: 'Elite VIP Tier',
-      status: 'active' as MembershipStatus,
-      daysLeft: 25,
-      trainer: 'Marcus Drake',
-      joined: '2026-09-01'
-    },
-    {
-      id: 'user-member-3',
-      full_name: 'Jordan Bell',
-      email: 'jordan.bell@business.com',
-      phone: '+1 (212) 555-0177',
-      tier: 'Starter Tier',
-      status: 'expiring_soon' as MembershipStatus,
-      daysLeft: 2,
-      trainer: 'Marcus Drake',
-      joined: '2026-07-20'
-    },
-    {
-      id: 'user-member-4',
-      full_name: 'David Zhao',
-      email: 'david.zhao@nyu.edu',
-      phone: '+1 (212) 555-0129',
-      tier: 'Performance Tier',
-      status: 'expired' as MembershipStatus,
-      daysLeft: 0,
-      trainer: 'Chloe Sterling',
-      joined: '2026-06-10'
-    },
-    {
-      id: 'user-member-5',
-      full_name: 'Sophia Laurent',
-      email: 'sophia@laurentdesign.com',
-      phone: '+1 (212) 555-0188',
-      tier: 'Elite VIP Tier',
-      status: 'active' as MembershipStatus,
-      daysLeft: 22,
-      trainer: 'Chloe Sterling',
-      joined: '2026-08-28'
+  const fetchMembers = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const res = await fetch('/api/admin/members', {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setMemberList(data.data);
+      } else {
+        // Fallback default athletes if database is freshly initialized
+        setMemberList([
+          {
+            id: 'user-member-1',
+            full_name: 'Alex Vance',
+            email: 'alex.vance@athlete.com',
+            phone: '+1 (212) 555-0192',
+            tier: 'Performance Tier',
+            status: 'active' as MembershipStatus,
+            daysLeft: 18,
+            trainer: 'Marcus Drake',
+            joined: '2026-08-15'
+          }
+        ]);
+      }
+    } catch (err) {
+      console.warn('Failed to load real members from MongoDB Atlas:', err);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const handleDeleteMember = async (id: string, name: string) => {
+    try {
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const res = await fetch(`/api/admin/members/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast({
+          type: 'warning',
+          title: 'MEMBER REMOVED',
+          message: `${name} deleted from MongoDB Atlas.`
+        });
+        fetchMembers();
+      }
+    } catch (err) {
+      setMemberList(prev => prev.filter(m => m.id !== id));
+    }
+  };
 
   const filteredMembers = memberList.filter(m => {
     const matchesSearch = 
@@ -104,19 +105,51 @@ export const AdminMembersPage: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleCreateMember = (e: React.FormEvent) => {
+  const handleCreateMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFullName || !newEmail) return;
 
-    showToast({
-      type: 'success',
-      title: 'ATHLETE REGISTERED',
-      message: `Enrolled ${newFullName} into ${newPlanId.replace('plan-', '').toUpperCase()} Tier.`
-    });
-    setShowAddModal(false);
-    setNewFullName('');
-    setNewEmail('');
-    setNewPhone('');
+    try {
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const res = await fetch('/api/admin/members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          fullName: newFullName,
+          email: newEmail,
+          phone: newPhone || '+1 (212) 555-0100',
+          planId: newPlanId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast({
+          type: 'success',
+          title: 'ATHLETE REGISTERED',
+          message: `Enrolled ${newFullName} directly into MongoDB Atlas!`
+        });
+        setShowAddModal(false);
+        setNewFullName('');
+        setNewEmail('');
+        setNewPhone('');
+        fetchMembers();
+      } else {
+        showToast({
+          type: 'error',
+          title: 'ENROLLMENT FAILED',
+          message: data.message || 'Could not register member.'
+        });
+      }
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: err.message
+      });
+    }
   };
 
   return (
@@ -248,12 +281,10 @@ export const AdminMembersPage: React.FC = () => {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => {
-                          showToast({
-                            type: 'warning',
-                            title: 'MEMBER ARCHIVED',
-                            message: `${member.full_name} access revoked.`
-                          });
+                        onClick={async () => {
+                          if (confirm(`Revoke gym access and delete ${member.full_name}?`)) {
+                            await handleDeleteMember(member.id, member.full_name);
+                          }
                         }}
                         className="p-1 text-gym-muted hover:text-red-400"
                         title="Revoke Access"

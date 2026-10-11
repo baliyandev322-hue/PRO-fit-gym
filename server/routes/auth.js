@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const { verifyAuth } = require('../middleware/auth');
-const { authLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, loginLimiter } = require('../middleware/rateLimiter');
 const User = require('../models/User');
 const Admin = require('../models/Admin');
 
@@ -116,7 +116,7 @@ router.post('/register', authLimiter, async (req, res) => {
  * @desc    Authenticate user credentials against MongoDB Atlas and return JWT session token
  * @access  Public (Rate Limited)
  */
-router.post('/login', authLimiter, async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 

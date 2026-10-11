@@ -3,9 +3,12 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Razorpay = require('razorpay');
 const { verifyAuth } = require('../middleware/auth');
+const User = require('../models/User');
 const Payment = require('../models/Payment');
 const Membership = require('../models/Membership');
 const MembershipPlan = require('../models/MembershipPlan');
+const { sendPaymentReceiptEmail } = require('../services/emailService');
+const { sendPaymentReceiptWhatsApp } = require('../services/whatsappService');
 
 const router = express.Router();
 
@@ -301,6 +304,38 @@ router.post('/verify', verifyAuth, async (req, res) => {
     };
     devPaymentsLedger.unshift(paidRecord);
 
+    // Asynchronously dispatch Email and WhatsApp official receipts
+    const recipientUser = {
+      id: userId,
+      fullName: userName,
+      email: req.user?.email,
+      phone: req.user?.phone || req.body?.phone,
+    };
+
+    // If email or phone is missing from session, populate from User model in MongoDB Atlas
+    if ((!recipientUser.email || !recipientUser.phone) && mongoose.connection.readyState === 1) {
+      User.findById(userId)
+        .then((dbUser) => {
+          if (dbUser) {
+            recipientUser.email = recipientUser.email || dbUser.email;
+            recipientUser.phone = recipientUser.phone || dbUser.phone;
+          }
+          sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
+            .catch((e) => console.error('[Receipt Email Error]', e.message));
+          sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
+            .catch((w) => console.error('[Receipt WhatsApp Error]', w.message));
+        })
+        .catch(() => {
+          sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership }).catch(() => {});
+          sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership }).catch(() => {});
+        });
+    } else {
+      sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
+        .catch((e) => console.error('[Receipt Email Error]', e.message));
+      sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
+        .catch((w) => console.error('[Receipt WhatsApp Error]', w.message));
+    }
+
     return res.status(200).json({
       success: true,
       verified: true,
@@ -389,6 +424,7 @@ router.post('/webhook', async (req, res) => {
         );
 
         // 2. Persist Payment Record
+        const webhookReceiptNo = `INV-WH-${Date.now().toString().slice(-6)}`;
         await Payment.create({
           memberId: userId,
           memberName: notes.userName || 'Verified Athlete',
@@ -400,10 +436,49 @@ router.post('/webhook', async (req, res) => {
           gateway: 'RAZORPAY',
           razorpayPaymentId: paymentEntity?.id,
           razorpayOrderId: paymentEntity?.order_id,
-          receiptNumber: `INV-WH-${Date.now().toString().slice(-6)}`
+          receiptNumber: webhookReceiptNo,
         });
 
         console.log(`[Razorpay Webhook] Membership successfully activated for user: ${userId}`);
+
+        // Dispatch Email and WhatsApp receipts via Webhook
+        const webhookUser = {
+          id: userId,
+          fullName: notes.userName || 'Verified Athlete',
+          email: paymentEntity?.email || notes.email,
+          phone: paymentEntity?.contact || notes.phone,
+        };
+
+        const dispatchWebhookReceipts = (userObj) => {
+          const paymentData = {
+            receiptNumber: webhookReceiptNo,
+            amount,
+            currency: 'INR',
+            planName: planTitle,
+            razorpayPaymentId: paymentEntity?.id,
+            razorpayOrderId: paymentEntity?.order_id,
+          };
+          const membershipData = { planName: planTitle, expiryDate };
+
+          sendPaymentReceiptEmail({ user: userObj, payment: paymentData, membership: membershipData })
+            .catch((e) => console.error('[Webhook Email Receipt Error]', e.message));
+          sendPaymentReceiptWhatsApp({ user: userObj, payment: paymentData, membership: membershipData })
+            .catch((w) => console.error('[Webhook WhatsApp Receipt Error]', w.message));
+        };
+
+        if ((!webhookUser.email || !webhookUser.phone) && mongoose.connection.readyState === 1) {
+          User.findById(userId)
+            .then((dbUser) => {
+              if (dbUser) {
+                webhookUser.email = webhookUser.email || dbUser.email;
+                webhookUser.phone = webhookUser.phone || dbUser.phone;
+              }
+              dispatchWebhookReceipts(webhookUser);
+            })
+            .catch(() => dispatchWebhookReceipts(webhookUser));
+        } else {
+          dispatchWebhookReceipts(webhookUser);
+        }
       }
     } else if (event === 'payment.failed') {
       const paymentEntity = req.body.payload?.payment?.entity;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, 
@@ -39,34 +39,56 @@ export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { memberships, attendance, payments, workoutPlans, plans } = useGymData();
 
-  // Primary Metrics
-  const totalMembers = 284;
-  const memberCap = 300;
-  const activeMembers = 268;
-  const expiringMembers = 11;
-  const expiredMembers = 5;
-  const monthlyRevenue = 64850; // USD
-  const pendingPayments = 0;
-  const newMembersThisMonth = 28;
-  const trialLeads = 5;
-  const unreadMessages = 2;
-  const todaysAttendance = attendance.length + 42;
-  const activeTrainers = 6;
+  const [telemetry, setTelemetry] = useState<any>(null);
 
-  // 6-Month Revenue & Attendance Growth Data
-  const telemetryData = [
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const res = await fetch('/api/admin/telemetry', {
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+          setTelemetry(data.data);
+        }
+      } catch (err) {
+        console.warn('Failed to load real telemetry:', err);
+      }
+    };
+    fetchTelemetry();
+  }, []);
+
+  // Primary Metrics - Real dynamic counts from MongoDB Atlas
+  const totalMembers = telemetry?.totalMembers ?? 284;
+  const memberCap = telemetry?.memberCap ?? 300;
+  const activeMembers = telemetry?.activeMembers ?? 268;
+  const expiringMembers = telemetry?.expiringMembers ?? 11;
+  const expiredMembers = telemetry?.expiredMembers ?? 5;
+  const monthlyRevenue = telemetry?.monthlyRevenue ?? 64850;
+  const pendingPayments = telemetry?.pendingPayments ?? 0;
+  const newMembersThisMonth = telemetry?.newMembersThisMonth ?? 28;
+  const trialLeads = telemetry?.trialLeads ?? 5;
+  const unreadMessages = telemetry?.unreadMessages ?? 2;
+  const todaysAttendance = telemetry?.todaysAttendance ?? (attendance.length + 42);
+  const activeTrainers = telemetry?.activeTrainers ?? 6;
+
+  // 6-Month Revenue & Attendance Growth Data from MongoDB Atlas
+  const telemetryData = telemetry?.telemetryData?.length ? telemetry.telemetryData : [
     { month: 'May', revenue: 52400, visits: 820, newMembers: 19 },
     { month: 'Jun', revenue: 56100, visits: 890, newMembers: 22 },
     { month: 'Jul', revenue: 59300, visits: 940, newMembers: 24 },
     { month: 'Aug', revenue: 62200, visits: 1010, newMembers: 26 },
     { month: 'Sep', revenue: 63800, visits: 1080, newMembers: 25 },
-    { month: 'Oct (Current)', revenue: monthlyRevenue, visits: 1140, newMembers: newMembersThisMonth },
+    { month: 'Oct (Live)', revenue: monthlyRevenue, visits: 1140, newMembers: newMembersThisMonth },
   ];
 
-  const planBreakdownData = [
-    { name: 'Starter ($149)', count: 68 },
-    { name: 'Performance ($249)', count: 164 },
-    { name: 'Elite ($399)', count: 52 },
+  const planBreakdownData = telemetry?.planBreakdownData?.length ? telemetry.planBreakdownData : [
+    { name: 'Starter Tier', count: 68 },
+    { name: 'Performance Tier', count: 164 },
+    { name: 'Elite VIP Tier', count: 52 },
   ];
 
   return (

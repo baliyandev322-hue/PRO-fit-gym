@@ -212,4 +212,35 @@ router.get('/analytics', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/attendance
+ * @desc    Get all recent turnstile attendance entries from MongoDB Atlas
+ * @access  Public / Authenticated
+ */
+router.get('/', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const records = await Attendance.find().sort({ timestamp: -1 }).limit(100);
+      return res.status(200).json({
+        success: true,
+        count: records.length,
+        data: records.map(r => ({
+          id: r._id.toString(),
+          member_id: r.memberId,
+          member_name: r.memberName,
+          gym_location: r.gymLocation,
+          method: r.method,
+          date: r.date,
+          check_in_time: r.timestamp ? r.timestamp.toISOString() : new Date().toISOString(),
+          created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString()
+        }))
+      });
+    }
+
+    return res.status(200).json({ success: true, count: 0, data: [] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch attendance records.' });
+  }
+});
+
 module.exports = router;
