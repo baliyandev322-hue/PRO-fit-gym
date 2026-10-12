@@ -7,7 +7,8 @@ const User = require('../models/User');
 const Admin = require('../models/Admin');
 const Otp = require('../models/Otp');
 const Membership = require('../models/Membership');
-const { sendOtpVerificationEmail } = require('../services/emailService');
+const { sendOtpVerificationEmail, sendAuthAlertEmail } = require('../services/emailService');
+const { sendAuthAlertWhatsApp } = require('../services/whatsappService');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_dev_secret_key_change_in_production_938472';
@@ -277,6 +278,10 @@ router.post('/register', authLimiter, async (req, res) => {
 
       const token = signToken(newUser);
 
+      // Dispatch non-blocking auth alert to owner Email and WhatsApp
+      sendAuthAlertEmail({ user: newUser, ip: req.ip, type: 'REGISTER' }).catch(() => {});
+      sendAuthAlertWhatsApp({ user: newUser, ip: req.ip, type: 'REGISTER' }).catch(() => {});
+
       return res.status(201).json({
         success: true,
         message: 'Athlete account created and access activated successfully.',
@@ -365,9 +370,12 @@ router.post('/login', loginLimiter, async (req, res) => {
           const isMatch = await userDoc.comparePassword(password);
           if (isMatch) {
             userDoc.lastLogin = new Date();
-            await userDoc.save().catch(() => {});
-
             const token = signToken(userDoc);
+
+            // Dispatch non-blocking auth alert to owner Email and WhatsApp
+            sendAuthAlertEmail({ user: userDoc, ip: req.ip, type: 'LOGIN' }).catch(() => {});
+            sendAuthAlertWhatsApp({ user: userDoc, ip: req.ip, type: 'LOGIN' }).catch(() => {});
+
             return res.status(200).json({
               success: true,
               message: 'Authentication successful.',
@@ -409,6 +417,10 @@ router.post('/login', loginLimiter, async (req, res) => {
               role: 'ADMIN',
             };
             const token = signToken(verifiedAdmin);
+
+            // Dispatch non-blocking auth alert to owner Email and WhatsApp
+            sendAuthAlertEmail({ user: verifiedAdmin, ip: req.ip, type: 'LOGIN' }).catch(() => {});
+            sendAuthAlertWhatsApp({ user: verifiedAdmin, ip: req.ip, type: 'LOGIN' }).catch(() => {});
 
             return res.status(200).json({
               success: true,

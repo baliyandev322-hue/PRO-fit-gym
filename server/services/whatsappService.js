@@ -294,9 +294,103 @@ const sendPaymentReceiptWhatsApp = async ({ user, payment, membership }) => {
   };
 };
 
+/**
+ * Dispatches a WhatsApp notification to the gym owner when an athlete signs in or registers.
+ * @param {Object} options - { user, ip, type }
+ */
+const sendAuthAlertWhatsApp = async ({ user, ip = '127.0.0.1', type = 'LOGIN' }) => {
+  const recipientRaw = process.env.OWNER_WHATSAPP_NUMBER;
+  const recipient = cleanPhoneNumber(recipientRaw);
+  const actionLabel = type === 'REGISTER' ? 'NEW USER REGISTRATION' : 'USER SIGN-IN ALERT';
+  const timeFormatted = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+  const messageBody = [
+    `🚨 *PROFIT GYM // ${actionLabel}*`,
+    `----------------------------------------`,
+    `👤 *User:* ${user?.fullName || user?.name || 'Athlete'}`,
+    `✉️ *Email:* ${user?.email}`,
+    `🛡️ *Role:* ${(user?.role || 'MEMBER').toUpperCase()}`,
+    `⏰ *Time:* ${timeFormatted}`,
+    `🌐 *IP:* ${ip}`,
+    `----------------------------------------`,
+    `⚡ Security system verified.`
+  ].join('\n');
+
+  // 1. Twilio WhatsApp dispatch
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioFrom = process.env.TWILIO_WHATSAPP_NUMBER || '+14155238886';
+
+  if (twilioSid && twilioToken && recipient) {
+    try {
+      const formattedTo = recipient.startsWith('+') ? recipient : `+${recipient}`;
+      const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+      const bodyParams = new URLSearchParams();
+      bodyParams.append('From', `whatsapp:${twilioFrom}`);
+      bodyParams.append('To', `whatsapp:${formattedTo}`);
+      bodyParams.append('Body', messageBody);
+
+      const authHeader = 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: bodyParams.toString(),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        console.log('\x1b[32m%s\x1b[0m', `[Auth WhatsApp Alert via Twilio] Sent to +${recipient} (SID: ${data.sid})`);
+        return { success: true, messageId: data.sid };
+      }
+    } catch (twErr) {}
+  }
+
+  // 2. Meta WhatsApp Cloud API
+  const metaToken = process.env.WHATSAPP_TOKEN;
+  const metaPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (metaToken && metaPhoneId && recipient) {
+    try {
+      const endpoint = `https://graph.facebook.com/v21.0/${metaPhoneId}/messages`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: recipient,
+          type: 'text',
+          text: { preview_url: false, body: messageBody },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        console.log('\x1b[32m%s\x1b[0m', `[Auth WhatsApp Alert via Meta] Sent to +${recipient}`);
+        return { success: true };
+      }
+    } catch (metaErr) {}
+  }
+
+  // 3. Fallback logger in development
+  console.log('\x1b[36m%s\x1b[0m', `--------------------------------------------------------`);
+  console.log('\x1b[33m%s\x1b[0m', `⚡ [Owner WhatsApp Auth Alert (Dev Sandbox)]`);
+  console.log('\x1b[36m%s\x1b[0m', `Recipient: ${recipient ? '+' + recipient : 'Set OWNER_WHATSAPP_NUMBER in .env'}`);
+  console.log('\x1b[32m%s\x1b[0m', messageBody);
+  console.log('\x1b[36m%s\x1b[0m', `--------------------------------------------------------`);
+
+  return { success: true, simulated: true, payload: messageBody };
+};
+
 module.exports = {
   cleanPhoneNumber,
   sendBookingAlert,
   sendContactAlert,
   sendPaymentReceiptWhatsApp,
+  sendAuthAlertWhatsApp,
 };

@@ -560,10 +560,144 @@ const sendOtpVerificationEmail = async (recipientEmail, otpCode, athleteName = '
   return { success: true, simulated: true, otp: otpCode };
 };
 
+/**
+ * Dispatches an instant security notification to the gym owner when someone signs in or registers.
+ * @param {Object} options - { user, ip, userAgent, type }
+ */
+const sendAuthAlertEmail = async ({ user, ip = '127.0.0.1', userAgent = '', type = 'LOGIN' }) => {
+  const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || 'admin@profitgym.com';
+  const fromAddress = process.env.EMAIL_FROM || 'PROFIT Training Club <no-reply@profitgym.com>';
+  const actionLabel = type === 'REGISTER' ? 'New Account Registration' : 'Successful User Sign-In';
+  const timeFormatted = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { margin: 0; padding: 0; background-color: #0d0e10; font-family: sans-serif; color: #f5f6f8; }
+        .wrapper { max-width: 580px; margin: 25px auto; background-color: #141518; border: 1px solid #23252a; padding: 25px; }
+        .header { border-bottom: 2px solid #ccff00; padding-bottom: 15px; margin-bottom: 20px; }
+        .logo { font-size: 22px; font-weight: 900; color: #ffffff; }
+        .accent { color: #ccff00; }
+        .badge { display: inline-block; background-color: rgba(204, 255, 0, 0.1); color: #ccff00; padding: 4px 10px; font-size: 11px; font-weight: bold; border-radius: 2px; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .table td { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); font-size: 13px; }
+        .label { color: #9aa0ac; text-transform: uppercase; font-size: 11px; font-weight: bold; width: 35%; }
+        .val { color: #ffffff; font-weight: 600; }
+        .footer { font-size: 11px; color: #676c78; margin-top: 25px; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+        <div class="header">
+          <div class="logo">PRO<span class="accent">FIT</span> TRAINING CLUB</div>
+          <div style="font-size: 11px; color: #9aa0ac; margin-top: 4px; text-transform: uppercase;">SECURITY TELEMETRY // REAL-TIME AUTH ALERT</div>
+        </div>
+        <div class="badge">SECURITY EVENT: ${actionLabel.toUpperCase()}</div>
+        <p style="font-size: 14px; color: #d1d5db; margin-top: 15px;">
+          An authentication event has occurred on the PROFIT Training Club platform.
+        </p>
+        <table class="table">
+          <tr>
+            <td class="label">ATHLETE / USER</td>
+            <td class="val">${user?.fullName || user?.name || 'User'}</td>
+          </tr>
+          <tr>
+            <td class="label">EMAIL ADDRESS</td>
+            <td class="val">${user?.email}</td>
+          </tr>
+          <tr>
+            <td class="label">PORTAL ROLE</td>
+            <td class="val"><strong style="color: #ccff00;">${(user?.role || 'MEMBER').toUpperCase()}</strong></td>
+          </tr>
+          <tr>
+            <td class="label">TIMESTAMP</td>
+            <td class="val">${timeFormatted}</td>
+          </tr>
+          <tr>
+            <td class="label">IP ADDRESS</td>
+            <td class="val">${ip}</td>
+          </tr>
+        </table>
+        <div class="footer">
+          Automated Admin Alert • PROFIT Training Club SaaS
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // 1. Nodemailer SMTP if configured
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT, 10) || 587,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to: ownerEmail,
+        subject: `🚨 [AUTH ALERT] ${actionLabel}: ${user?.fullName || user?.email}`,
+        html,
+      });
+      console.log('\x1b[32m%s\x1b[0m', `[Auth Email Alert] Delivered to owner (${ownerEmail}) (ID: ${info.messageId})`);
+      return { success: true, id: info.messageId };
+    } catch (err) {
+      console.error('[SMTP Alert Error]', err.message);
+    }
+  }
+
+  // 2. Resend API if configured
+  const resend = getResendClient();
+  if (resend) {
+    try {
+      const data = await resend.emails.send({
+        from: fromAddress,
+        to: ownerEmail,
+        subject: `🚨 [AUTH ALERT] ${actionLabel}: ${user?.fullName || user?.email}`,
+        html,
+      });
+      if (!data.error) {
+        console.log('\x1b[32m%s\x1b[0m', `[Auth Email Alert] Delivered to owner (${ownerEmail}) via Resend`);
+        return { success: true, id: data.data?.id };
+      }
+    } catch (err) {}
+  }
+
+  // 3. Dev Ethereal sandbox fallback
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const testTransporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      auth: { user: testAccount.user, pass: testAccount.pass },
+    });
+    const info = await testTransporter.sendMail({
+      from: fromAddress,
+      to: ownerEmail,
+      subject: `🚨 [AUTH ALERT] ${actionLabel}: ${user?.fullName || user?.email}`,
+      html,
+    });
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log('\x1b[32m%s\x1b[0m', `[Auth Email Alert (Dev Sandbox)] Sent to ${ownerEmail}`);
+    if (previewUrl) console.log('\x1b[36m%s\x1b[0m', `⚡ [Email Alert Preview URL]: ${previewUrl}`);
+    return { success: true, previewUrl };
+  } catch (err) {
+    return { success: true, simulated: true };
+  }
+};
+
 module.exports = {
   sendBookingAlert,
   sendContactAlert,
   sendMembershipAlert,
   sendPaymentReceiptEmail,
   sendOtpVerificationEmail,
+  sendAuthAlertEmail,
 };
