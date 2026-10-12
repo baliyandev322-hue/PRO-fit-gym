@@ -480,9 +480,90 @@ const sendPaymentReceiptEmail = async ({ user, payment, membership }) => {
   }
 };
 
+/**
+ * Dispatches a 6-digit OTP email to verify athlete identity during registration.
+ * @param {string} recipientEmail - Email address of the athlete
+ * @param {string} otpCode - 6-digit verification code
+ * @param {string} athleteName - Athlete full name
+ */
+const sendOtpVerificationEmail = async (recipientEmail, otpCode, athleteName = 'Athlete') => {
+  const fromAddress = process.env.EMAIL_FROM || 'PROFIT Training Club <onboarding@resend.dev>';
+  const resend = getResendClient();
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { margin: 0; padding: 0; background-color: #0d0e10; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #f5f6f8; }
+        .container { max-width: 580px; margin: 25px auto; background-color: #141518; border: 1px solid #23252a; border-radius: 4px; overflow: hidden; }
+        .header { background-color: #0d0e10; border-bottom: 2px solid #ccff00; padding: 24px 30px; }
+        .brand { font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #ffffff; }
+        .brand-accent { color: #ccff00; }
+        .subhead { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #9aa0ac; margin-top: 4px; }
+        .content { padding: 32px 30px; }
+        .greeting { font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+        .description { font-size: 14px; line-height: 1.6; color: #b5bac5; margin-bottom: 24px; }
+        .otp-box { background: #0d0e10; border: 1px solid #ccff00; border-radius: 4px; padding: 20px; text-align: center; margin-bottom: 24px; }
+        .otp-code { font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 900; letter-spacing: 12px; color: #ccff00; }
+        .otp-notice { font-size: 12px; color: #737885; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+        .footer { padding: 20px 30px; background-color: #0d0e10; border-top: 1px solid #23252a; font-size: 11px; color: #6b7280; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="brand">PRO<span class="brand-accent">FIT</span></div>
+          <div class="subhead">Athlete Onboarding Verification</div>
+        </div>
+        <div class="content">
+          <div class="greeting">Welcome, ${athleteName}!</div>
+          <p class="description">
+            You are initiating athlete access for <strong>PROFIT Training Club</strong>. Please verify your email address by entering the 6-digit authorization code below:
+          </p>
+          <div class="otp-box">
+            <div class="otp-code">${otpCode}</div>
+            <div class="otp-notice">Valid for 10 minutes • Do not share this code</div>
+          </div>
+          <p class="description" style="font-size: 12px; color: #8e95a5;">
+            If you did not initiate this request, you can safely ignore this email.
+          </p>
+        </div>
+        <div class="footer">
+          PROFIT TRAINING CLUB • 452 LAFAYETTE ST, NOHO NYC • ALL RIGHTS RESERVED
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Always log OTP in server console for effortless developer testing
+  console.log('\x1b[35m%s\x1b[0m', `==============================================`);
+  console.log('\x1b[32m%s\x1b[0m', `⚡ [ONBOARDING OTP] Code for ${recipientEmail}: ${otpCode}`);
+  console.log('\x1b[35m%s\x1b[0m', `==============================================`);
+
+  if (resend) {
+    try {
+      const data = await resend.emails.send({
+        from: fromAddress,
+        to: recipientEmail,
+        subject: `🔐 [PROFIT Security] Your 6-Digit Verification Code: ${otpCode}`,
+        html,
+      });
+      return { success: true, id: data.id, provider: 'resend' };
+    } catch (resendErr) {
+      console.warn('[Email Warning] Resend failed, falling back to simulated output:', resendErr.message);
+    }
+  }
+
+  return { success: true, simulated: true, otp: otpCode };
+};
+
 module.exports = {
   sendBookingAlert,
   sendContactAlert,
   sendMembershipAlert,
   sendPaymentReceiptEmail,
+  sendOtpVerificationEmail,
 };

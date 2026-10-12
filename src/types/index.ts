@@ -144,3 +144,38 @@ export interface NotificationItem {
   link?: string;
   created_at: string;
 }
+
+export interface RegisterPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  avatarUrl?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+  };
+  membershipDetails?: {
+    planId: string;
+    planName: string;
+    billingCycle: 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
+    startDate?: string;
+    expiryDate?: string;
+    price?: number;
+  };
+  fitnessProfile?: {
+    primaryGoal?: string;
+    experienceLevel?: string;
+    preferredTime?: string;
+    requiresTrainer?: boolean;
+    emergencyContact?: {
+      name?: string;
+      relationship?: string;
+      phone?: string;
+    };
+  };
+}

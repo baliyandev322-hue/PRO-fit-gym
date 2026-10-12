@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { UserProfile, UserRole } from '@/types';
+import type { UserProfile, UserRole, RegisterPayload } from '@/types';
 import { useNotifications } from './NotificationContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -11,7 +11,9 @@ interface AuthContextType {
   isLoading: boolean;
   token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, fullName: string, password: string) => Promise<boolean>;
+  register: (payload: RegisterPayload | string, fullName?: string, password?: string) => Promise<boolean>;
+  sendOtp: (email: string, fullName?: string) => Promise<{ success: boolean; message: string; devOtp?: string }>;
+  verifyOtp: (email: string, otp: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
 }
@@ -152,26 +154,124 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   /**
-   * Real Server Registration — Strictly Restricted to Member Role
-   * Public users cannot grant themselves Admin or Trainer privileges.
+   * Dispatches a 6-digit OTP verification code to the athlete's email
+   */
+  const sendOtp = async (
+    email: string,
+    fullName?: string
+  ): Promise<{ success: boolean; message: string; devOtp?: string }> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), fullName: fullName?.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        showToast({
+          type: 'error',
+          title: 'OTP DISPATCH FAILED',
+          message: data.message || 'Could not send verification code.',
+        });
+        return { success: false, message: data.message || 'Failed to send OTP.' };
+      }
+
+      showToast({
+        type: 'info',
+        title: 'VERIFICATION CODE SENT',
+        message: data.message || 'Check your inbox for the 6-digit code.',
+      });
+
+      return {
+        success: true,
+        message: data.message,
+        devOtp: data.devOtp,
+      };
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: 'Could not connect to authentication server to send code.',
+      });
+      return { success: false, message: 'Server connection error.' };
+    }
+  };
+
+  /**
+   * Verifies the 6-digit OTP code entered by the athlete
+   */
+  const verifyOtp = async (email: string, otp: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), otp: otp.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        showToast({
+          type: 'error',
+          title: 'VERIFICATION FAILED',
+          message: data.message || 'Invalid or expired verification code.',
+        });
+        return false;
+      }
+
+      showToast({
+        type: 'success',
+        title: 'EMAIL VERIFIED',
+        message: 'Email authorization confirmed. Proceed to next step.',
+      });
+
+      return true;
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'NETWORK ERROR',
+        message: 'Could not connect to verification server.',
+      });
+      return false;
+    }
+  };
+
+  /**
+   * Real Server Registration — Supports full 4-step onboarding payload or standard credentials
    */
   const register = async (
-    email: string,
-    fullName: string,
-    password: string
+    payloadOrEmail: RegisterPayload | string,
+    fullNameParam?: string,
+    passwordParam?: string
   ): Promise<boolean> => {
     setIsLoading(true);
 
     try {
+      let requestBody: any;
+      let athleteName = '';
+
+      if (typeof payloadOrEmail === 'string') {
+        athleteName = fullNameParam?.trim() || '';
+        requestBody = {
+          email: payloadOrEmail.trim(),
+          fullName: athleteName,
+          password: passwordParam,
+          role: 'MEMBER',
+        };
+      } else {
+        athleteName = payloadOrEmail.fullName.trim();
+        requestBody = {
+          ...payloadOrEmail,
+          role: 'MEMBER',
+        };
+      }
+
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-          fullName: fullName.trim(),
-          role: 'MEMBER', // Enforced server-side & client-side
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -192,8 +292,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: data.user.id,
           email: data.user.email,
           role: 'member',
-          full_name: fullName.trim(),
-          avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          full_name: athleteName || data.user.fullName || 'Athlete',
+          avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          phone: data.user.phone,
           created_at: new Date().toISOString(),
         };
         setUser(newUser);
@@ -202,7 +303,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showToast({
           type: 'success',
           title: 'REGISTRATION COMPLETE',
-          message: `Welcome to PROFIT Training Club, ${fullName}!`,
+          message: `Welcome to PROFIT Training Club, ${newUser.full_name}!`,
         });
         return true;
       }
@@ -265,6 +366,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         login,
         register,
+        sendOtp,
+        verifyOtp,
         logout,
         updateProfile,
       }}

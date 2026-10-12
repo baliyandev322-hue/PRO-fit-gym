@@ -56,6 +56,56 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Extended Onboarding & Profile Information
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
+    gender: {
+      type: String,
+      enum: ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY', ''],
+      default: '',
+    },
+    address: {
+      street: { type: String, default: '' },
+      city: { type: String, default: '' },
+      state: { type: String, default: '' },
+      postalCode: { type: String, default: '' },
+    },
+    membershipDetails: {
+      planId: { type: String, default: 'plan-performance' },
+      planName: { type: String, default: 'Performance Tier' },
+      billingCycle: { type: String, enum: ['MONTHLY', 'QUARTERLY', 'ANNUAL'], default: 'MONTHLY' },
+      startDate: { type: Date, default: Date.now },
+      expiryDate: { type: Date, default: null },
+      price: { type: Number, default: 249 },
+    },
+    fitnessProfile: {
+      primaryGoal: {
+        type: String,
+        enum: ['WEIGHT_LOSS', 'MUSCLE_GAIN', 'GENERAL_FITNESS', 'ENDURANCE', 'STRENGTH', ''],
+        default: '',
+      },
+      experienceLevel: {
+        type: String,
+        enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', ''],
+        default: '',
+      },
+      preferredTime: {
+        type: String,
+        enum: ['MORNING', 'MIDDAY', 'EVENING', ''],
+        default: '',
+      },
+      requiresTrainer: {
+        type: Boolean,
+        default: false,
+      },
+      emergencyContact: {
+        name: { type: String, default: '' },
+        relationship: { type: String, default: '' },
+        phone: { type: String, default: '' },
+      },
+    },
   },
   {
     timestamps: true,
