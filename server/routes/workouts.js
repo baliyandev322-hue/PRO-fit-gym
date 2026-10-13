@@ -70,10 +70,15 @@ let inMemoryPlans = [...defaultSeedPlans];
 let inMemoryLogs = [];
 
 /**
- * @route   GET /api/workouts/plans
+ * @route   GET /api/workouts or GET /api/workouts/plans
  * @desc    Get all workout plans from MongoDB Atlas
  * @access  Public / Authenticated
  */
+router.get('/', (req, res, next) => {
+  req.url = '/plans';
+  router.handle(req, res, next);
+});
+
 router.get('/plans', async (req, res) => {
   try {
     if (mongoose.connection.readyState === 1) {

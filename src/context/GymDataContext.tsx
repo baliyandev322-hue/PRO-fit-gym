@@ -99,7 +99,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Synchronize live data from MongoDB Atlas on mount and auth state change
   useEffect(() => {
     const syncWithBackend = async () => {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -107,7 +107,49 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // 1. Fetch live turnstile attendance from MongoDB Atlas
+      // 1. Fetch live membership plans from MongoDB Atlas
+      fetch(`${API_URL}/memberships/plans`, { headers })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            setPlans(data.data);
+          }
+        })
+        .catch(() => {});
+
+      // 2. Fetch live memberships from MongoDB Atlas
+      const memQuery = user ? `?userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}` : '';
+      fetch(`${API_URL}/memberships${memQuery}`, { headers })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            setMemberships(prev => {
+              const remoteList: Membership[] = data.data.map((m: any) => {
+                const matchedPlan = plans.find((p: any) => p.id === m.plan_id) || SEED_PLANS[0];
+                return {
+                  id: m.id || m._id,
+                  user_id: m.user_id || m.userId,
+                  plan_id: m.plan_id || m.planId,
+                  plan: matchedPlan,
+                  status: (m.status || 'active').toLowerCase(),
+                  start_date: m.start_date || m.startDate || new Date().toISOString(),
+                  expiry_date: m.expiry_date || m.expiryDate || new Date().toISOString(),
+                  days_remaining: m.days_remaining ?? m.daysRemaining ?? 30,
+                  auto_renew: m.auto_renew ?? m.autoRenew ?? true,
+                  created_at: m.created_at || m.createdAt || new Date().toISOString()
+                };
+              });
+              if (user) {
+                const others = prev.filter(p => p.user_id !== user.id);
+                return [...remoteList, ...others];
+              }
+              return remoteList;
+            });
+          }
+        })
+        .catch(() => {});
+
+      // 3. Fetch live turnstile attendance from MongoDB Atlas
       fetch(`${API_URL}/attendance`, { headers })
         .then(res => res.json())
         .then(data => {
@@ -117,7 +159,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         })
         .catch(() => {});
 
-      // 2. Fetch live workout plans from MongoDB Atlas
+      // 4. Fetch live workout plans from MongoDB Atlas
       fetch(`${API_URL}/workouts/plans`, { headers })
         .then(res => res.json())
         .then(data => {
@@ -127,7 +169,7 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         })
         .catch(() => {});
 
-      // 3. Fetch live payment transactions from MongoDB Atlas
+      // 5. Fetch live payment transactions from MongoDB Atlas
       if (token) {
         fetch(`${API_URL}/payments/history`, { headers })
           .then(res => res.json())
@@ -160,16 +202,48 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const id = `plan-${Date.now()}`;
     const plan: MembershipPlan = { ...newPlan, id };
     setPlans(prev => [...prev, plan]);
+
+    const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    fetch(`${API_URL}/memberships/plans`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(newPlan)
+    }).catch(() => {});
+
     showToast({ type: 'success', title: 'PLAN CREATED', message: `${plan.name} has been added.` });
   };
 
   const updatePlan = (id: string, updates: Partial<MembershipPlan>) => {
     setPlans(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+
+    const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    fetch(`${API_URL}/memberships/plans/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(updates)
+    }).catch(() => {});
+
     showToast({ type: 'success', title: 'PLAN UPDATED', message: 'Membership tier modified.' });
   };
 
   const deletePlan = (id: string) => {
     setPlans(prev => prev.filter(p => p.id !== id));
+
+    const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    fetch(`${API_URL}/memberships/plans/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    }).catch(() => {});
+
     showToast({ type: 'warning', title: 'PLAN REMOVED', message: 'Membership tier archived.' });
   };
 
@@ -180,10 +254,10 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     // Compute dates
     const startDate = new Date().toISOString().split('T')[0];
-    const expiryDateObj = new Date(Date.now() + targetPlan.duration_days * 86400000);
+    const expiryDateObj = new Date(Date.now() + (targetPlan.duration_days || 30) * 86400000);
     const expiryDate = expiryDateObj.toISOString().split('T')[0];
 
-    const newMembership: Membership = {
+    const fallbackMembership: Membership = {
       id: `mem-${Date.now()}`,
       user_id: user.id,
       plan_id: targetPlan.id,
@@ -191,13 +265,48 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       status: 'active',
       start_date: startDate,
       expiry_date: expiryDate,
-      days_remaining: targetPlan.duration_days,
+      days_remaining: targetPlan.duration_days || 30,
       auto_renew: true,
       created_at: new Date().toISOString()
     };
 
-    // Update memberships
-    setMemberships(prev => [newMembership, ...prev.filter(m => m.user_id !== user.id)]);
+    const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${API_URL}/memberships/purchase`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          planId: targetPlan.id,
+          userId: user.id,
+          memberEmail: user.email,
+          memberName: user.full_name,
+          paymentMethod: _paymentMethod,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const persistedMembership: Membership = {
+          id: data.data.id || fallbackMembership.id,
+          user_id: user.id,
+          plan_id: targetPlan.id,
+          plan: targetPlan,
+          status: 'active',
+          start_date: data.data.start_date || startDate,
+          expiry_date: data.data.expiry_date || expiryDate,
+          days_remaining: data.data.days_remaining || targetPlan.duration_days || 30,
+          auto_renew: true,
+          created_at: data.data.created_at || new Date().toISOString()
+        };
+        setMemberships(prev => [persistedMembership, ...prev.filter(m => m.user_id !== user.id)]);
+      } else {
+        setMemberships(prev => [fallbackMembership, ...prev.filter(m => m.user_id !== user.id)]);
+      }
+    } catch {
+      setMemberships(prev => [fallbackMembership, ...prev.filter(m => m.user_id !== user.id)]);
+    }
 
     const isRazorpay = _paymentMethod.includes('RAZORPAY');
     const inrPrice = targetPlan.id.includes('starter') ? 14900 : targetPlan.id.includes('elite') ? 39900 : 24900;
@@ -241,6 +350,16 @@ export const GymDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const cancelMembership = (membershipId: string) => {
     setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: 'canceled' } : m));
+
+    const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    fetch(`${API_URL}/memberships/${membershipId}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    }).catch(() => {});
+
     showToast({ type: 'warning', title: 'CANCELED', message: 'Auto-renewal deactivated.' });
   };
 

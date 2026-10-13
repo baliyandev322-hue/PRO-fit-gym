@@ -2,11 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const dotenv = require('dotenv');
+const path = require('path');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 
-// Load environment variables
+// Load environment variables (checks current dir and server/.env)
 dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
