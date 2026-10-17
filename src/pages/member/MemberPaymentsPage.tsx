@@ -9,10 +9,12 @@ import {
   Clock, 
   ArrowUpRight,
   ShieldCheck,
-  DollarSign
+  DollarSign,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
+import { openWhatsAppReceipt } from '@/lib/whatsapp';
 
 export const MemberPaymentsPage: React.FC = () => {
   const { user } = useAuth();
@@ -142,12 +144,29 @@ export const MemberPaymentsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => alert(`Downloading verified receipt: ${p.id}`)}
-                        className="inline-flex items-center gap-1 text-gym-lime hover:underline font-mono text-xs"
-                      >
-                        <Download className="w-3.5 h-3.5" /> PDF Statement
-                      </button>
+                      <div className="flex items-center justify-end gap-2.5">
+                        <button
+                          onClick={() => openWhatsAppReceipt({
+                            athleteName: user.full_name,
+                            planName: p.plan_name || 'Sanctuary Tier',
+                            amount: p.amount > 1000 ? p.amount : p.amount * 85,
+                            paymentId: p.stripe_payment_intent_id || p.id,
+                            receiptNumber: `INV-${p.id.slice(-6).toUpperCase()}`,
+                            phone: (user as any).phone
+                          })}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 font-mono text-[11px] transition-colors"
+                          title="Send official receipt & pass to WhatsApp"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
+                          onClick={() => alert(`Downloading verified receipt: ${p.id}`)}
+                          className="inline-flex items-center gap-1 text-gym-lime hover:underline font-mono text-xs"
+                        >
+                          <Download className="w-3.5 h-3.5" /> PDF
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

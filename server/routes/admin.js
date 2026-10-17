@@ -707,8 +707,39 @@ router.delete('/members/:id', async (req, res) => {
     deleteRecord('users', 'id', req.params.id);
     return res.status(200).json({ success: true, message: 'Member successfully removed from local sanctuary store.' });
   } catch (err) {
+/**
+ * @route   POST /api/admin/test-whatsapp
+ * @desc    Test WhatsApp notification dispatch to gym owner or member
+ * @access  Private (Admin)
+ */
+router.post('/test-whatsapp', async (req, res) => {
+  try {
+    const { sendPaymentReceiptWhatsApp } = require('../services/whatsappService');
+    const targetPhone = req.body?.phone || process.env.OWNER_WHATSAPP_NUMBER || '+919876543210';
+    const result = await sendPaymentReceiptWhatsApp({
+      user: { fullName: req.body?.name || 'Test Athlete', phone: targetPhone },
+      payment: {
+        receiptNumber: `INV-TEST-${Date.now().toString().slice(-4)}`,
+        id: 'pay_test_verified',
+        planName: 'Performance Tier',
+        amount: 24900,
+        phone: targetPhone
+      },
+      membership: {
+        planName: 'Performance Tier',
+        expiryDate: new Date(Date.now() + 30 * 86400000).toISOString()
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'WhatsApp notification test executed successfully.',
+      result
+    });
+  } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
 
 module.exports = router;
+

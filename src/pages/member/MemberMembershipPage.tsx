@@ -9,12 +9,14 @@ import {
   ArrowUpRight, 
   Lock,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { processStripePayment } from '@/lib/stripe';
 import { executeRazorpayCheckout } from '@/lib/razorpay';
+import { openWhatsAppReceipt } from '@/lib/whatsapp';
 import { useNotifications } from '@/context/NotificationContext';
 import confetti from 'canvas-confetti';
 import type { MembershipPlan } from '@/types';
@@ -37,6 +39,12 @@ export const MemberMembershipPage: React.FC = () => {
   const [cardExpiry, setCardExpiry] = useState('12/28');
   const [cardCvc, setCardCvc] = useState('981');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [verifiedReceiptModal, setVerifiedReceiptModal] = useState<{
+    planName: string;
+    amount: number;
+    paymentId: string;
+    receiptNo: string;
+  } | null>(null);
 
   if (!user) return null;
 
@@ -79,6 +87,13 @@ export const MemberMembershipPage: React.FC = () => {
 
       if (result.success) {
         await purchaseMembership(selectedPlanForCheckout.id, 'RAZORPAY_UPI');
+        const receiptNo = `INV-PROFIT-${Date.now().toString().slice(-6)}`;
+        setVerifiedReceiptModal({
+          planName: selectedPlanForCheckout.name,
+          amount: priceINR,
+          paymentId: result.paymentId || 'pay_verified',
+          receiptNo
+        });
         setSelectedPlanForCheckout(null);
 
         // Confetti celebration
@@ -543,6 +558,75 @@ export const MemberMembershipPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Verified Receipt & WhatsApp Pass Modal */}
+      {verifiedReceiptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="bg-gym-surface border border-gym-lime/50 rounded-lg max-w-md w-full p-6 text-center space-y-5 shadow-2xl relative">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gym-lime/20 border-2 border-gym-lime flex items-center justify-center text-gym-lime">
+              <ShieldCheck className="w-9 h-9" />
+            </div>
+
+            <div>
+              <span className="px-2.5 py-0.5 rounded text-[10px] font-heading font-black uppercase tracking-wider bg-gym-lime/10 text-gym-lime border border-gym-lime/30 inline-block mb-2">
+                PAYMENT SETTLED & VERIFIED
+              </span>
+              <h3 className="font-heading text-2xl font-black uppercase text-white tracking-wide">
+                SANCTUARY PASS ACTIVATED!
+              </h3>
+              <p className="text-xs text-gym-secondary mt-1">
+                Your 30-day membership is active. Send your official pass and receipt directly to WhatsApp.
+              </p>
+            </div>
+
+            <div className="bg-gym-black/70 border border-gym-border/70 rounded p-4 text-left text-xs font-mono space-y-2">
+              <div className="flex justify-between text-gym-muted">
+                <span>Tier:</span>
+                <span className="text-white font-bold">{verifiedReceiptModal.planName}</span>
+              </div>
+              <div className="flex justify-between text-gym-muted">
+                <span>Amount Settled:</span>
+                <span className="text-gym-lime font-bold">₹{verifiedReceiptModal.amount.toLocaleString('en-IN')} INR</span>
+              </div>
+              <div className="flex justify-between text-gym-muted">
+                <span>Payment ID:</span>
+                <span className="text-gym-secondary">{verifiedReceiptModal.paymentId}</span>
+              </div>
+              <div className="flex justify-between text-gym-muted">
+                <span>Turnstile QR Pass:</span>
+                <span className="text-emerald-400 font-bold uppercase">READY AT FRONT GATE</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => {
+                  openWhatsAppReceipt({
+                    athleteName: user.full_name,
+                    planName: verifiedReceiptModal.planName,
+                    amount: verifiedReceiptModal.amount,
+                    paymentId: verifiedReceiptModal.paymentId,
+                    receiptNumber: verifiedReceiptModal.receiptNo,
+                    phone: (user as any).phone
+                  });
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded font-heading font-black uppercase text-xs bg-emerald-500 hover:bg-emerald-400 text-gym-black transition-all shadow-lg cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4 text-gym-black fill-current" />
+                <span>Send Pass & Receipt to WhatsApp</span>
+              </button>
+
+              <button
+                onClick={() => setVerifiedReceiptModal(null)}
+                className="w-full py-2.5 px-4 rounded font-heading font-bold uppercase text-xs text-gym-muted hover:text-white border border-gym-border hover:border-gym-border-hover transition-colors"
+              >
+                Continue to Sanctuary Floor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

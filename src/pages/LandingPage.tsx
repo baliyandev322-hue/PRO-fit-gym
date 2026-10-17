@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { openWhatsAppTrial } from '@/lib/whatsapp';
 import confetti from 'canvas-confetti';
 
 export const LandingPage: React.FC = () => {
@@ -182,7 +183,16 @@ export const LandingPage: React.FC = () => {
       showToast({
         type: 'success',
         title: 'TRIAL PASS CONFIRMED',
-        message: `Complimentary pass issued for ${trialName.trim()}! Reference: ${issuedRef}.`
+        message: `Complimentary pass issued for ${trialName.trim()}! Reference: ${issuedRef}. WhatsApp pass generated.`
+      });
+
+      // Automatically dispatch / open WhatsApp with the confirmed trial pass
+      openWhatsAppTrial({
+        athleteName: trialName.trim(),
+        reference: issuedRef,
+        discipline: trialDiscipline,
+        date: trialDate,
+        phone: trialPhone.trim()
       });
 
       setTrialName('');

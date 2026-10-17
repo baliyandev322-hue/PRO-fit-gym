@@ -8,9 +8,11 @@ import {
   Download, 
   CheckCircle2, 
   AlertCircle,
-  Clock
+  Clock,
+  MessageSquare
 } from 'lucide-react';
 import { useGymData } from '@/context/GymDataContext';
+import { openWhatsAppReceipt } from '@/lib/whatsapp';
 
 export const AdminPaymentsPage: React.FC = () => {
   const { payments } = useGymData();
@@ -150,9 +152,25 @@ export const AdminPaymentsPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <span className="text-gym-lime font-mono text-xs flex items-center justify-end gap-1 cursor-pointer hover:underline">
-                      <span>Receipt PDF</span> <ArrowUpRight className="w-3 h-3" />
-                    </span>
+                    <div className="flex items-center justify-end gap-2.5">
+                      <button
+                        onClick={() => openWhatsAppReceipt({
+                          athleteName: p.member_name || 'Athlete Member',
+                          planName: p.plan_name || 'Performance Tier',
+                          amount: p.amount > 1000 ? p.amount : p.amount * 85,
+                          paymentId: p.stripe_payment_intent_id || p.id,
+                          receiptNumber: `INV-${p.id.slice(-6).toUpperCase()}`
+                        })}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 font-mono text-[11px] transition-colors"
+                        title="Send WhatsApp receipt to athlete"
+                      >
+                        <MessageSquare className="w-3 h-3 text-emerald-400" />
+                        <span>WhatsApp</span>
+                      </button>
+                      <span className="text-gym-lime font-mono text-xs flex items-center justify-end gap-1 cursor-pointer hover:underline">
+                        <span>PDF</span> <ArrowUpRight className="w-3 h-3" />
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ))}
