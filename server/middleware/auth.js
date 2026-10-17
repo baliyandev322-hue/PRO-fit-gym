@@ -16,7 +16,7 @@ const verifyAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const secret = process.env.JWT_SECRET || 'profit_gym_dev_secret_key_change_in_production_938472';
+    const secret = process.env.JWT_SECRET || 'profit_gym_super_secure_jwt_secret_key_2026_x92';
 
     let decoded;
     try {

@@ -10,6 +10,12 @@ jobs:
   test:
     name: Automated Unit, API, Security & E2E Tests
     runs-on: ubuntu-latest
+    env:
+      PORT: 5000
+      NODE_ENV: development
+      JWT_SECRET: profit_gym_super_secure_jwt_secret_key_2026_x92
+      RAZORPAY_KEY_ID: rzp_test_TozqfaER0JXID9
+      RAZORPAY_KEY_SECRET: 4X1RlzdDMelNAciiYAcVvAxY
 
     steps:
       - name: Checkout Code
@@ -35,10 +41,6 @@ jobs:
 
       - name: Start Backend Server
         run: node server/server.js &
-        env:
-          PORT: 5000
-          NODE_ENV: development
-          JWT_SECRET: ci_test_secret_key_83921
 
       - name: Start Frontend Preview Server
         run: npx vite --host 127.0.0.1 --port 3000 &

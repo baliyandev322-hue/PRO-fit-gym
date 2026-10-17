@@ -11,7 +11,7 @@ const { sendOtpVerificationEmail, sendAuthAlertEmail } = require('../services/em
 const { sendAuthAlertWhatsApp } = require('../services/whatsappService');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_dev_secret_key_change_in_production_938472';
+const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_super_secure_jwt_secret_key_2026_x92';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 const bcrypt = require('bcryptjs');
