@@ -1,6 +1,149 @@
 {
   "users": [
     {
+      "id": "usr_1792246067658",
+      "email": "baliyandev322@gmail.com",
+      "fullName": "Dev Baliyan",
+      "role": "MEMBER",
+      "phone": "9368593249",
+      "dateOfBirth": "2007-10-10",
+      "gender": "MALE",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "address": {
+        "street": "DE4JKRJ",
+        "city": "",
+        "state": "",
+        "postalCode": ""
+      },
+      "membershipDetails": {
+        "planId": "plan-performance",
+        "planName": "Performance Plan",
+        "billingCycle": "MONTHLY",
+        "startDate": "2026-10-17T00:00:00.000Z",
+        "expiryDate": "2026-11-16T00:00:00.000Z",
+        "price": 249
+      },
+      "fitnessProfile": {
+        "primaryGoal": "MUSCLE_GAIN",
+        "experienceLevel": "INTERMEDIATE",
+        "preferredTime": "MORNING",
+        "requiresTrainer": true,
+        "emergencyContact": {
+          "name": "",
+          "relationship": "Parent",
+          "phone": ""
+        }
+      },
+      "qrPassToken": "QR_1792246067658_MOCK",
+      "password": "Dev@1234",
+      "passwordHash": "$2b$10$oV3mliJ9XqBtCj.4xQgSC.RfuEeXpm/iccKlcqUgnO8xItqd7Mzs6"
+    },
+    {
+      "id": "usr_1792244951899",
+      "fullName": "Test Athlete Enrolled",
+      "full_name": "Test Athlete Enrolled",
+      "email": "test_athlete_1792244951891@profitgym.com",
+      "phone": "+1 (212) 555-9911",
+      "role": "MEMBER",
+      "tier": "Performance Tier",
+      "status": "active",
+      "daysLeft": 30,
+      "trainer": "Marcus Drake",
+      "joined": "2026-10-17",
+      "createdAt": "2026-10-17T13:49:11.899Z"
+    },
+    {
+      "id": "usr_1792244951774",
+      "email": "athlete_1792244951760@testgym.com",
+      "fullName": "New Athlete Test",
+      "role": "MEMBER",
+      "phone": "+1 (212) 555-4321",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "address": {},
+      "membershipDetails": {
+        "planId": "plan-performance",
+        "planName": "Performance Tier",
+        "billingCycle": "MONTHLY",
+        "price": 249,
+        "startDate": "2026-10-17T13:49:11.774Z",
+        "expiryDate": "2026-11-16T13:49:11.774Z"
+      },
+      "fitnessProfile": {},
+      "qrPassToken": "QR_1792244951774_MOCK",
+      "password": "strongPassword123",
+      "passwordHash": "$2b$10$X8Ww9pUxjLt.FPaMKho0wexPswmslTWQnddUgX9Nd6xT6MTvc6pLS"
+    },
+    {
+      "id": "usr_1792244923649",
+      "fullName": "Test Athlete Enrolled",
+      "full_name": "Test Athlete Enrolled",
+      "email": "test_athlete_1792244923639@profitgym.com",
+      "phone": "+1 (212) 555-9911",
+      "role": "MEMBER",
+      "tier": "Performance Tier",
+      "status": "active",
+      "daysLeft": 30,
+      "trainer": "Marcus Drake",
+      "joined": "2026-10-17",
+      "createdAt": "2026-10-17T13:48:43.649Z"
+    },
+    {
+      "id": "usr_1792244923477",
+      "email": "athlete_1792244923462@testgym.com",
+      "fullName": "New Athlete Test",
+      "role": "MEMBER",
+      "phone": "+1 (212) 555-4321",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "address": {},
+      "membershipDetails": {
+        "planId": "plan-performance",
+        "planName": "Performance Tier",
+        "billingCycle": "MONTHLY",
+        "price": 249,
+        "startDate": "2026-10-17T13:48:43.477Z",
+        "expiryDate": "2026-11-16T13:48:43.477Z"
+      },
+      "fitnessProfile": {},
+      "qrPassToken": "QR_1792244923477_MOCK",
+      "password": "strongPassword123",
+      "passwordHash": "$2b$10$UqP0KYlVPrBnJkh0/.JipebuE3oQ7e/Mo1CbWe72GgpuSXo2K7hXS"
+    },
+    {
+      "id": "usr_1792243554663",
+      "fullName": "Test Athlete Enrolled",
+      "full_name": "Test Athlete Enrolled",
+      "email": "test_athlete_1792243554661@profitgym.com",
+      "phone": "+1 (212) 555-9911",
+      "role": "MEMBER",
+      "tier": "Performance Tier",
+      "status": "active",
+      "daysLeft": 30,
+      "trainer": "Marcus Drake",
+      "joined": "2026-10-17",
+      "createdAt": "2026-10-17T13:25:54.663Z"
+    },
+    {
+      "id": "usr_1792243554529",
+      "email": "athlete_1792243554514@testgym.com",
+      "fullName": "New Athlete Test",
+      "role": "MEMBER",
+      "phone": "+1 (212) 555-4321",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "address": {},
+      "membershipDetails": {
+        "planId": "plan-performance",
+        "planName": "Performance Tier",
+        "billingCycle": "MONTHLY",
+        "price": 249,
+        "startDate": "2026-10-17T13:25:54.528Z",
+        "expiryDate": "2026-11-16T13:25:54.528Z"
+      },
+      "fitnessProfile": {},
+      "qrPassToken": "QR_1792243554529_MOCK",
+      "password": "strongPassword123",
+      "passwordHash": "$2b$10$1..JuAcSMBdelyicy6b54uB4K1eHSck7WaMpn.EeU.ydv9Nscdeau"
+    },
+    {
       "id": "usr_1791905009488",
       "fullName": "Test Athlete Enrolled",
       "full_name": "Test Athlete Enrolled",
@@ -227,6 +370,66 @@
   ],
   "trials": [
     {
+      "id": "trial-1792244971103",
+      "reference": "PRO-TR-20261017-5657",
+      "fullName": "Playwright Test Athlete",
+      "email": "playwright.athlete@gymtest.com",
+      "phone": "+1 (212) 555-7788",
+      "discipline": "Athletic Strength & Conditioning",
+      "preferredDate": "2026-10-17",
+      "notes": "",
+      "status": "NEW",
+      "createdAt": "2026-10-17T13:49:31.103Z"
+    },
+    {
+      "id": "trial-1792244951682",
+      "reference": "PRO-TR-20261017-08B8",
+      "fullName": "Automated QA Lead",
+      "email": "qa.lead@gymtest.com",
+      "phone": "+1 (212) 555-8123",
+      "discipline": "Hypertrophy & Power",
+      "preferredDate": "2026-10-17",
+      "notes": "Testing trial creation pipeline.",
+      "status": "NEW",
+      "createdAt": "2026-10-17T13:49:11.682Z"
+    },
+    {
+      "id": "trial-1792244923383",
+      "reference": "PRO-TR-20261017-111B",
+      "fullName": "Automated QA Lead",
+      "email": "qa.lead@gymtest.com",
+      "phone": "+1 (212) 555-8123",
+      "discipline": "Hypertrophy & Power",
+      "preferredDate": "2026-10-17",
+      "notes": "Testing trial creation pipeline.",
+      "status": "NEW",
+      "createdAt": "2026-10-17T13:48:43.383Z"
+    },
+    {
+      "id": "trial-1792243566825",
+      "reference": "PRO-TR-20261017-96AE",
+      "fullName": "Playwright Test Athlete",
+      "email": "playwright.athlete@gymtest.com",
+      "phone": "+1 (212) 555-7788",
+      "discipline": "Athletic Strength & Conditioning",
+      "preferredDate": "2026-10-17",
+      "notes": "",
+      "status": "NEW",
+      "createdAt": "2026-10-17T13:26:06.825Z"
+    },
+    {
+      "id": "trial-1792243554435",
+      "reference": "PRO-TR-20261017-F2EE",
+      "fullName": "Automated QA Lead",
+      "email": "qa.lead@gymtest.com",
+      "phone": "+1 (212) 555-8123",
+      "discipline": "Hypertrophy & Power",
+      "preferredDate": "2026-10-17",
+      "notes": "Testing trial creation pipeline.",
+      "status": "NEW",
+      "createdAt": "2026-10-17T13:25:54.435Z"
+    },
+    {
       "id": "trial-1791905016699",
       "reference": "PRO-TR-20261013-5415",
       "fullName": "Playwright Test Athlete",
@@ -373,6 +576,39 @@
   ],
   "contactMessages": [
     {
+      "id": "ct-1792244951650",
+      "reference": "PRO-CT-20261017-957D",
+      "fullName": "Test Auditor Athlete",
+      "email": "auditor@gymtest.com",
+      "phone": "+1 (212) 555-9090",
+      "objective": "Facility Equipment Inspection",
+      "message": "Checking facility hours and Olympic platform availability.",
+      "status": "New",
+      "createdAt": "2026-10-17T13:49:11.650Z"
+    },
+    {
+      "id": "ct-1792244923355",
+      "reference": "PRO-CT-20261017-A89B",
+      "fullName": "Test Auditor Athlete",
+      "email": "auditor@gymtest.com",
+      "phone": "+1 (212) 555-9090",
+      "objective": "Facility Equipment Inspection",
+      "message": "Checking facility hours and Olympic platform availability.",
+      "status": "New",
+      "createdAt": "2026-10-17T13:48:43.355Z"
+    },
+    {
+      "id": "ct-1792243554404",
+      "reference": "PRO-CT-20261017-F7E3",
+      "fullName": "Test Auditor Athlete",
+      "email": "auditor@gymtest.com",
+      "phone": "+1 (212) 555-9090",
+      "objective": "Facility Equipment Inspection",
+      "message": "Checking facility hours and Olympic platform availability.",
+      "status": "New",
+      "createdAt": "2026-10-17T13:25:54.404Z"
+    },
+    {
       "id": "ct-1791905009256",
       "reference": "PRO-CT-20261013-3E74",
       "fullName": "Test Auditor Athlete",
@@ -474,6 +710,36 @@
   ],
   "attendance": [
     {
+      "id": "att_1792244951915",
+      "memberId": "qa_member_1792244951902",
+      "memberName": "Alex Vance",
+      "gymLocation": "NYC - NoHo Flagship (Sanctuary 01)",
+      "method": "qr_scan",
+      "date": "2026-10-17",
+      "checkInTime": "07:19 PM",
+      "timestamp": "2026-10-17T13:49:11.914Z"
+    },
+    {
+      "id": "att_1792244923676",
+      "memberId": "qa_member_1792244923651",
+      "memberName": "Alex Vance",
+      "gymLocation": "NYC - NoHo Flagship (Sanctuary 01)",
+      "method": "qr_scan",
+      "date": "2026-10-17",
+      "checkInTime": "07:18 PM",
+      "timestamp": "2026-10-17T13:48:43.663Z"
+    },
+    {
+      "id": "att_1792243554700",
+      "memberId": "qa_member_1792243554668",
+      "memberName": "Alex Vance",
+      "gymLocation": "NYC - NoHo Flagship (Sanctuary 01)",
+      "method": "qr_scan",
+      "date": "2026-10-17",
+      "checkInTime": "06:55 PM",
+      "timestamp": "2026-10-17T13:25:54.683Z"
+    },
+    {
       "id": "att_1791905009524",
       "memberId": "qa_member_1791905009493",
       "memberName": "Alex Vance",
@@ -545,6 +811,51 @@
     }
   ],
   "bookings": [
+    {
+      "id": "bk_1792244951697",
+      "bookingReference": "PRO-PT-20261017-4DE8",
+      "type": "coached_session",
+      "fullName": "Test Athlete Coached",
+      "email": "coached_1792244951685@testgym.com",
+      "phone": "+1 (212) 555-8888",
+      "program": "Olympic Barbell Technique",
+      "trainer": "Marcus Drake",
+      "date": "2026-10-25",
+      "time": "02:00 PM",
+      "notes": "",
+      "status": "Pending",
+      "createdAt": "2026-10-17T13:49:11.697Z"
+    },
+    {
+      "id": "bk_1792244923398",
+      "bookingReference": "PRO-PT-20261017-59EA",
+      "type": "coached_session",
+      "fullName": "Test Athlete Coached",
+      "email": "coached_1792244923386@testgym.com",
+      "phone": "+1 (212) 555-8888",
+      "program": "Olympic Barbell Technique",
+      "trainer": "Marcus Drake",
+      "date": "2026-10-25",
+      "time": "02:00 PM",
+      "notes": "",
+      "status": "Pending",
+      "createdAt": "2026-10-17T13:48:43.398Z"
+    },
+    {
+      "id": "bk_1792243554451",
+      "bookingReference": "PRO-PT-20261017-B62F",
+      "type": "coached_session",
+      "fullName": "Test Athlete Coached",
+      "email": "coached_1792243554439@testgym.com",
+      "phone": "+1 (212) 555-8888",
+      "program": "Olympic Barbell Technique",
+      "trainer": "Marcus Drake",
+      "date": "2026-10-25",
+      "time": "02:00 PM",
+      "notes": "",
+      "status": "Pending",
+      "createdAt": "2026-10-17T13:25:54.451Z"
+    },
     {
       "id": "bk_1791905009296",
       "bookingReference": "PRO-PT-20261013-3380",
@@ -666,8 +977,64 @@
       "createdAt": "2026-10-13T14:53:46.498Z"
     }
   ],
-  "lastUpdated": "2026-10-13T15:23:36.701Z",
+  "lastUpdated": "2026-10-17T14:25:04.039Z",
   "payments": [
+    {
+      "id": "pay-1792247104038",
+      "razorpay_payment_id": "pay_test_112233",
+      "razorpay_order_id": "order_test_998877",
+      "user_id": "usr_member_01",
+      "member_name": "Alex Vance",
+      "plan_id": "plan-performance",
+      "plan_name": "Performance Tier",
+      "amount": 24900,
+      "currency": "INR",
+      "status": "PAID",
+      "receipt": "INV-PROFIT-103930",
+      "created_at": "2026-10-17T14:25:03.930Z"
+    },
+    {
+      "id": "pay-1792247007087",
+      "razorpay_payment_id": "pay_test_112233",
+      "razorpay_order_id": "order_test_998877",
+      "user_id": "usr_member_01",
+      "member_name": "Alex Vance",
+      "plan_id": "plan-performance",
+      "plan_name": "Performance Tier",
+      "amount": 24900,
+      "currency": "INR",
+      "status": "PAID",
+      "receipt": "INV-PROFIT-006973",
+      "created_at": "2026-10-17T14:23:26.973Z"
+    },
+    {
+      "id": "pay-1792244952194",
+      "razorpay_payment_id": "pay_test_112233",
+      "razorpay_order_id": "order_test_998877",
+      "user_id": "usr_member_01",
+      "member_name": "Alex Vance",
+      "plan_id": "plan-performance",
+      "plan_name": "Performance Tier",
+      "amount": 24900,
+      "currency": "INR",
+      "status": "PAID",
+      "receipt": "INV-PROFIT-952194",
+      "created_at": "2026-10-17T13:49:12.194Z"
+    },
+    {
+      "id": "pay-1792243554776",
+      "razorpay_payment_id": "pay_test_112233",
+      "razorpay_order_id": "order_test_998877",
+      "user_id": "usr_member_01",
+      "member_name": "Alex Vance",
+      "plan_id": "plan-performance",
+      "plan_name": "Performance Tier",
+      "amount": 24900,
+      "currency": "INR",
+      "status": "PAID",
+      "receipt": "INV-PROFIT-554776",
+      "created_at": "2026-10-17T13:25:54.776Z"
+    },
     {
       "id": "pay-1791905009604",
       "razorpay_payment_id": "pay_test_112233",

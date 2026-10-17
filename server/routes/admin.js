@@ -452,6 +452,35 @@ router.get('/members', async (req, res) => {
     const cleanTier = String(tier).trim().toLowerCase();
     const cleanStatus = String(status).trim().toLowerCase();
 
+    const fallbackMembers = [
+      {
+        id: 'usr_member_01',
+        full_name: 'Alex Vance',
+        email: 'alex.vance@athlete.com',
+        phone: '+1 (212) 555-0192',
+        tier: 'Performance Tier',
+        status: 'active',
+        daysLeft: 24,
+        trainer: 'Marcus Drake',
+        joined: '2026-08-15',
+        qrPassToken: 'QR_ALEX_VANCE_PASS',
+        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        id: 'usr_member_02',
+        full_name: 'Jordan Bell',
+        email: 'member@profitgym.com',
+        phone: '+1 (212) 555-8392',
+        tier: 'Elite VIP Tier',
+        status: 'active',
+        daysLeft: 19,
+        trainer: 'Marcus Drake',
+        joined: '2026-07-20',
+        qrPassToken: 'QR_JORDAN_BELL_PASS',
+        avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      },
+    ];
+
     if (mongoose.connection.readyState === 1) {
       const query = { role: 'MEMBER' };
       if (cleanSearch) {
@@ -486,6 +515,25 @@ router.get('/members', async (req, res) => {
         };
       });
 
+      if (memberList.length === 0 && !cleanSearch && !cleanTier && !cleanStatus) {
+        memberList = [...fallbackMembers];
+      } else if (memberList.length === 0 && (cleanSearch || cleanTier || cleanStatus)) {
+        // Also check fallback members so search works on fresh database setup
+        let seeded = [...fallbackMembers];
+        if (cleanSearch) {
+          seeded = seeded.filter(m => m.full_name.toLowerCase().includes(cleanSearch) || m.email.toLowerCase().includes(cleanSearch));
+        }
+        if (cleanTier) {
+          seeded = seeded.filter(m => m.tier.toLowerCase().includes(cleanTier));
+        }
+        if (cleanStatus && cleanStatus !== 'all') {
+          seeded = seeded.filter(m => m.status.toLowerCase() === cleanStatus);
+        }
+        if (seeded.length > 0) {
+          memberList = seeded;
+        }
+      }
+
       if (cleanTier) {
         memberList = memberList.filter(m => (m.tier || '').toLowerCase().includes(cleanTier));
       }
@@ -501,35 +549,6 @@ router.get('/members', async (req, res) => {
     }
 
     // Offline / Local fallback: aggregate seed athletes with local persistent store
-    const fallbackMembers = [
-      {
-        id: 'usr_member_01',
-        full_name: 'Alex Vance',
-        email: 'alex.vance@athlete.com',
-        phone: '+1 (212) 555-0192',
-        tier: 'Performance Tier',
-        status: 'active',
-        daysLeft: 24,
-        trainer: 'Marcus Drake',
-        joined: '2026-08-15',
-        qrPassToken: 'QR_ALEX_VANCE_PASS',
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        id: 'usr_member_02',
-        full_name: 'Jordan Bell',
-        email: 'member@profitgym.com',
-        phone: '+1 (212) 555-8392',
-        tier: 'Elite VIP Tier',
-        status: 'active',
-        daysLeft: 19,
-        trainer: 'Marcus Drake',
-        joined: '2026-07-20',
-        qrPassToken: 'QR_JORDAN_BELL_PASS',
-        avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      },
-    ];
-
     const localUsers = getRecords('users') || [];
     const localAthletes = localUsers
       .filter(u => !u.role || u.role.toUpperCase() === 'MEMBER')

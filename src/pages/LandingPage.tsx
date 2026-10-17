@@ -39,18 +39,22 @@ export const LandingPage: React.FC = () => {
   const [trialNotes, setTrialNotes] = useState('');
   const [isSubmittingTrial, setIsSubmittingTrial] = useState(false);
 
-  // Close trial modal on Escape key for WCAG accessibility
+  // Legal Policies Modal State (Razorpay & RBI Compliance)
+  const [activePolicy, setActivePolicy] = useState<'terms' | 'privacy' | 'refund' | null>(null);
+
+  // Close modal on Escape key for WCAG accessibility
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowTrialModal(false);
+        setActivePolicy(null);
       }
     };
-    if (showTrialModal) {
+    if (showTrialModal || activePolicy) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showTrialModal]);
+  }, [showTrialModal, activePolicy]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -1146,6 +1150,70 @@ export const LandingPage: React.FC = () => {
         </div>
       )}
 
+      {/* ================= MODAL: LEGAL & REGULATORY COMPLIANCE POLICIES ================= */}
+      {activePolicy && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-gym-surface border border-gym-border rounded-sm max-w-2xl w-full p-6 sm:p-8 relative shadow-card animate-in fade-in zoom-in-95 max-h-[85vh] overflow-y-auto">
+            <button
+              onClick={() => setActivePolicy(null)}
+              className="absolute top-4 right-4 text-gym-muted hover:text-white text-sm"
+              aria-label="Close dialog"
+            >
+              ✕
+            </button>
+
+            {activePolicy === 'terms' && (
+              <div className="space-y-4 text-xs text-gym-secondary leading-relaxed">
+                <h3 className="font-heading text-2xl font-black uppercase text-gym-primary tracking-wide">
+                  TERMS OF SERVICE // PROFIT TRAINING CLUB
+                </h3>
+                <p><strong>1. Membership & Facility Access:</strong> PROFIT Training Club operates as a private athletic strength sanctuary strictly capped at 300 active athletes. Access is granted via digital biometric QR pass upon active subscription verification.</p>
+                <p><strong>2. Safety & Liability:</strong> Members agree to follow all Olympic lifting and strength platform guidelines. Use of Eleiko calibrated equipment requires proper collars and adherence to facility etiquette.</p>
+                <p><strong>3. Billing & Prorations:</strong> All membership fees are billed on recurring monthly, quarterly, or annual schedules via our secure payment gateway. Renewal dates are maintained inside the Athlete Portal.</p>
+                <p><strong>4. Code of Conduct:</strong> We uphold an intense, focused sanctuary environment. Commercial videography, disruptive behavior, or sharing digital turnstile QR tokens with non-members results in immediate termination of membership privileges.</p>
+              </div>
+            )}
+
+            {activePolicy === 'privacy' && (
+              <div className="space-y-4 text-xs text-gym-secondary leading-relaxed">
+                <h3 className="font-heading text-2xl font-black uppercase text-gym-primary tracking-wide">
+                  PRIVACY POLICY // DATA PROTECTION
+                </h3>
+                <p><strong>1. Information Collection:</strong> We collect athlete profile details including full name, verified email, phone number, and physical fitness onboarding assessments solely to tailor personalized coaching and turnstile gate credentials.</p>
+                <p><strong>2. Payment Security:</strong> We do not store full credit card numbers or banking passwords on our local servers. Payment transactions are processed via Razorpay and Stripe with PCI-DSS Level 1 compliance and HMAC-SHA256 signatures.</p>
+                <p><strong>3. Data Retention & Privacy:</strong> Athlete training telemetry, set weights, and check-in records are protected by encrypted databases and will never be sold or rented to third-party advertisers.</p>
+                <p><strong>4. Communications:</strong> We use your contact information to deliver turnstile access confirmations, payment receipts, and direct coach feedback.</p>
+              </div>
+            )}
+
+            {activePolicy === 'refund' && (
+              <div className="space-y-4 text-xs text-gym-secondary leading-relaxed">
+                <h3 className="font-heading text-2xl font-black uppercase text-gym-primary tracking-wide">
+                  CANCELLATION & REFUND POLICY
+                </h3>
+                <p><strong>1. 7-Day Performance Guarantee:</strong> If within the first 7 days of joining PROFIT Training Club you are not completely satisfied with our facility or coaching standard, you may request a full 100% refund without cancellation fees.</p>
+                <p><strong>2. Membership Cancellation:</strong> Athletes may cancel recurring memberships at any time directly through their Athlete Portal or by contacting front-desk concierge. Cancellation stops future billing cycles immediately.</p>
+                <p><strong>3. Refund Processing:</strong> Approved refunds are credited directly to the original payment source (UPI account, Credit/Debit card, or NetBanking) within 5 to 7 business days in accordance with RBI and Razorpay processing guidelines.</p>
+                <p><strong>4. Contact Support:</strong> For refund inquiries or billing disputes, contact our desk team at billing@profitgym.com or +1 (212) 555-0100.</p>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-gym-border/60 flex justify-end">
+              <button
+                onClick={() => setActivePolicy(null)}
+                className="px-5 py-2 font-heading uppercase font-bold text-xs bg-gym-lime text-gym-black hover:bg-gym-lime-hover transition-colors"
+              >
+                Close Policy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ================= 9. ARCHITECTURAL FOOTER ================= */}
       <footer className="bg-gym-black py-16 border-t border-gym-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1211,12 +1279,32 @@ export const LandingPage: React.FC = () => {
 
           <div className="pt-8 border-t border-gym-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gym-muted">
             <div>&copy; 2026 PROFIT Training Club LLC. All rights reserved.</div>
-            <div className="flex gap-4">
-              <span>Biometric Security v2.4</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <button 
+                type="button" 
+                onClick={() => setActivePolicy('terms')} 
+                className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
+              >
+                Terms of Service
+              </button>
               <span>&bull;</span>
-              <span>Eleiko Calibrated</span>
+              <button 
+                type="button" 
+                onClick={() => setActivePolicy('privacy')} 
+                className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
+              >
+                Privacy Policy
+              </button>
               <span>&bull;</span>
-              <span>PCI DSS Level 1 via Stripe</span>
+              <button 
+                type="button" 
+                onClick={() => setActivePolicy('refund')} 
+                className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
+              >
+                Refund & Cancellation
+              </button>
+              <span>&bull;</span>
+              <span>PCI-DSS Level 1 & Razorpay Verified</span>
             </div>
           </div>
         </div>

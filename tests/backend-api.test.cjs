@@ -1,6 +1,7 @@
 const assert = require('assert');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+require('dotenv').config({ path: 'server/.env' });
 
 const BASE_URL = 'http://localhost:5000';
 const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_super_secure_jwt_secret_key_2026_x92';
@@ -387,7 +388,7 @@ async function runApiTests() {
   await test('POST /api/payments/verify validates correct HMAC SHA256 signature', async () => {
     const orderId = 'order_test_998877';
     const paymentId = 'pay_test_112233';
-    const secret = 'profit_gym_secret_dev_382910';
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'profit_gym_secret_dev_382910';
     const validSignature = crypto
       .createHmac('sha256', secret)
       .update(`${orderId}|${paymentId}`)
