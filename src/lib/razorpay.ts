@@ -57,6 +57,14 @@ export const loadRazorpayScript = (): Promise<boolean> => {
   });
 };
 
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
+  return '/api';
+};
+
 /**
  * Create order on backend API (/api/payments/create-order)
  */
@@ -64,7 +72,9 @@ export async function createRazorpayOrder(planId: string, token?: string): Promi
   const authToken = token || localStorage.getItem('profit_auth_token');
 
   try {
-    const res = await fetch('/api/payments/create-order', {
+    const apiBase = getApiBase();
+    const endpoint = apiBase.endsWith('/api') ? `${apiBase}/payments/create-order` : `${apiBase}/api/payments/create-order`;
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,7 +126,9 @@ export async function verifyRazorpayPayment(params: {
   const authToken = params.token || localStorage.getItem('profit_auth_token');
 
   try {
-    const res = await fetch('/api/payments/verify', {
+    const apiBase = getApiBase();
+    const endpoint = apiBase.endsWith('/api') ? `${apiBase}/payments/verify` : `${apiBase}/api/payments/verify`;
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
