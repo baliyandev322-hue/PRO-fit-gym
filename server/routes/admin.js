@@ -9,6 +9,7 @@ const Payment = require('../models/Payment');
 const Membership = require('../models/Membership');
 const WorkoutPlan = require('../models/WorkoutPlan');
 const { verifyAdmin } = require('../middleware/auth');
+const { getRecords, saveRecord, deleteRecord } = require('../config/localStore');
 
 const router = express.Router();
 
@@ -446,8 +447,21 @@ router.get('/telemetry', async (req, res) => {
  */
 router.get('/members', async (req, res) => {
   try {
+    const { search = '', tier = '', status = '' } = req.query;
+    const cleanSearch = String(search).trim().toLowerCase();
+    const cleanTier = String(tier).trim().toLowerCase();
+    const cleanStatus = String(status).trim().toLowerCase();
+
     if (mongoose.connection.readyState === 1) {
-      const users = await User.find({ role: 'MEMBER' }).sort({ createdAt: -1 });
+      const query = { role: 'MEMBER' };
+      if (cleanSearch) {
+        query.$or = [
+          { fullName: { $regex: cleanSearch, $options: 'i' } },
+          { email: { $regex: cleanSearch, $options: 'i' } },
+        ];
+      }
+
+      const users = await User.find(query).sort({ createdAt: -1 });
       const memberships = await Membership.find({});
       const membershipMap = {};
       memberships.forEach(m => {
@@ -455,7 +469,7 @@ router.get('/members', async (req, res) => {
         if (m.memberEmail) membershipMap[m.memberEmail.toLowerCase()] = m;
       });
 
-      const memberList = users.map(u => {
+      let memberList = users.map(u => {
         const mem = membershipMap[u._id.toString()] || membershipMap[u.email.toLowerCase()];
         return {
           id: u._id.toString(),
@@ -468,18 +482,97 @@ router.get('/members', async (req, res) => {
           trainer: u.assignedTrainerName || 'Marcus Drake',
           joined: u.createdAt ? u.createdAt.toISOString().split('T')[0] : '2026-08-15',
           qrPassToken: u.qrPassToken,
-          avatar_url: u.avatarUrl
+          avatar_url: u.avatarUrl,
         };
       });
+
+      if (cleanTier) {
+        memberList = memberList.filter(m => (m.tier || '').toLowerCase().includes(cleanTier));
+      }
+      if (cleanStatus && cleanStatus !== 'all') {
+        memberList = memberList.filter(m => (m.status || '').toLowerCase() === cleanStatus);
+      }
 
       return res.status(200).json({
         success: true,
         count: memberList.length,
-        data: memberList
+        data: memberList,
       });
     }
 
-    return res.status(200).json({ success: true, count: 0, data: [] });
+    // Offline / Local fallback: aggregate seed athletes with local persistent store
+    const fallbackMembers = [
+      {
+        id: 'usr_member_01',
+        full_name: 'Alex Vance',
+        email: 'alex.vance@athlete.com',
+        phone: '+1 (212) 555-0192',
+        tier: 'Performance Tier',
+        status: 'active',
+        daysLeft: 24,
+        trainer: 'Marcus Drake',
+        joined: '2026-08-15',
+        qrPassToken: 'QR_ALEX_VANCE_PASS',
+        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        id: 'usr_member_02',
+        full_name: 'Jordan Bell',
+        email: 'member@profitgym.com',
+        phone: '+1 (212) 555-8392',
+        tier: 'Elite VIP Tier',
+        status: 'active',
+        daysLeft: 19,
+        trainer: 'Marcus Drake',
+        joined: '2026-07-20',
+        qrPassToken: 'QR_JORDAN_BELL_PASS',
+        avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      },
+    ];
+
+    const localUsers = getRecords('users') || [];
+    const localAthletes = localUsers
+      .filter(u => !u.role || u.role.toUpperCase() === 'MEMBER')
+      .map(u => ({
+        id: u.id || u._id || `usr_${Date.now()}`,
+        full_name: u.fullName || u.full_name || 'Athlete',
+        email: u.email,
+        phone: u.phone || '+1 (212) 555-0192',
+        tier: (u.membershipDetails && u.membershipDetails.planName) || u.tier || 'Performance Tier',
+        status: u.status || 'active',
+        daysLeft: u.daysLeft || 30,
+        trainer: u.trainer || u.assignedTrainerName || 'Marcus Drake',
+        joined: u.joined || (u.createdAt ? u.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+        qrPassToken: u.qrPassToken || `QR_${u.id}_PASS`,
+        avatar_url: u.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      }));
+
+    const combined = [...fallbackMembers];
+    for (const la of localAthletes) {
+      if (!combined.some(m => m.email.toLowerCase() === la.email.toLowerCase())) {
+        combined.push(la);
+      }
+    }
+
+    let filtered = combined;
+    if (cleanSearch) {
+      filtered = filtered.filter(m =>
+        (m.full_name || '').toLowerCase().includes(cleanSearch) ||
+        (m.email || '').toLowerCase().includes(cleanSearch)
+      );
+    }
+    if (cleanTier) {
+      filtered = filtered.filter(m => (m.tier || '').toLowerCase().includes(cleanTier));
+    }
+    if (cleanStatus && cleanStatus !== 'all') {
+      filtered = filtered.filter(m => (m.status || '').toLowerCase() === cleanStatus);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: filtered.length,
+      data: filtered,
+    });
   } catch (err) {
     console.error('[Admin Members Fetch Error]', err);
     return res.status(500).json({ success: false, message: 'Failed to fetch members.' });
@@ -488,7 +581,7 @@ router.get('/members', async (req, res) => {
 
 /**
  * @route   POST /api/admin/members
- * @desc    Create new athlete directly from Admin Dashboard into MongoDB Atlas
+ * @desc    Create new athlete directly from Admin Dashboard into MongoDB Atlas or Local Store
  * @access  Private (Admin)
  */
 router.post('/members', async (req, res) => {
@@ -499,6 +592,8 @@ router.post('/members', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const tierName = planId.includes('elite') ? 'Elite VIP Tier' : planId.includes('starter') ? 'Starter Tier' : 'Performance Tier';
+
     if (mongoose.connection.readyState === 1) {
       const existing = await User.findOne({ email: normalizedEmail });
       if (existing) {
@@ -511,12 +606,11 @@ router.post('/members', async (req, res) => {
         password: 'password123',
         role: 'MEMBER',
         phone,
-        assignedTrainerName: trainer
+        assignedTrainerName: trainer,
       });
 
       const now = new Date();
       const expiryDate = new Date(now.getTime() + 30 * 86400000);
-      const tierName = planId.includes('elite') ? 'Elite VIP Tier' : planId.includes('starter') ? 'Starter Tier' : 'Performance Tier';
 
       await Membership.create({
         userId: newUser._id.toString(),
@@ -528,7 +622,7 @@ router.post('/members', async (req, res) => {
         startDate: now,
         expiryDate,
         daysRemaining: 30,
-        price: planId.includes('elite') ? 39900 : planId.includes('starter') ? 14900 : 24900
+        price: planId.includes('elite') ? 39900 : planId.includes('starter') ? 14900 : 24900,
       });
 
       return res.status(201).json({
@@ -543,12 +637,33 @@ router.post('/members', async (req, res) => {
           status: 'active',
           daysLeft: 30,
           trainer: newUser.assignedTrainerName,
-          joined: newUser.createdAt.toISOString().split('T')[0]
-        }
+          joined: newUser.createdAt.toISOString().split('T')[0],
+        },
       });
     }
 
-    return res.status(503).json({ success: false, message: 'Database offline.' });
+    // Offline mode: store athlete into persistent localStore
+    const newMemberRecord = {
+      id: `usr_${Date.now()}`,
+      fullName,
+      full_name: fullName,
+      email: normalizedEmail,
+      phone: phone || '+1 (212) 555-0100',
+      role: 'MEMBER',
+      tier: tierName,
+      status: 'active',
+      daysLeft: 30,
+      trainer,
+      joined: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+    };
+    saveRecord('users', newMemberRecord);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Member registered successfully (saved to local sanctuary store).',
+      data: newMemberRecord,
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -556,7 +671,7 @@ router.post('/members', async (req, res) => {
 
 /**
  * @route   DELETE /api/admin/members/:id
- * @desc    Delete athlete from MongoDB Atlas
+ * @desc    Delete athlete from MongoDB Atlas or Local Store
  * @access  Private (Admin)
  */
 router.delete('/members/:id', async (req, res) => {
@@ -569,7 +684,9 @@ router.delete('/members/:id', async (req, res) => {
       await Membership.deleteMany({ userId: req.params.id });
       return res.status(200).json({ success: true, message: 'Member successfully removed.' });
     }
-    return res.status(503).json({ success: false, message: 'Database offline.' });
+
+    deleteRecord('users', 'id', req.params.id);
+    return res.status(200).json({ success: true, message: 'Member successfully removed from local sanctuary store.' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

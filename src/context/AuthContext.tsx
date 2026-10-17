@@ -10,7 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (payload: RegisterPayload | string, fullName?: string, password?: string) => Promise<boolean>;
   sendOtp: (email: string, fullName?: string) => Promise<{ success: boolean; message: string; devOtp?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<boolean>;
@@ -102,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * Genuine Server-side Password Verification Login
    * NEVER bypasses password verification or fabricates a fake session.
    */
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true);
 
     try {
@@ -116,12 +116,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!res.ok || !data.success) {
         setIsLoading(false);
+        const errorMsg = data.message || 'Invalid email or password credentials.';
         showToast({
           type: 'error',
           title: 'AUTHENTICATION FAILED',
-          message: data.message || 'Invalid email or password credentials.',
+          message: errorMsg,
         });
-        return false;
+        return { success: false, message: errorMsg };
       }
 
       setToken(data.token);
@@ -133,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
         created_at: new Date().toISOString(),
       };
+      localStorage.setItem('profit_gym_current_user', JSON.stringify(loggedUser));
       setUser(loggedUser);
       setIsLoading(false);
 
@@ -141,15 +143,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: 'AUTHENTICATION VERIFIED',
         message: `Welcome back, ${loggedUser.full_name} (${loggedUser.role.toUpperCase()})`,
       });
-      return true;
+      return { success: true };
     } catch (err: any) {
       setIsLoading(false);
+      const networkMsg = 'Could not connect to authentication server. Please check your backend connection.';
       showToast({
         type: 'error',
         title: 'NETWORK ERROR',
-        message: 'Could not connect to authentication server. Please check your backend connection.',
+        message: networkMsg,
       });
-      return false;
+      return { success: false, message: networkMsg };
     }
   };
 

@@ -1,0 +1,50 @@
+name: Test & Quality Assurance CI
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  test:
+    name: Automated Unit, API, Security & E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Frontend & Root Dependencies
+        run: npm ci
+
+      - name: Install Server Dependencies
+        run: cd server && npm ci && cd ..
+
+      - name: TypeScript & Build Verification
+        run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Backend Server
+        run: node server/server.js &
+        env:
+          PORT: 5000
+          NODE_ENV: development
+          JWT_SECRET: ci_test_secret_key_83921
+
+      - name: Start Frontend Preview Server
+        run: npx vite --host 127.0.0.1 --port 3000 &
+
+      - name: Wait for Services to be Ready
+        run: npx wait-on http://127.0.0.1:5000/api/health http://127.0.0.1:3000
+
+      - name: Run Complete Test Suite (API, Security, E2E)
+        run: npm test

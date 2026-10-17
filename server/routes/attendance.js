@@ -2,11 +2,16 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 const { verifyAuth, verifyAdmin } = require('../middleware/auth');
+const { readStore, saveRecord } = require('../config/localStore');
 
 const router = express.Router();
 
 // Configurable anti-duplicate cooldown window (in minutes)
 const DUPLICATE_COOLDOWN_MINUTES = 60;
+
+// Persistent fallback attendance records
+const storedAttendance = readStore().attendance || [];
+const devAttendanceRecords = [...storedAttendance];
 
 /**
  * @route   POST /api/attendance/check-in
@@ -72,7 +77,19 @@ router.post('/check-in', async (req, res) => {
       });
     }
 
-    // Fallback if database is offline
+    // Fallback if database is offline: check recent in-memory check-ins
+    const recentFallback = devAttendanceRecords.find(
+      (r) => r.memberId === memberId && new Date(r.timestamp) >= cooldownLimit
+    );
+    if (recentFallback) {
+      return res.status(400).json({
+        success: false,
+        isDuplicate: true,
+        message: `Duplicate check-in blocked. You already checked in today at ${recentFallback.checkInTime}. Please wait before scanning again.`,
+        lastCheckIn: recentFallback.checkInTime,
+      });
+    }
+
     const fallbackRecord = {
       id: `att_${Date.now()}`,
       memberId,
@@ -81,13 +98,15 @@ router.post('/check-in', async (req, res) => {
       method,
       date: todayStr,
       checkInTime: timeFormatted,
-      timestamp: now.toISOString()
+      timestamp: now.toISOString(),
     };
+    devAttendanceRecords.unshift(fallbackRecord);
+    saveRecord('attendance', fallbackRecord);
 
     return res.status(201).json({
       success: true,
       message: `Access granted! Welcome to ${location}, ${memberName || 'Athlete'}.`,
-      attendance: fallbackRecord
+      attendance: fallbackRecord,
     });
   } catch (error) {
     console.error('[Attendance Check-in Error]', error);

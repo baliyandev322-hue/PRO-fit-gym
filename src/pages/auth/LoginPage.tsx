@@ -20,15 +20,16 @@ export const LoginPage: React.FC = () => {
 
     setErrorMessage(null);
     setIsSubmitting(true);
-    const success = await login(email, password);
+    const result = await login(email, password);
     setIsSubmitting(false);
 
-    if (success) {
+    if (result.success) {
       try {
         const saved = JSON.parse(localStorage.getItem('profit_gym_current_user') || '{}');
-        if (saved.role === 'admin') {
+        const role = (saved.role || '').toLowerCase();
+        if (role === 'admin') {
           navigate('/admin/dashboard', { replace: true });
-        } else if (saved.role === 'trainer') {
+        } else if (role === 'trainer') {
           navigate('/trainer/dashboard', { replace: true });
         } else {
           navigate(from === '/login' ? '/member/dashboard' : from, { replace: true });
@@ -37,7 +38,7 @@ export const LoginPage: React.FC = () => {
         navigate('/member/dashboard', { replace: true });
       }
     } else {
-      setErrorMessage('Invalid credentials. Please verify your email and password.');
+      setErrorMessage(result.message || 'Invalid credentials. Please verify your email and password.');
     }
   };
 

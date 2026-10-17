@@ -6,8 +6,13 @@ const { formSubmitLimiter } = require('../middleware/rateLimiter');
 const { generateReference } = require('../utils/referenceGenerator');
 const { sendBookingAlert } = require('../services/emailService');
 const whatsappService = require('../services/whatsappService');
+const { readStore, saveRecord } = require('../config/localStore');
 
 const router = express.Router();
+
+// Persistent bookings fallback store
+const storedBookings = readStore().bookings || [];
+const devBookings = [...storedBookings];
 
 /**
  * @route   POST /api/bookings
@@ -15,103 +20,107 @@ const router = express.Router();
  * @access  Public
  */
 router.post('/', formSubmitLimiter, validateBooking, async (req, res) => {
-  // Check database connectivity
-  if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({
-      success: false,
-      message: 'Database is currently offline. Please ensure MONGODB_URI is configured.',
-    });
-  }
-
   try {
     const { type, fullName, email, phone, program, trainer, date, time, notes } = req.body;
-
-    // Duplicate check: Same email, type, and date submitted within the last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const existingRecentBooking = await Booking.findOne({
-      email,
-      type,
-      date,
-      createdAt: { $gte: fiveMinutesAgo },
-    });
-
-    if (existingRecentBooking) {
-      return res.status(409).json({
-        success: false,
-        message: 'A booking request with these details was already received recently.',
-        bookingReference: existingRecentBooking.bookingReference,
-      });
-    }
-
-    // Generate prefix based on booking type
     const refPrefix = type === 'trial_pass' ? 'TR' : 'PT';
     const bookingReference = generateReference(refPrefix);
 
-    // Save to database
-    const newBooking = await Booking.create({
+    // 1. If MongoDB Atlas is connected
+    if (mongoose.connection.readyState === 1) {
+      const existingRecentBooking = await Booking.findOne({
+        email,
+        type,
+        date,
+        createdAt: { $gte: fiveMinutesAgo },
+      });
+
+      if (existingRecentBooking) {
+        return res.status(409).json({
+          success: false,
+          message: 'A booking request with these details was already received recently.',
+          bookingReference: existingRecentBooking.bookingReference,
+        });
+      }
+
+      const newBooking = await Booking.create({
+        bookingReference,
+        type,
+        fullName,
+        email,
+        phone,
+        program,
+        trainer,
+        date,
+        time,
+        notes,
+        status: 'Pending',
+      });
+
+      // Async owner alerts
+      sendBookingAlert(newBooking).catch(() => {});
+      whatsappService.sendBookingAlert(newBooking).catch(() => {});
+
+      return res.status(201).json({
+        success: true,
+        message:
+          type === 'trial_pass'
+            ? 'Provisional 7-Day Trial Pass successfully registered.'
+            : 'Coaching session reservation successfully logged.',
+        data: {
+          bookingReference: newBooking.bookingReference,
+          type: newBooking.type,
+          fullName: newBooking.fullName,
+          email: newBooking.email,
+          phone: newBooking.phone,
+          program: newBooking.program,
+          trainer: newBooking.trainer,
+          date: newBooking.date,
+          time: newBooking.time,
+          status: newBooking.status,
+          createdAt: newBooking.createdAt,
+        },
+      });
+    }
+
+    // 2. Offline / Resilient Local Persistence Fallback
+    const existingDev = devBookings.find(
+      (b) => b.email === email && b.type === type && b.date === date && new Date(b.createdAt) >= fiveMinutesAgo
+    );
+    if (existingDev) {
+      return res.status(409).json({
+        success: false,
+        message: 'A booking request with these details was already received recently.',
+        bookingReference: existingDev.bookingReference,
+      });
+    }
+
+    const fallbackBooking = {
+      id: `bk_${Date.now()}`,
       bookingReference,
       type,
       fullName,
       email,
       phone,
-      program,
-      trainer,
+      program: program || 'Coached Session',
+      trainer: trainer || 'Master Coach on Duty',
       date,
-      time,
-      notes,
+      time: time || '10:00 AM',
+      notes: notes || '',
       status: 'Pending',
-    });
+      createdAt: new Date().toISOString(),
+    };
 
-    // Asynchronously dispatch owner email notification (non-blocking)
-    sendBookingAlert(newBooking)
-      .then(async (result) => {
-        await Booking.findByIdAndUpdate(newBooking._id, {
-          'notificationStatus.emailSent': Boolean(result && result.success),
-          'notificationStatus.emailError': result && result.error ? result.error : null,
-        });
-      })
-      .catch(async (err) => {
-        await Booking.findByIdAndUpdate(newBooking._id, {
-          'notificationStatus.emailSent': false,
-          'notificationStatus.emailError': err.message,
-        });
-      });
+    devBookings.unshift(fallbackBooking);
+    saveRecord('bookings', fallbackBooking);
 
-    // Asynchronously dispatch owner WhatsApp notification (independent & non-blocking)
-    whatsappService.sendBookingAlert(newBooking)
-      .then(async (result) => {
-        await Booking.findByIdAndUpdate(newBooking._id, {
-          'notificationStatus.whatsappSent': Boolean(result && result.success),
-          'notificationStatus.whatsappError': result && result.error ? result.error : null,
-        });
-      })
-      .catch(async (err) => {
-        await Booking.findByIdAndUpdate(newBooking._id, {
-          'notificationStatus.whatsappSent': false,
-          'notificationStatus.whatsappError': err.message,
-        });
-      });
-
-    // Response returned only after successfully saved in database
     return res.status(201).json({
       success: true,
       message:
         type === 'trial_pass'
           ? 'Provisional 7-Day Trial Pass successfully registered.'
           : 'Coaching session reservation successfully logged.',
-      data: {
-        bookingReference: newBooking.bookingReference,
-        type: newBooking.type,
-        fullName: newBooking.fullName,
-        email: newBooking.email,
-        phone: newBooking.phone,
-        program: newBooking.program,
-        trainer: newBooking.trainer,
-        date: newBooking.date,
-        time: newBooking.time,
-        status: newBooking.status,
-        createdAt: newBooking.createdAt,
-      },
+      data: fallbackBooking,
     });
   } catch (error) {
     console.error('[Booking Error]', error);
@@ -129,29 +138,38 @@ router.post('/', formSubmitLimiter, validateBooking, async (req, res) => {
  * @access  Public
  */
 router.get('/lookup/:reference', async (req, res) => {
-  if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({
-      success: false,
-      message: 'Database is currently offline.',
-    });
-  }
-
   try {
     const { reference } = req.params;
-    const booking = await Booking.findOne({
-      bookingReference: reference.toUpperCase().trim(),
-    }).select('bookingReference type fullName program trainer date time status createdAt');
+    const cleanRef = reference.toUpperCase().trim();
 
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'No booking record found for the provided reference code.',
+    if (mongoose.connection.readyState === 1) {
+      const booking = await Booking.findOne({
+        bookingReference: cleanRef,
+      }).select('bookingReference type fullName program trainer date time status createdAt');
+
+      if (booking) {
+        return res.status(200).json({
+          success: true,
+          data: booking,
+        });
+      }
+    }
+
+    // Resilient offline search in local persistent store
+    const localMatch = devBookings.find(
+      (b) => b.bookingReference && b.bookingReference.toUpperCase().trim() === cleanRef
+    );
+
+    if (localMatch) {
+      return res.status(200).json({
+        success: true,
+        data: localMatch,
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: booking,
+    return res.status(404).json({
+      success: false,
+      message: 'No booking record found for the provided reference code.',
     });
   } catch (error) {
     return res.status(500).json({

@@ -15,12 +15,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_dev_secret_key_change_i
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 const bcrypt = require('bcryptjs');
+const { readStore, saveRecord } = require('../config/localStore');
 
 // In-memory OTP storage fallback (active during dev/testing or when DB is booting)
 const devOtpStore = new Map();
 
-// In-memory User storage fallback (ensures newly registered users can log in even when MongoDB is offline)
+// In-memory User storage fallback loaded with local persistent store
 const inMemoryUsersStore = new Map();
+try {
+  const storedUsers = readStore().users || [];
+  storedUsers.forEach((u) => {
+    if (u && u.email) inMemoryUsersStore.set(u.email.toLowerCase().trim(), u);
+  });
+} catch {}
 
 /**
  * Helper to generate JWT token
@@ -321,11 +328,13 @@ router.post('/register', authLimiter, async (req, res) => {
 
     // Store in in-memory registry so the athlete can log in anytime
     const passwordHash = await bcrypt.hash(password, 10);
-    inMemoryUsersStore.set(normalizedEmail, {
+    const userRecord = {
       ...mockUser,
       password,
       passwordHash,
-    });
+    };
+    inMemoryUsersStore.set(normalizedEmail, userRecord);
+    saveRecord('users', userRecord);
 
     const token = signToken(mockUser);
 
@@ -506,12 +515,12 @@ router.post('/login', loginLimiter, async (req, res) => {
         id: 'usr_member_prince',
         name: 'Prince',
         role: 'MEMBER',
-        validPasswords: [password, 'password123', 'admin123']
+        validPasswords: ['password123', 'admin123']
       }
     };
 
     const seedAccount = SEED_CREDENTIALS[normalizedEmail];
-    if (seedAccount && (seedAccount.validPasswords.includes(password) || normalizedEmail === 'princekrssm1@gmail.com')) {
+    if (seedAccount && seedAccount.validPasswords.includes(password)) {
       const verifiedUser = {
         id: seedAccount.id,
         email: normalizedEmail,

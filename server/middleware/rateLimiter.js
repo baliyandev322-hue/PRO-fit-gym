@@ -22,7 +22,7 @@ const formSubmitLimiter = rateLimit({
  */
 const loginLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute (60,000 ms)
-  max: 5, // Max 5 login attempts per 1 minute window
+  max: process.env.NODE_ENV === 'production' ? 5 : 30, // Max 5 login attempts in production, 30 in dev/test
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,

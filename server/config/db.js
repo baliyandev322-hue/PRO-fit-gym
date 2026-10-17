@@ -23,6 +23,11 @@ const connectDB = async () => {
     return true;
   } catch (error) {
     console.error('\x1b[31m%s\x1b[0m', `[Database Error] Connection failed: ${error.message}`);
+    if (error.message.includes('bad auth')) {
+      console.warn('\x1b[33m%s\x1b[0m', '👉 [Action Required] MongoDB Atlas username or password incorrect. Update Database Access user password in Atlas dashboard & MONGODB_URI in server/.env.');
+    } else if (error.message.includes('timed out') || error.message.includes('whitelist') || error.message.includes('ECONNREFUSED')) {
+      console.warn('\x1b[33m%s\x1b[0m', '👉 [Action Required] IP address not whitelisted. In Atlas dashboard: Network Access -> Add IP Address -> Add 0.0.0.0/0 (Allow from Anywhere).');
+    }
     // In development or when starting without credentials, do not hard-crash the server process
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);

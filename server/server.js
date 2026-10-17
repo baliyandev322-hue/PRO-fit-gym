@@ -10,6 +10,16 @@ const connectDB = require('./config/db');
 dotenv.config();
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const DEV_FALLBACK_JWT = 'profit_gym_dev_secret_key_change_in_production_938472';
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === DEV_FALLBACK_JWT || process.env.JWT_SECRET.length < 32) {
+    console.error('[CRITICAL SECURITY ERROR] Production startup aborted: JWT_SECRET must be explicitly configured in production environment with at least 32 characters, and cannot use the development fallback key.');
+    process.exit(1);
+  }
+} else if (!process.env.JWT_SECRET) {
+  console.warn('[Security Advisory] Running in development mode using internal fallback JWT secret. Set a secure JWT_SECRET in server/.env for production deployment.');
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 

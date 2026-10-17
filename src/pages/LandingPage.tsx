@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Dumbbell, 
@@ -38,6 +38,19 @@ export const LandingPage: React.FC = () => {
   const [trialDate, setTrialDate] = useState('');
   const [trialNotes, setTrialNotes] = useState('');
   const [isSubmittingTrial, setIsSubmittingTrial] = useState(false);
+
+  // Close trial modal on Escape key for WCAG accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowTrialModal(false);
+      }
+    };
+    if (showTrialModal) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showTrialModal]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -161,10 +174,11 @@ export const LandingPage: React.FC = () => {
         colors: ['#ccff00', '#ffffff', '#23252a']
       });
 
+      const issuedRef = data.data?.reference || data.reference || data.trial?.reference || 'PRO-TR-CONFIRMED';
       showToast({
         type: 'success',
         title: 'TRIAL PASS CONFIRMED',
-        message: `Complimentary pass issued for ${trialName.trim()}! Ref: ${data.reference || data.trial?.reference || 'TR-PROFIT'}.`
+        message: `Complimentary pass issued for ${trialName.trim()}! Reference: ${issuedRef}.`
       });
 
       setTrialName('');
@@ -982,11 +996,18 @@ export const LandingPage: React.FC = () => {
 
       {/* ================= MODAL: COMPLIMENTARY TRIAL PASS ================= */}
       {showTrialModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trial-modal-title"
+          aria-describedby="trial-modal-description"
+        >
           <div className="bg-gym-surface border border-gym-border rounded-sm max-w-lg w-full p-6 sm:p-8 relative shadow-card animate-in fade-in zoom-in-95">
             <button
               onClick={() => setShowTrialModal(false)}
               className="absolute top-4 right-4 text-gym-muted hover:text-white text-sm"
+              aria-label="Close complimentary trial pass dialog"
             >
               ✕
             </button>
@@ -998,10 +1019,16 @@ export const LandingPage: React.FC = () => {
               </span>
             </div>
 
-            <h3 className="font-heading text-2xl sm:text-3xl font-black uppercase text-gym-primary tracking-wide mb-1">
+            <h3 
+              id="trial-modal-title"
+              className="font-heading text-2xl sm:text-3xl font-black uppercase text-gym-primary tracking-wide mb-1"
+            >
               EXPERIENCE PROFIT ATHLETIC CLUB
             </h3>
-            <p className="text-xs text-gym-secondary mb-6 leading-relaxed">
+            <p 
+              id="trial-modal-description"
+              className="text-xs text-gym-secondary mb-6 leading-relaxed"
+            >
               Includes full floor access, Eleiko competition racks, and a 30-minute biomechanics mobility screen with our coaching staff.
             </p>
 

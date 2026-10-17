@@ -3,14 +3,15 @@ const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const { formSubmitLimiter } = require('../middleware/rateLimiter');
 const { generateReference } = require('../utils/referenceGenerator');
+const { readStore, saveRecord } = require('../config/localStore');
 
 const router = express.Router();
 
-// In-memory dev trial leads storage fallback
-const devTrialRequests = [
+// Seed trial leads storage with persistent local fallback
+const defaultTrialSeed = [
   {
     id: 'trial-001',
-    reference: 'TR-260901-8391',
+    reference: 'PRO-TR-260901-8391',
     fullName: 'David Sterling',
     email: 'david.sterling@hedgefund.com',
     phone: '+1 (212) 555-0144',
@@ -22,7 +23,7 @@ const devTrialRequests = [
   },
   {
     id: 'trial-002',
-    reference: 'TR-260902-4729',
+    reference: 'PRO-TR-260902-4729',
     fullName: 'Sophia Martinez',
     email: 'sophia.martinez@architects.ny',
     phone: '+1 (212) 555-0199',
@@ -33,6 +34,9 @@ const devTrialRequests = [
     createdAt: new Date(Date.now() - 20 * 3600000).toISOString()
   }
 ];
+
+const storedTrials = readStore().trials || [];
+const devTrialRequests = storedTrials.length > 0 ? storedTrials : [...defaultTrialSeed];
 
 /**
  * @route   GET /api/trials
@@ -134,6 +138,7 @@ router.post('/', formSubmitLimiter, async (req, res) => {
       createdAt: new Date().toISOString()
     };
     devTrialRequests.unshift(fallbackTrial);
+    saveRecord('trials', fallbackTrial);
 
     return res.status(201).json({
       success: true,

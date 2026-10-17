@@ -6,14 +6,15 @@ const { formSubmitLimiter } = require('../middleware/rateLimiter');
 const { generateReference } = require('../utils/referenceGenerator');
 const { sendContactAlert } = require('../services/emailService');
 const whatsappService = require('../services/whatsappService');
+const { readStore, saveRecord } = require('../config/localStore');
 
 const router = express.Router();
 
-// In-memory dev contact storage for guaranteed zero-downtime resilience
-const devContactMessages = [
+// Seed contact messages storage with persistent local fallback
+const defaultContactSeed = [
   {
     id: 'ct-001',
-    reference: 'CT-260901-4821',
+    reference: 'PRO-CT-260901-4821',
     fullName: 'Robert Sterling',
     email: 'robert.sterling@fintechcapital.com',
     phone: '+1 (212) 555-8921',
@@ -25,7 +26,7 @@ const devContactMessages = [
   },
   {
     id: 'ct-002',
-    reference: 'CT-260902-1982',
+    reference: 'PRO-CT-260902-1982',
     fullName: 'Dr. Evelyn Reed',
     email: 'evelyn.reed@columbia.edu',
     phone: '+1 (212) 555-3211',
@@ -36,6 +37,9 @@ const devContactMessages = [
     createdAt: new Date(Date.now() - 24 * 3600000).toISOString()
   }
 ];
+
+const storedContacts = readStore().contactMessages || [];
+const devContactMessages = storedContacts.length > 0 ? storedContacts : [...defaultContactSeed];
 
 /**
  * @route   GET /api/contact
@@ -122,6 +126,7 @@ router.post('/', formSubmitLimiter, async (req, res) => {
       createdAt: new Date().toISOString()
     };
     devContactMessages.unshift(fallbackMsg);
+    saveRecord('contactMessages', fallbackMsg);
 
     return res.status(201).json({
       success: true,
