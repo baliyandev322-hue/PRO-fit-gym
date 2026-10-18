@@ -388,7 +388,7 @@ async function runApiTests() {
   await test('POST /api/payments/verify validates correct HMAC SHA256 signature', async () => {
     const orderId = 'order_test_998877';
     const paymentId = 'pay_test_112233';
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'profit_gym_secret_dev_382910';
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'GzTRhcC7FleEoUXebp1VTchS';
     const validSignature = crypto
       .createHmac('sha256', secret)
       .update(`${orderId}|${paymentId}`)
@@ -479,7 +479,7 @@ async function runApiTests() {
   await test('POST /api/verify-payment verifies valid HMAC-SHA256 signature with 200', async () => {
     const orderId = 'order_std_test_001';
     const paymentId = 'pay_std_test_001';
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'profit_gym_secret_dev_382910';
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'GzTRhcC7FleEoUXebp1VTchS';
     const validSignature = crypto
       .createHmac('sha256', secret)
       .update(`${orderId}|${paymentId}`)
