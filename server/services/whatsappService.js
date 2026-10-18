@@ -387,10 +387,114 @@ const sendAuthAlertWhatsApp = async ({ user, ip = '127.0.0.1', type = 'LOGIN' })
   return { success: true, simulated: true, payload: messageBody };
 };
 
+/**
+ * Dispatches an official WhatsApp 1-Day Trial Pass confirmation directly to the athlete.
+ * @param {Object} options - { fullName, phone, reference, discipline, date }
+ */
+const sendTrialPassWhatsApp = async ({ fullName, phone, reference, discipline, date }) => {
+  const athleteName = fullName || 'Athlete';
+  const recipient = cleanPhoneNumber(phone);
+  const passDate = date || 'Immediate Entry';
+  const program = discipline || 'Strength & Conditioning';
+
+  const messageBody = [
+    `⚡ *PROFIT TRAINING CLUB // COMPLIMENTARY TRIAL PASS* ⚡`,
+    `----------------------------------------------------`,
+    `🎉 *Congratulations, ${athleteName}!*`,
+    `Your 1-Day Complimentary Sanctuary Trial Pass has been confirmed.`,
+    ``,
+    `🎟️ *Pass ID:* ${reference}`,
+    `🏋️ *Discipline:* ${program}`,
+    `📅 *Valid Date:* ${passDate}`,
+    `⏰ *Sanctuary Hours:* 06:00 AM – 10:00 PM`,
+    `📍 *Location:* PROFIT Flagship Sanctuary (452 Lafayette St, NYC)`,
+    ``,
+    `Show this Pass ID at our front reception desk for direct entry.`,
+    `Our strength coaches look forward to welcoming you on the training floor!`,
+    `----------------------------------------------------`,
+    `Train Hard. Stay Consistent. 💪`
+  ].join('\n');
+
+  // 1. Twilio WhatsApp dispatch
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioFrom = process.env.TWILIO_WHATSAPP_NUMBER || '+14155238886';
+
+  if (twilioSid && twilioToken && recipient) {
+    try {
+      const formattedTo = recipient.startsWith('+') ? recipient : `+${recipient}`;
+      const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+      const bodyParams = new URLSearchParams();
+      bodyParams.append('From', `whatsapp:${twilioFrom}`);
+      bodyParams.append('To', `whatsapp:${formattedTo}`);
+      bodyParams.append('Body', messageBody);
+
+      const authHeader = 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: bodyParams.toString(),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        console.log('\x1b[32m%s\x1b[0m', `[Trial WhatsApp Sent via Twilio] Delivered to +${recipient} (SID: ${data.sid})`);
+        return { success: true, messageId: data.sid, provider: 'twilio' };
+      }
+    } catch (twErr) {
+      console.warn('[Twilio Trial WhatsApp Exception]', twErr.message);
+    }
+  }
+
+  // 2. Meta WhatsApp Cloud API
+  const metaToken = process.env.WHATSAPP_TOKEN;
+  const metaPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (metaToken && metaPhoneId && recipient) {
+    try {
+      const endpoint = `https://graph.facebook.com/v21.0/${metaPhoneId}/messages`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: recipient,
+          type: 'text',
+          text: { preview_url: false, body: messageBody },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        console.log('\x1b[32m%s\x1b[0m', `[Trial WhatsApp Sent via Meta] Delivered to +${recipient}`);
+        return { success: true, messageId: data.messages?.[0]?.id, provider: 'meta' };
+      }
+    } catch (metaErr) {
+      console.warn('[Meta Trial WhatsApp Exception]', metaErr.message);
+    }
+  }
+
+  // 3. Fallback logger in development
+  console.log('\x1b[36m%s\x1b[0m', `--------------------------------------------------------`);
+  console.log('\x1b[33m%s\x1b[0m', `⚡ [Trial Pass WhatsApp Dispatched to Athlete]`);
+  console.log('\x1b[36m%s\x1b[0m', `Recipient Phone: ${recipient ? '+' + recipient : 'No Phone'}`);
+  console.log('\x1b[32m%s\x1b[0m', messageBody);
+  console.log('\x1b[36m%s\x1b[0m', `--------------------------------------------------------`);
+
+  return { success: true, simulated: true, payload: messageBody };
+};
+
 module.exports = {
   cleanPhoneNumber,
   sendBookingAlert,
   sendContactAlert,
   sendPaymentReceiptWhatsApp,
   sendAuthAlertWhatsApp,
+  sendTrialPassWhatsApp,
 };

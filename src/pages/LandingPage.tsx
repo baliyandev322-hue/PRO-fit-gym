@@ -16,13 +16,21 @@ import {
   Play, 
   Sparkles,
   Phone,
-  Mail
+  Mail,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { openWhatsAppTrial } from '@/lib/whatsapp';
 import confetti from 'canvas-confetti';
+
+interface ConfirmedTrialPass {
+  reference: string;
+  athleteName: string;
+  discipline: string;
+  date: string;
+  phone: string;
+}
 
 export const LandingPage: React.FC = () => {
   const { user, isAuthenticated, role } = useAuth();
@@ -39,6 +47,7 @@ export const LandingPage: React.FC = () => {
   const [trialDate, setTrialDate] = useState('');
   const [trialNotes, setTrialNotes] = useState('');
   const [isSubmittingTrial, setIsSubmittingTrial] = useState(false);
+  const [confirmedTrialPass, setConfirmedTrialPass] = useState<ConfirmedTrialPass | null>(null);
 
   // Legal Policies Modal State (Razorpay & RBI Compliance)
   const [activePolicy, setActivePolicy] = useState<'terms' | 'privacy' | 'refund' | null>(null);
@@ -49,13 +58,14 @@ export const LandingPage: React.FC = () => {
       if (e.key === 'Escape') {
         setShowTrialModal(false);
         setActivePolicy(null);
+        setConfirmedTrialPass(null);
       }
     };
-    if (showTrialModal || activePolicy) {
+    if (showTrialModal || activePolicy || confirmedTrialPass) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showTrialModal, activePolicy]);
+  }, [showTrialModal, activePolicy, confirmedTrialPass]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -186,12 +196,12 @@ export const LandingPage: React.FC = () => {
         message: `Complimentary pass issued for ${trialName.trim()}! Reference: ${issuedRef}. WhatsApp pass generated.`
       });
 
-      // Automatically dispatch / open WhatsApp with the confirmed trial pass
-      openWhatsAppTrial({
+      // Set confirmed pass details to display confirmation dialog (NO external WhatsApp redirect)
+      setConfirmedTrialPass({
         athleteName: trialName.trim(),
         reference: issuedRef,
         discipline: trialDiscipline,
-        date: trialDate,
+        date: trialDate || 'Immediate Entry',
         phone: trialPhone.trim()
       });
 
@@ -1156,6 +1166,87 @@ export const LandingPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: TRIAL PASS CONFIRMATION POPUP ================= */}
+      {confirmedTrialPass && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trial-success-title"
+        >
+          <div className="bg-gym-surface border-2 border-gym-lime rounded-sm max-w-md w-full p-6 sm:p-8 relative shadow-2xl animate-in zoom-in-95 text-center">
+            <button
+              onClick={() => setConfirmedTrialPass(null)}
+              className="absolute top-4 right-4 text-gym-muted hover:text-white text-sm"
+              aria-label="Close pass confirmation dialog"
+            >
+              ✕
+            </button>
+
+            <div className="w-16 h-16 bg-gym-lime/10 border border-gym-lime/40 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-9 h-9 text-gym-lime" />
+            </div>
+
+            <span className="text-[11px] font-heading font-black uppercase text-gym-lime tracking-widest block mb-1">
+              CONGRATULATIONS // PASS CONFIRMED
+            </span>
+
+            <h3 
+              id="trial-success-title"
+              className="font-heading text-2xl sm:text-3xl font-black uppercase text-gym-primary tracking-wide mb-2"
+            >
+              YOU'RE BOOKED, {confirmedTrialPass.athleteName.toUpperCase()}!
+            </h3>
+
+            <p className="text-xs text-gym-secondary mb-5 leading-relaxed">
+              Your 1-Day Complimentary Sanctuary Pass has been confirmed. Simply present your Pass ID at reception for entry.
+            </p>
+
+            {/* Pass Ticket Card */}
+            <div className="bg-gym-black border border-gym-border rounded p-4 mb-5 text-left space-y-3 font-mono">
+              <div className="flex justify-between items-center pb-2 border-b border-gym-border/60">
+                <span className="text-[10px] text-gym-muted uppercase font-heading font-bold">PASS REFERENCE ID</span>
+                <span className="text-sm text-gym-lime font-black tracking-wider">{confirmedTrialPass.reference}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-[10px] text-gym-muted block uppercase font-heading font-bold">DISCIPLINE</span>
+                  <span className="text-gym-primary text-[11px] font-sans font-semibold">{confirmedTrialPass.discipline}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gym-muted block uppercase font-heading font-bold">RESERVED DATE</span>
+                  <span className="text-gym-primary text-[11px] font-sans font-semibold">{confirmedTrialPass.date}</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-gym-border/60 flex justify-between items-center text-[10px]">
+                <span className="text-gym-secondary uppercase font-heading font-bold">SANCTUARY ACCESS HOURS</span>
+                <span className="text-white font-bold font-sans">06:00 AM – 10:00 PM</span>
+              </div>
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-gym-secondary uppercase font-heading font-bold">FACILITY</span>
+                <span className="text-gym-lime font-sans font-medium">NYC - NoHo Flagship (Sanctuary 01)</span>
+              </div>
+            </div>
+
+            {/* Direct WhatsApp Dispatched Indicator */}
+            <div className="bg-emerald-950/40 border border-emerald-500/30 rounded p-3.5 mb-6 flex items-start gap-3 text-left">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse mt-1 flex-shrink-0" />
+              <div className="text-[11px] text-emerald-200/90 leading-relaxed font-sans">
+                <span className="font-bold text-white block">Automated WhatsApp Pass Dispatched:</span>
+                We have sent your Pass ID and entry clearance directly to your WhatsApp ({confirmedTrialPass.phone}). You do not need to send any message yourself.
+              </div>
+            </div>
+
+            <button
+              onClick={() => setConfirmedTrialPass(null)}
+              className="w-full py-3 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow transition-all"
+            >
+              GOT IT // RETURN TO CLUB
+            </button>
           </div>
         </div>
       )}

@@ -109,6 +109,13 @@ router.post('/', formSubmitLimiter, async (req, res) => {
         status: 'Confirmed'
       });
 
+      // Automatically dispatch WhatsApp confirmation directly to the athlete (non-blocking)
+      try {
+        const { sendTrialPassWhatsApp, sendBookingAlert } = require('../services/whatsappService');
+        sendTrialPassWhatsApp({ fullName, phone, reference, discipline, date: preferredDate }).catch(() => {});
+        sendBookingAlert(mongoBooking).catch(() => {});
+      } catch (waErr) {}
+
       return res.status(201).json({
         success: true,
         message: 'Trial pass application confirmed! Concierge pass issued.',
@@ -139,6 +146,11 @@ router.post('/', formSubmitLimiter, async (req, res) => {
     };
     devTrialRequests.unshift(fallbackTrial);
     saveRecord('trials', fallbackTrial);
+
+    try {
+      const { sendTrialPassWhatsApp } = require('../services/whatsappService');
+      sendTrialPassWhatsApp({ fullName, phone, reference, discipline, date: preferredDate }).catch(() => {});
+    } catch (waErr) {}
 
     return res.status(201).json({
       success: true,
