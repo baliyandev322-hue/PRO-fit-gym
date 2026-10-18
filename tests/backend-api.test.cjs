@@ -413,6 +413,93 @@ async function runApiTests() {
     assert.strictEqual(data.verified, true);
   });
 
+  // --- RAZORPAY STANDARD WEB CHECKOUT ENDPOINTS ---
+  await test('POST /api/create-order rejects amount < 100 paise with 400', async () => {
+    const res = await fetch(`${BASE_URL}/api/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: 50, currency: 'INR' }),
+    });
+    assert.strictEqual(res.status, 400);
+    const data = await res.json();
+    assert.strictEqual(data.success, false);
+  });
+
+  await test('POST /api/create-order creates order with order_id, amount, currency', async () => {
+    const res = await fetch(`${BASE_URL}/api/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: 50000, currency: 'INR', receipt: 'rcp_test_001' }),
+    });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.success, true);
+    assert.ok(data.order_id);
+    assert.strictEqual(data.amount, 50000);
+    assert.strictEqual(data.currency, 'INR');
+  });
+
+  await test('POST /api/create-order rejects invalid auth token with 401', async () => {
+    const res = await fetch(`${BASE_URL}/api/create-order`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer invalid_forged_token'
+      },
+      body: JSON.stringify({ amount: 50000 }),
+    });
+    assert.strictEqual(res.status, 401);
+  });
+
+  await test('POST /api/verify-payment rejects missing fields with 400', async () => {
+    const res = await fetch(`${BASE_URL}/api/verify-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: 'order_123' }), // missing payment_id and signature
+    });
+    assert.strictEqual(res.status, 400);
+  });
+
+  await test('POST /api/verify-payment rejects signature mismatch with 400', async () => {
+    const res = await fetch(`${BASE_URL}/api/verify-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_id: 'order_123',
+        payment_id: 'pay_123',
+        signature: 'invalid_tampered_signature_hex'
+      }),
+    });
+    assert.strictEqual(res.status, 400);
+    const data = await res.json();
+    assert.strictEqual(data.success, false);
+    assert.strictEqual(data.verified, false);
+  });
+
+  await test('POST /api/verify-payment verifies valid HMAC-SHA256 signature with 200', async () => {
+    const orderId = 'order_std_test_001';
+    const paymentId = 'pay_std_test_001';
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'uGysBqDj3jvgNb5T4m3axonA';
+    const validSignature = crypto
+      .createHmac('sha256', secret)
+      .update(`${orderId}|${paymentId}`)
+      .digest('hex');
+
+    const res = await fetch(`${BASE_URL}/api/verify-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_id: orderId,
+        payment_id: paymentId,
+        signature: validSignature
+      }),
+    });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.success, true);
+    assert.strictEqual(data.verified, true);
+  });
+
   console.log('\n======================================================');
   console.log(`API TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('======================================================\n');

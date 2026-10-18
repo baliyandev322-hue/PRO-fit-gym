@@ -82,8 +82,44 @@ const requireAdmin = [verifyAuth, requireRole('ADMIN')];
 const requireTrainer = [verifyAuth, requireRole('TRAINER', 'ADMIN')];
 const requireMember = [verifyAuth, requireRole('MEMBER', 'TRAINER', 'ADMIN')];
 
+/**
+ * Optional Authentication Middleware
+ * If Authorization header is present, validates it (rejects invalid tokens with 401).
+ * If not present, proceeds with unauthenticated request.
+ */
+const optionalAuth = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return next();
+  }
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required. Missing or malformed Bearer token.',
+    });
+  }
+  const token = authHeader.split(' ')[1];
+  const secret = process.env.JWT_SECRET || 'profit_gym_super_secure_jwt_secret_key_2026_x92';
+  try {
+    const decoded = jwt.verify(token, secret);
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: (decoded.role || 'MEMBER').toUpperCase(),
+      fullName: decoded.fullName,
+    };
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or forged authentication token.',
+    });
+  }
+};
+
 module.exports = {
   verifyAuth,
+  optionalAuth,
   requireRole,
   requireAdmin,
   requireTrainer,

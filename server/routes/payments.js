@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Razorpay = require('razorpay');
-const { verifyAuth } = require('../middleware/auth');
+const { verifyAuth, optionalAuth } = require('../middleware/auth');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
 const Membership = require('../models/Membership');
@@ -88,89 +88,103 @@ router.get('/config', (req, res) => {
 });
 
 /**
- * @route   POST /api/payments/create-order
- * @desc    Create a Razorpay Order on server (with live Razorpay API integration)
- * @access  Private (Authenticated User)
+ * @desc Create a Razorpay Order
+ * Request: { amount (paise), currency, receipt } or { planId }
+ * Returns: { order_id, amount, currency }
+ * Minimum amount: 100 paise
  */
-router.post('/create-order', verifyAuth, async (req, res) => {
+const createOrderHandler = async (req, res) => {
   try {
-    const { planId } = req.body;
-    const userId = req.user.id;
-    const userName = req.user.fullName || req.user.name || 'Valued Athlete';
+    const { planId, amount, currency, receipt } = req.body || {};
+    const userId = req.user?.id || 'guest';
+    const userName = req.user?.fullName || req.user?.name || req.body?.name || 'Valued Athlete';
 
-    if (!planId) {
+    let amountInPaise = 0;
+    let planTitle = req.body?.planTitle || 'Sanctuary Access';
+
+    if (amount !== undefined && amount !== null && amount !== '') {
+      const numAmount = Number(amount);
+      if (isNaN(numAmount) || numAmount < 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid amount. Minimum amount is 100 paise.'
+        });
+      }
+      amountInPaise = Math.round(numAmount);
+    } else if (planId) {
+      let planPrice = 24900;
+      if (mongoose.connection.readyState === 1) {
+        try {
+          const dbPlan = await MembershipPlan.findOne({ slug: planId });
+          if (dbPlan) {
+            planPrice = dbPlan.priceInr || dbPlan.price;
+            planTitle = dbPlan.name;
+          }
+        } catch (err) {
+          console.warn('MongoDB plan lookup error, using catalog:', err.message);
+        }
+      }
+      if (!planPrice && PLAN_CATALOG[planId]) {
+        planPrice = PLAN_CATALOG[planId].price;
+        planTitle = PLAN_CATALOG[planId].name;
+      }
+      amountInPaise = Math.round(planPrice * 100);
+    } else {
       return res.status(400).json({
         success: false,
-        message: 'Plan ID is required to initiate checkout.'
+        message: 'Amount (in paise) or planId is required to create an order.'
       });
     }
 
-    let planPrice = 24900;
-    let planTitle = 'Performance Tier';
-
-    // Fetch plan from MongoDB Atlas or catalog
-    if (mongoose.connection.readyState === 1) {
-      try {
-        const dbPlan = await MembershipPlan.findOne({ slug: planId });
-        if (dbPlan) {
-          planPrice = dbPlan.priceInr || dbPlan.price;
-          planTitle = dbPlan.name;
-        }
-      } catch (err) {
-        console.warn('MongoDB plan lookup error, using catalog:', err.message);
-      }
+    if (amountInPaise < 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount must be at least 100 paise.'
+      });
     }
 
-    if (!planPrice && PLAN_CATALOG[planId]) {
-      planPrice = PLAN_CATALOG[planId].price;
-      planTitle = PLAN_CATALOG[planId].name;
-    }
-
-    // Amount in paise (1 INR = 100 paise)
-    const amountInPaise = Math.round(planPrice * 100);
-    const receiptId = `rcp_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-    let orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const orderCurrency = (currency || 'INR').toUpperCase();
+    const receiptId = receipt || `rcp_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     // 1. Live Razorpay SDK order creation
+    let orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     if (razorpayClient) {
       try {
         const rzpOrder = await razorpayClient.orders.create({
           amount: amountInPaise,
-          currency: 'INR',
+          currency: orderCurrency,
           receipt: receiptId,
           notes: {
             userId: userId.toString(),
-            planId,
+            planId: planId || 'custom',
             planTitle,
             userName,
-            email: req.user.email
+            email: req.user?.email || req.body?.email || ''
           }
         });
         orderId = rzpOrder.id;
       } catch (rzpErr) {
         console.error('[Razorpay API Error] Order creation failed:', rzpErr.error?.description || rzpErr.message);
-        if (process.env.NODE_ENV !== 'production' || rzpErr.statusCode === 401) {
-          console.warn('[Payment Gateway Notice] Live Razorpay credentials returned authentication error. Falling back to sandbox order simulation so athlete checkout continues.');
-        } else {
-          return res.status(500).json({
-            success: false,
-            message: `Razorpay Order creation failed: ${rzpErr.error?.description || rzpErr.message}`
-          });
-        }
+        return res.status(500).json({
+          success: false,
+          message: `Razorpay Order creation failed: ${rzpErr.error?.description || rzpErr.message}`,
+          error: rzpErr.error || rzpErr.message
+        });
       }
+    } else {
+      console.warn('[Payment Gateway Notice] Razorpay client uninitialized, using sandbox order ID.');
     }
 
     // 2. Record pending transaction in MongoDB Atlas if available
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1 && userId !== 'guest') {
       try {
         await Payment.create({
           memberId: userId,
           memberName: userName,
-          planId,
+          planId: planId || 'custom',
           planName: planTitle,
-          amount: planPrice,
-          currency: 'INR',
+          amount: amountInPaise / 100,
+          currency: orderCurrency,
           status: 'PENDING',
           gateway: 'RAZORPAY',
           razorpayOrderId: orderId,
@@ -183,14 +197,21 @@ router.post('/create-order', verifyAuth, async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      order_id: orderId,
+      id: orderId,
+      amount: amountInPaise,
+      currency: orderCurrency,
+      receipt: receiptId,
+      keyId: RAZORPAY_KEY_ID,
       order: {
         id: orderId,
+        order_id: orderId,
         amount: amountInPaise,
-        amountInRupees: planPrice,
-        currency: 'INR',
+        amountInRupees: amountInPaise / 100,
+        currency: orderCurrency,
         receipt: receiptId,
         keyId: RAZORPAY_KEY_ID,
-        planId,
+        planId: planId || 'custom',
         planTitle
       }
     });
@@ -201,60 +222,54 @@ router.post('/create-order', verifyAuth, async (req, res) => {
       message: 'Failed to create payment order. Please try again.'
     });
   }
-});
+};
 
 /**
- * @route   POST /api/payments/verify
- * @desc    Verify Razorpay payment signature & activate membership in MongoDB Atlas
- * @access  Private (Authenticated User)
+ * @desc Verify Razorpay payment signature
+ * Request: { order_id, payment_id, signature } or { razorpay_order_id, razorpay_payment_id, razorpay_signature }
+ * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
  */
-router.post('/verify', verifyAuth, async (req, res) => {
+const verifyPaymentHandler = async (req, res) => {
   try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
-      razorpay_signature,
-      planId 
-    } = req.body;
+    const orderId = req.body?.order_id || req.body?.razorpay_order_id;
+    const paymentId = req.body?.payment_id || req.body?.razorpay_payment_id;
+    const signature = req.body?.signature || req.body?.razorpay_signature;
+    const planId = req.body?.planId;
 
-    const userId = req.user.id;
-    const userName = req.user.fullName || req.user.name || 'Valued Athlete';
-
-    if (!razorpay_order_id || !razorpay_payment_id) {
+    if (!orderId || !paymentId || !signature) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID and Payment ID are required for verification.'
+        message: 'Missing required payment verification fields (order_id, payment_id, signature).'
       });
     }
 
     // Server-side HMAC SHA256 Signature Verification
     const generatedSignature = crypto
       .createHmac('sha256', RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .update(`${orderId}|${paymentId}`)
       .digest('hex');
 
-    // Strict validation for live production mode; fallback for dev simulation
-    const isSandbox = RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY') || process.env.NODE_ENV !== 'production';
-    const isSignatureValid = 
-      razorpay_signature === generatedSignature || 
-      (isSandbox && (razorpay_signature?.startsWith('sig_dev_') || !razorpay_signature));
+    const isSignatureValid = (generatedSignature === signature);
 
     if (!isSignatureValid) {
-      console.warn(`[SECURITY] Signature mismatch: expected ${generatedSignature}, received ${razorpay_signature}`);
+      console.warn(`[SECURITY] Signature mismatch: expected ${generatedSignature}, received ${signature}`);
       return res.status(400).json({
         success: false,
+        verified: false,
         message: 'Payment verification failed: Signature mismatch. Potential tampering detected.'
       });
     }
 
+    const userId = req.user?.id || req.body?.userId || 'usr_guest';
+    const userName = req.user?.fullName || req.body?.userName || 'Valued Athlete';
     const planMeta = PLAN_CATALOG[planId] || { name: 'Performance Tier', price: 24900, durationDays: 30 };
     const receiptNumber = `INV-PROFIT-${Date.now().toString().slice(-6)}`;
     const now = new Date();
     const expiryDate = new Date(now.getTime() + (planMeta.durationDays || 30) * 86400000);
 
-    // Update / Activate Membership in MongoDB Database
+    // Update / Activate Membership in MongoDB Database if authenticated
     let updatedMembership = null;
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1 && req.user?.id) {
       try {
         updatedMembership = await Membership.findOneAndUpdate(
           { userId },
@@ -283,8 +298,8 @@ router.post('/verify', verifyAuth, async (req, res) => {
           currency: 'INR',
           status: 'COMPLETED',
           gateway: 'RAZORPAY',
-          razorpayPaymentId: razorpay_payment_id,
-          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: paymentId,
+          razorpayOrderId: orderId,
           receiptNumber
         });
       } catch (err) {
@@ -295,8 +310,8 @@ router.post('/verify', verifyAuth, async (req, res) => {
     // Record in in-memory dev ledger
     const paidRecord = {
       id: `pay-${Date.now()}`,
-      razorpay_payment_id,
-      razorpay_order_id,
+      razorpay_payment_id: paymentId,
+      razorpay_order_id: orderId,
       user_id: userId,
       member_name: userName,
       plan_id: planId,
@@ -314,38 +329,18 @@ router.post('/verify', verifyAuth, async (req, res) => {
     const recipientUser = {
       id: userId,
       fullName: userName,
-      email: req.user?.email,
+      email: req.user?.email || req.body?.email,
       phone: req.user?.phone || req.body?.phone,
     };
-
-    // If email or phone is missing from session, populate from User model in MongoDB Atlas
-    if ((!recipientUser.email || !recipientUser.phone) && mongoose.connection.readyState === 1) {
-      User.findById(userId)
-        .then((dbUser) => {
-          if (dbUser) {
-            recipientUser.email = recipientUser.email || dbUser.email;
-            recipientUser.phone = recipientUser.phone || dbUser.phone;
-          }
-          sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
-            .catch((e) => console.error('[Receipt Email Error]', e.message));
-          sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
-            .catch((w) => console.error('[Receipt WhatsApp Error]', w.message));
-        })
-        .catch(() => {
-          sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership }).catch(() => {});
-          sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership }).catch(() => {});
-        });
-    } else {
-      sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
-        .catch((e) => console.error('[Receipt Email Error]', e.message));
-      sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership })
-        .catch((w) => console.error('[Receipt WhatsApp Error]', w.message));
-    }
+    sendPaymentReceiptEmail({ user: recipientUser, payment: paidRecord, membership: updatedMembership }).catch(() => {});
+    sendPaymentReceiptWhatsApp({ user: recipientUser, payment: paidRecord, membership: updatedMembership }).catch(() => {});
 
     return res.status(200).json({
       success: true,
       verified: true,
-      message: 'Razorpay payment verified successfully! Membership has been activated.',
+      message: 'Payment verified successfully! Membership has been activated.',
+      order_id: orderId,
+      payment_id: paymentId,
       payment: paidRecord,
       membership: {
         status: 'ACTIVE',
@@ -359,10 +354,15 @@ router.post('/verify', verifyAuth, async (req, res) => {
     console.error('Error verifying payment:', error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while verifying payment.'
+      message: 'Failed to verify payment.'
     });
   }
-});
+};
+
+// Mount route handlers
+router.post('/create-order', optionalAuth, createOrderHandler);
+router.post('/verify', optionalAuth, verifyPaymentHandler);
+router.post('/verify-payment', optionalAuth, verifyPaymentHandler);
 
 /**
  * @route   POST /api/payments/webhook
@@ -642,3 +642,5 @@ router.get('/invoice/:id', verifyAuth, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.createOrderHandler = createOrderHandler;
+module.exports.verifyPaymentHandler = verifyPaymentHandler;

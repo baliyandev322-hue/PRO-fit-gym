@@ -66,31 +66,54 @@ const getApiBase = () => {
 };
 
 /**
- * Create order on backend API (/api/payments/create-order)
+ * Create order on backend API (/api/create-order or /api/payments/create-order)
  */
-export async function createRazorpayOrder(planId: string, token?: string): Promise<RazorpayOrderData> {
+export async function createRazorpayOrder(
+  planOrOptions: string | { amount?: number; currency?: string; receipt?: string; planId?: string },
+  token?: string
+): Promise<RazorpayOrderData> {
   const authToken = token || localStorage.getItem('profit_auth_token');
+  const planId = typeof planOrOptions === 'string' ? planOrOptions : planOrOptions?.planId || 'plan-performance';
+  const customAmount = typeof planOrOptions === 'object' ? planOrOptions.amount : undefined;
+  const currency = typeof planOrOptions === 'object' ? planOrOptions.currency || 'INR' : 'INR';
+  const receipt = typeof planOrOptions === 'object' ? planOrOptions.receipt : undefined;
 
   try {
     const apiBase = getApiBase();
-    const endpoint = apiBase.endsWith('/api') ? `${apiBase}/payments/create-order` : `${apiBase}/api/payments/create-order`;
-    const res = await fetch(endpoint, {
+    // Try standard endpoint /api/create-order first
+    const primaryEndpoint = apiBase.endsWith('/api') ? `${apiBase}/create-order` : `${apiBase}/api/create-order`;
+    const payload: any = { planId, currency };
+    if (customAmount !== undefined) payload.amount = customAmount;
+    if (receipt) payload.receipt = receipt;
+
+    const res = await fetch(primaryEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
       },
-      body: JSON.stringify({ planId })
+      body: JSON.stringify(payload)
     });
 
     if (res.ok) {
       const data = await res.json();
-      if (data.success && data.order) {
-        return data.order;
+      const orderId = data.order_id || data.id || data.order?.id;
+      const amountPaise = data.amount || data.order?.amount || 2490000;
+      if (orderId) {
+        return {
+          id: orderId,
+          amount: amountPaise,
+          amountInRupees: amountPaise / 100,
+          currency: data.currency || currency,
+          receipt: data.receipt || data.order?.receipt || `rcp_${Date.now()}`,
+          keyId: data.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TpHpYjRKTXl5yi',
+          planId: planId,
+          planTitle: data.order?.planTitle || 'Sanctuary Access'
+        };
       }
     }
   } catch (err) {
-    console.warn('API /api/payments/create-order unreachable, using local fallback:', err);
+    console.warn('API /api/create-order failed, checking fallback:', err);
   }
 
   // Resilient fallback order creation for local development
@@ -99,7 +122,7 @@ export async function createRazorpayOrder(planId: string, token?: string): Promi
     'plan-performance': 24900,
     'plan-elite': 39900
   };
-  const amount = planPrices[planId] || 24900;
+  const amount = customAmount ? (customAmount > 1000 ? customAmount / 100 : customAmount) : (planPrices[planId] || 24900);
 
   return {
     id: `order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -107,38 +130,41 @@ export async function createRazorpayOrder(planId: string, token?: string): Promi
     amountInRupees: amount,
     currency: 'INR',
     receipt: `rcp_local_${Date.now()}`,
-    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_PROFIT_GYM_DEV_KEY',
+    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TpHpYjRKTXl5yi',
     planId,
     planTitle: planId.includes('elite') ? 'Elite VIP Tier' : planId.includes('starter') ? 'Starter Tier' : 'Performance Tier'
   };
 }
 
 /**
- * Verify payment on backend API (/api/payments/verify)
+ * Verify payment on backend API (/api/verify-payment or /api/payments/verify)
  */
 export async function verifyRazorpayPayment(params: {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
-  planId: string;
+  planId?: string;
   token?: string;
 }): Promise<RazorpayVerificationResult> {
   const authToken = params.token || localStorage.getItem('profit_auth_token');
 
   try {
     const apiBase = getApiBase();
-    const endpoint = apiBase.endsWith('/api') ? `${apiBase}/payments/verify` : `${apiBase}/api/payments/verify`;
-    const res = await fetch(endpoint, {
+    const primaryEndpoint = apiBase.endsWith('/api') ? `${apiBase}/verify-payment` : `${apiBase}/api/verify-payment`;
+    const res = await fetch(primaryEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
       },
       body: JSON.stringify({
+        order_id: params.razorpay_order_id,
+        payment_id: params.razorpay_payment_id,
+        signature: params.razorpay_signature,
         razorpay_order_id: params.razorpay_order_id,
         razorpay_payment_id: params.razorpay_payment_id,
         razorpay_signature: params.razorpay_signature,
-        planId: params.planId
+        planId: params.planId || 'plan-performance'
       })
     });
 
@@ -158,14 +184,11 @@ export async function verifyRazorpayPayment(params: {
         error: errData.message || 'Server verification failed'
       };
     }
-  } catch (err) {
-    console.warn('Backend verification call failed, accepting local test signature:', err);
+  } catch (err: any) {
+    console.warn('Backend verification call failed:', err.message);
     return {
-      success: true,
-      verified: true,
-      paymentId: params.razorpay_payment_id,
-      orderId: params.razorpay_order_id,
-      receiptNumber: `INV-PROFIT-${Date.now().toString().slice(-6)}`
+      success: false,
+      error: err.message || 'Payment verification network error'
     };
   }
 }

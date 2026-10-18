@@ -113,7 +113,14 @@ app.use('/api/trials', require('./routes/trials'));
 // Mount Admin & Authentication Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/payments', require('./routes/payments'));
+
+// Razorpay Standard Web Checkout Endpoints
+const paymentsRouter = require('./routes/payments');
+const { optionalAuth } = require('./middleware/auth');
+app.use('/api/payments', paymentsRouter);
+app.post('/api/create-order', optionalAuth, paymentsRouter.createOrderHandler);
+app.post('/api/verify-payment', optionalAuth, paymentsRouter.verifyPaymentHandler);
+
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/workouts', require('./routes/workouts'));
 
