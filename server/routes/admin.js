@@ -707,6 +707,10 @@ router.delete('/members/:id', async (req, res) => {
     deleteRecord('users', 'id', req.params.id);
     return res.status(200).json({ success: true, message: 'Member successfully removed from local sanctuary store.' });
   } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to remove member.' });
+  }
+});
+
 /**
  * @route   POST /api/admin/test-whatsapp
  * @desc    Test WhatsApp notification dispatch to gym owner or member

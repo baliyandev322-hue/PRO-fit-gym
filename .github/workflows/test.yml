@@ -10,6 +10,7 @@ jobs:
   test:
     name: Automated Unit, API, Security & E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       PORT: 5000
       NODE_ENV: development
@@ -39,14 +40,27 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Start Backend Server
-        run: node server/server.js &
+      - name: Start Services & Run Complete Test Suite
+        run: |
+          node server/server.js > server.log 2>&1 &
+          SERVER_PID=$!
+          npx vite --host 127.0.0.1 --port 3000 > vite.log 2>&1 &
+          VITE_PID=$!
 
-      - name: Start Frontend Preview Server
-        run: npx vite --host 127.0.0.1 --port 3000 &
+          echo "Waiting for services to become healthy..."
+          if ! npx wait-on -t 45000 http://127.0.0.1:5000/api/health http://127.0.0.1:3000; then
+            echo "::error::Services failed to start within 45s"
+            echo "===== SERVER LOG ====="
+            cat server.log || true
+            echo "===== VITE LOG ====="
+            cat vite.log || true
+            kill $SERVER_PID $VITE_PID 2>/dev/null || true
+            exit 1
+          fi
 
-      - name: Wait for Services to be Ready
-        run: npx wait-on http://127.0.0.1:5000/api/health http://127.0.0.1:3000
+          echo "Services are ready! Running complete test suite..."
+          npm test
+          TEST_EXIT_CODE=$?
 
-      - name: Run Complete Test Suite (API, Security, E2E)
-        run: npm test
+          kill $SERVER_PID $VITE_PID 2>/dev/null || true
+          exit $TEST_EXIT_CODE
