@@ -106,7 +106,7 @@ export async function createRazorpayOrder(
           amountInRupees: amountPaise / 100,
           currency: data.currency || currency,
           receipt: data.receipt || data.order?.receipt || `rcp_${Date.now()}`,
-          keyId: data.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TpItGd7Mi8jY90',
+          keyId: data.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_PROFIT_GYM_DEV_KEY',
           planId: planId,
           planTitle: data.order?.planTitle || 'Sanctuary Access'
         };
@@ -130,7 +130,7 @@ export async function createRazorpayOrder(
     amountInRupees: amount,
     currency: 'INR',
     receipt: `rcp_local_${Date.now()}`,
-    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TpItGd7Mi8jY90',
+    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_PROFIT_GYM_DEV_KEY',
     planId,
     planTitle: planId.includes('elite') ? 'Elite VIP Tier' : planId.includes('starter') ? 'Starter Tier' : 'Performance Tier'
   };

@@ -15,8 +15,8 @@ jobs:
       PORT: 5000
       NODE_ENV: development
       JWT_SECRET: profit_gym_super_secure_jwt_secret_key_2026_x92
-      RAZORPAY_KEY_ID: rzp_live_TpItGd7Mi8jY90
-      RAZORPAY_KEY_SECRET: GzTRhcC7FleEoUXebp1VTchS
+      RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID || 'rzp_test_PROFIT_GYM_DEV_KEY' }}
+      RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET || 'profit_gym_secret_dev_382910' }}
 
     steps:
       - name: Checkout Code

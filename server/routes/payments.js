@@ -14,9 +14,9 @@ const { saveRecord } = require('../config/localStore');
 const router = express.Router();
 
 // Razorpay credentials from environment
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_live_TpItGd7Mi8jY90';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'GzTRhcC7FleEoUXebp1VTchS';
-const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || 'GzTRhcC7FleEoUXebp1VTchS';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_PROFIT_GYM_DEV_KEY';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'profit_gym_secret_dev_382910';
+const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || 'profit_gym_webhook_secret_dev_382910';
 
 // Initialize Razorpay SDK instance if keys are available
 let razorpayClient = null;
