@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserProfile, UserRole, RegisterPayload } from '@/types';
 import { useNotifications } from './NotificationContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface AuthContextType {
   user: UserProfile | null;
