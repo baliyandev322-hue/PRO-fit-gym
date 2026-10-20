@@ -27,6 +27,11 @@ import {
   QrCode,
   Shield,
   UserCheck,
+  X,
+  CreditCard,
+  Sun,
+  Sunset,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
@@ -47,6 +52,7 @@ export const RegisterPage: React.FC = () => {
 
   // Wizard Navigation
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
+  const [showPassModal, setShowPassModal] = useState(false);
 
   // ──────────────────────────────────────────
   // STEP 1: Personal Information
@@ -497,29 +503,47 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(false);
   };
 
+  // Step Meta Configuration
+  const stepsMeta = [
+    { step: 1, label: 'Identity', title: 'Athlete Identity', estimate: '~2 min' },
+    { step: 2, label: 'Security', title: 'Security & Access', estimate: '~1 min' },
+    { step: 3, label: 'Membership', title: 'Clearance Tier', estimate: '~1 min' },
+    { step: 4, label: 'Diagnostics', title: 'Training & Safety', estimate: 'Optional' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gym-black text-gym-primary flex flex-col justify-between relative overflow-x-hidden">
-      {/* Background Neon Glows */}
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-gym-lime/5 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="absolute bottom-10 left-10 w-96 h-96 bg-gym-lime/3 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="min-h-screen bg-[#0a0b0d] text-gym-primary flex flex-col justify-between relative overflow-x-hidden">
+      {/* Ambient Lighting Orbs */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-gym-lime/5 rounded-full blur-[160px] pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-gym-lime/3 rounded-full blur-[140px] pointer-events-none"></div>
 
       {/* Top Navbar */}
-      <header className="border-b border-gym-border/60 bg-gym-black/90 backdrop-blur sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="font-heading text-2xl font-black tracking-wider text-gym-primary group-hover:text-white transition-colors">
+      <header className="border-b border-zinc-800/80 bg-[#0a0b0d]/90 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <span className="font-heading text-2xl font-black tracking-wider text-white group-hover:text-gym-lime transition-colors">
               PRO<span className="text-gym-lime">FIT</span>
             </span>
-            <span className="text-[10px] tracking-widest font-heading uppercase text-gym-secondary border-l border-gym-border pl-2 hidden sm:inline">
+            <span className="text-[10px] tracking-widest font-heading uppercase text-zinc-400 border-l border-zinc-800 pl-2.5 hidden sm:inline">
               ATHLETE ONBOARDING
             </span>
           </Link>
 
-          <div className="flex items-center gap-4 text-xs">
-            <span className="text-gym-muted hidden sm:inline">Already registered?</span>
+          <div className="flex items-center gap-3">
+            {/* Live Pass Preview Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowPassModal(true)}
+              className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-gym-lime/60 bg-zinc-900/60 text-xs font-semibold text-zinc-300 hover:text-white flex items-center gap-1.5 transition-all"
+            >
+              <QrCode className="w-3.5 h-3.5 text-gym-lime" />
+              <span className="hidden sm:inline">Live Pass</span>
+            </button>
+
+            <span className="text-zinc-500 text-xs hidden md:inline">Already registered?</span>
             <Link
               to="/login"
-              className="px-3.5 py-1.5 border border-gym-border hover:border-gym-lime text-gym-primary hover:text-gym-lime font-bold uppercase tracking-wider text-xs rounded transition-colors"
+              className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 hover:border-gym-lime text-white hover:text-gym-lime font-bold uppercase tracking-wider text-xs rounded-lg transition-all"
             >
               Sign In
             </Link>
@@ -527,32 +551,46 @@ export const RegisterPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: 4-Step Stepper & Form Form (8 Cols) */}
-        <div className="lg:col-span-8 bg-gym-surface border border-gym-border rounded-lg p-6 sm:p-8 shadow-2xl relative">
-          {/* Step Progress Bar */}
+      {/* Main Centered Studio Flow Container */}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full flex flex-col justify-center">
+        {/* Modern Studio Card */}
+        <div className="bg-gradient-to-b from-[#14151a] to-[#0f1013] border border-zinc-800/90 rounded-2xl shadow-2xl p-6 sm:p-10 relative overflow-hidden backdrop-blur-xl">
+          {/* Subtle Card Accent Top Border */}
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-gym-lime/50 to-transparent"></div>
+
+          {/* Stepper Progress Pill Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-3 text-xs uppercase tracking-wider font-bold">
-              <span className="text-gym-lime flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" /> STEP {currentStep} OF 4
-              </span>
-              <span className="text-gym-secondary">
-                {currentStep === 1 && 'Personal Details'}
-                {currentStep === 2 && 'Credentials & Email Verification'}
-                {currentStep === 3 && 'Membership Plan & Billing'}
-                {currentStep === 4 && 'Fitness Diagnostics (Optional)'}
+            <div className="flex items-center justify-between mb-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-gym-lime text-black font-black text-xs flex items-center justify-center font-heading">
+                  {currentStep}
+                </span>
+                <span className="font-heading font-black text-sm uppercase tracking-wider text-white">
+                  {stepsMeta[currentStep - 1].title}
+                </span>
+              </div>
+              <span className="text-zinc-400 text-xs font-medium">
+                Step {currentStep} of 4 <span className="text-zinc-600">·</span> {stepsMeta[currentStep - 1].estimate}
               </span>
             </div>
 
-            {/* Stepper Indicators */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { step: 1, label: 'Identity' },
-                { step: 2, label: 'Security' },
-                { step: 3, label: 'Membership' },
-                { step: 4, label: 'Fitness' },
-              ].map((item) => (
+            {/* Segmented Slim Progress Lines */}
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {[1, 2, 3, 4].map((stepNum) => (
+                <div
+                  key={stepNum}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    stepNum <= currentStep
+                      ? 'bg-gym-lime shadow-[0_0_10px_rgba(204,255,0,0.3)]'
+                      : 'bg-zinc-800'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Step Quick Jump Chips */}
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+              {stepsMeta.map((item) => (
                 <button
                   key={item.step}
                   type="button"
@@ -560,30 +598,28 @@ export const RegisterPage: React.FC = () => {
                     if (item.step < currentStep) setCurrentStep(item.step as OnboardingStep);
                   }}
                   disabled={item.step > currentStep}
-                  className={`text-left p-2 rounded border transition-all ${
+                  className={`py-1.5 px-2 rounded-lg text-left transition-all flex items-center gap-1.5 ${
                     currentStep === item.step
-                      ? 'border-gym-lime bg-gym-lime/10 text-white shadow-[0_0_15px_rgba(204,255,0,0.1)]'
+                      ? 'bg-gym-lime/10 border border-gym-lime/40 text-white'
                       : item.step < currentStep
-                      ? 'border-gym-border bg-gym-black/40 text-gym-lime hover:border-gym-lime/60'
-                      : 'border-gym-border/40 bg-gym-black/20 text-gym-muted cursor-not-allowed'
+                      ? 'bg-zinc-900/60 border border-zinc-800 text-gym-lime hover:border-zinc-700 cursor-pointer'
+                      : 'bg-transparent border border-transparent text-zinc-600 cursor-not-allowed'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        item.step < currentStep
-                          ? 'bg-gym-lime text-black'
-                          : currentStep === item.step
-                          ? 'bg-gym-lime/20 text-gym-lime border border-gym-lime'
-                          : 'bg-zinc-800 text-zinc-500'
-                      }`}
-                    >
-                      {item.step < currentStep ? <Check className="w-3 h-3 stroke-[3]" /> : item.step}
-                    </span>
-                    <span className="text-[11px] font-heading font-bold uppercase tracking-wider truncate">
-                      {item.label}
-                    </span>
-                  </div>
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                      item.step < currentStep
+                        ? 'bg-gym-lime text-black'
+                        : currentStep === item.step
+                        ? 'bg-gym-lime/20 text-gym-lime'
+                        : 'bg-zinc-800 text-zinc-500'
+                    }`}
+                  >
+                    {item.step < currentStep ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : item.step}
+                  </span>
+                  <span className="text-[11px] font-semibold truncate hidden sm:inline">
+                    {item.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -594,25 +630,25 @@ export const RegisterPage: React.FC = () => {
           {/* ──────────────────────────────────────────────────────── */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="border-b border-gym-border pb-4">
-                <h2 className="font-heading text-2xl font-black uppercase tracking-wider text-white">
+              <div className="border-b border-zinc-800/80 pb-4">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
                   Athlete Identity
                 </h2>
-                <p className="text-xs text-gym-muted mt-1">
-                  Enter your official details to establish your facility clearance pass.
+                <p className="text-xs text-zinc-400 mt-1">
+                  Establish your official club clearance credentials and membership profile.
                 </p>
               </div>
 
-              {/* Profile Avatar Upload */}
-              <div className="flex items-center gap-5 p-4 bg-gym-black rounded border border-gym-border">
-                <div className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-gym-lime/50 bg-zinc-900 flex-shrink-0">
+              {/* Profile Avatar Upload - Modern Studio Frame */}
+              <div className="flex items-center gap-5 p-4 bg-zinc-900/50 border border-zinc-800/90 rounded-xl hover:border-zinc-700 transition-all">
+                <div className="relative group w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gym-lime/60 bg-zinc-950 flex-shrink-0 shadow-lg shadow-gym-lime/10">
                   <img
                     src={avatarUrl}
                     alt="Athlete Avatar"
                     className="w-full h-full object-cover"
                   />
-                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] uppercase font-bold text-gym-lime cursor-pointer transition-opacity">
-                    <Upload className="w-4 h-4 mb-1" /> Change
+                  <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] uppercase font-bold text-gym-lime cursor-pointer transition-opacity">
+                    <Upload className="w-4 h-4 mb-0.5" /> Change
                     <input
                       type="file"
                       accept="image/*"
@@ -622,11 +658,14 @@ export const RegisterPage: React.FC = () => {
                   </label>
                 </div>
                 <div className="flex-1">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider block">
-                    Profile Picture <span className="text-gym-muted font-normal">(Optional)</span>
-                  </span>
-                  <p className="text-[11px] text-gym-muted mt-0.5">
-                    Your photo is embedded into your digital QR pass for turnstile verification.
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Turnstile Photo
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-medium">(Optional)</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Embedded into your NFC digital pass for contactless entry at facility gates.
                   </p>
                   <label className="inline-flex items-center gap-1.5 mt-2 text-xs text-gym-lime hover:underline cursor-pointer font-bold">
                     <Upload className="w-3.5 h-3.5" /> Upload Photo from Device
@@ -643,11 +682,11 @@ export const RegisterPage: React.FC = () => {
               {/* Full Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Full Legal Name <span className="text-gym-lime">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                       <User className="w-4 h-4" />
                     </div>
                     <input
@@ -656,17 +695,17 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="e.g. Marcus Vance"
                       required
-                      className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded text-sm text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      className="block w-full pl-10 pr-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Mobile Phone Number <span className="text-gym-lime">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                       <Phone className="w-4 h-4" />
                     </div>
                     <input
@@ -675,7 +714,7 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+1 (555) 019-2834"
                       required
-                      className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded text-sm text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      className="block w-full pl-10 pr-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                   </div>
                 </div>
@@ -683,11 +722,11 @@ export const RegisterPage: React.FC = () => {
 
               {/* Email Address */}
               <div>
-                <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                   Primary Email Address <span className="text-gym-lime">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
@@ -696,22 +735,22 @@ export const RegisterPage: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="marcus.vance@athletes.com"
                     required
-                    className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded text-sm text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                    className="block w-full pl-10 pr-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                   />
                 </div>
-                <p className="text-[11px] text-gym-muted mt-1">
-                  We'll dispatch your 6-digit access OTP code to this email in Step 2.
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  We will send your 6-digit access authorization code to this email in Step 2.
                 </p>
               </div>
 
-              {/* Date of Birth & Gender */}
+              {/* Date of Birth & Gender Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Date of Birth <span className="text-gym-lime">* (Must be 16+)</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                       <Calendar className="w-4 h-4" />
                     </div>
                     <input
@@ -719,16 +758,16 @@ export const RegisterPage: React.FC = () => {
                       value={dateOfBirth}
                       onChange={(e) => setDateOfBirth(e.target.value)}
                       required
-                      className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded text-sm text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors [color-scheme:dark]"
+                      className="block w-full pl-10 pr-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all [color-scheme:dark]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
-                    Gender Identity <span className="text-gym-muted font-normal">(Optional)</span>
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
+                    Gender Identity <span className="text-zinc-500 font-normal">(Optional)</span>
                   </label>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {[
                       { key: 'MALE', label: 'Male' },
                       { key: 'FEMALE', label: 'Female' },
@@ -739,10 +778,10 @@ export const RegisterPage: React.FC = () => {
                         key={g.key}
                         type="button"
                         onClick={() => setGender(g.key)}
-                        className={`py-2.5 text-xs font-bold rounded border transition-colors ${
+                        className={`py-2.5 text-xs font-bold rounded-lg border transition-all ${
                           gender === g.key
-                            ? 'border-gym-lime bg-gym-lime text-black'
-                            : 'border-gym-border bg-gym-black text-gym-secondary hover:border-zinc-500'
+                            ? 'border-gym-lime bg-gym-lime text-black shadow-md shadow-gym-lime/20'
+                            : 'border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white hover:border-zinc-700'
                         }`}
                       >
                         {g.label}
@@ -752,14 +791,14 @@ export const RegisterPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Physical Address (Optional) */}
-              <div className="pt-2 border-t border-gym-border/60">
-                <span className="text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 block font-heading">
-                  Residential Address <span className="text-gym-muted font-normal">(Optional)</span>
+              {/* Physical Address Section */}
+              <div className="pt-3 border-t border-zinc-800/80">
+                <span className="text-xs uppercase tracking-wider font-bold text-zinc-300 mb-2.5 block font-heading">
+                  Residential Address <span className="text-zinc-500 font-normal">(Optional)</span>
                 </span>
                 <div className="space-y-3">
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                       <MapPin className="w-4 h-4" />
                     </div>
                     <input
@@ -767,43 +806,43 @@ export const RegisterPage: React.FC = () => {
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                       placeholder="Street address (e.g. 452 Lafayette St)"
-                      className="block w-full pl-10 pr-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      className="block w-full pl-10 pr-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2.5">
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      placeholder="City (e.g. New York)"
-                      className="block w-full px-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      placeholder="City (e.g. NYC)"
+                      className="block w-full px-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                     <input
                       type="text"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       placeholder="State (e.g. NY)"
-                      className="block w-full px-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      className="block w-full px-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                     <input
                       type="text"
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
                       placeholder="Postal Code"
-                      className="block w-full px-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      className="block w-full px-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Step 1 Actions */}
-              <div className="pt-4 flex justify-end">
+              <div className="pt-6 border-t border-zinc-800/80 flex justify-end">
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="w-full sm:w-auto px-6 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded hover:bg-white transition-all flex items-center justify-center gap-2 group shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                  className="w-full sm:w-auto px-8 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-all flex items-center justify-center gap-2 group shadow-lg shadow-gym-lime/20"
                 >
-                  Next: Credentials & Security
+                  Continue: Credentials & Security
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -815,12 +854,12 @@ export const RegisterPage: React.FC = () => {
           {/* ──────────────────────────────────────────────────────── */}
           {currentStep === 2 && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="border-b border-gym-border pb-4">
-                <h2 className="font-heading text-2xl font-black uppercase tracking-wider text-white">
-                  Security & Verification
+              <div className="border-b border-zinc-800/80 pb-4">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
+                  Security & Access
                 </h2>
-                <p className="text-xs text-gym-muted mt-1">
-                  Create a secure passphrase and verify your athlete email address via 6-digit OTP.
+                <p className="text-xs text-zinc-400 mt-1">
+                  Create a secure passphrase and confirm email ownership via instant 6-digit OTP.
                 </p>
               </div>
 
@@ -828,11 +867,11 @@ export const RegisterPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Create Password */}
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Create Password <span className="text-gym-lime">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                       <Lock className="w-4 h-4" />
                     </div>
                     <input
@@ -841,12 +880,12 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="block w-full pl-10 pr-10 py-2.5 bg-gym-black border border-gym-border rounded text-sm text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime transition-colors"
+                      className="block w-full pl-10 pr-10 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gym-muted hover:text-white"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-white"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -855,11 +894,11 @@ export const RegisterPage: React.FC = () => {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Confirm Password <span className="text-gym-lime">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gym-muted">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                       <Lock className="w-4 h-4" />
                     </div>
                     <input
@@ -868,18 +907,18 @@ export const RegisterPage: React.FC = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className={`block w-full pl-10 pr-10 py-2.5 bg-gym-black border rounded text-sm text-white placeholder-gym-muted focus:outline-none transition-colors ${
+                      className={`block w-full pl-10 pr-10 py-2.5 bg-zinc-900/80 border rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none transition-all ${
                         confirmPassword && confirmPassword === password
-                          ? 'border-gym-lime'
+                          ? 'border-gym-lime ring-1 ring-gym-lime'
                           : confirmPassword && confirmPassword !== password
                           ? 'border-red-500'
-                          : 'border-gym-border focus:border-gym-lime'
+                          : 'border-zinc-800 focus:border-gym-lime focus:ring-1 focus:ring-gym-lime'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gym-muted hover:text-white"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-white"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -888,12 +927,12 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               {/* Password Strength Indicator */}
-              <div className="p-3 bg-gym-black rounded border border-gym-border/80">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] uppercase tracking-wider font-bold text-gym-secondary">
-                    Password Security Level
+              <div className="p-3.5 bg-zinc-900/50 rounded-xl border border-zinc-800/90">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-zinc-400">
+                    Password Security
                   </span>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-white">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">
                     {passwordStrength.label}
                   </span>
                 </div>
@@ -907,50 +946,50 @@ export const RegisterPage: React.FC = () => {
                     />
                   ))}
                 </div>
-                <div className="flex items-center gap-3 mt-2 text-[10px] text-gym-muted">
-                  <span className={password.length >= 6 ? 'text-gym-lime flex items-center gap-1' : ''}>
+                <div className="flex flex-wrap items-center gap-3 mt-2.5 text-[11px] text-zinc-500">
+                  <span className={password.length >= 6 ? 'text-gym-lime flex items-center gap-1 font-medium' : ''}>
                     {password.length >= 6 ? '✓' : '•'} 6+ characters
                   </span>
-                  <span className={/[A-Z]/.test(password) ? 'text-gym-lime flex items-center gap-1' : ''}>
+                  <span className={/[A-Z]/.test(password) ? 'text-gym-lime flex items-center gap-1 font-medium' : ''}>
                     {/[A-Z]/.test(password) ? '✓' : '•'} Uppercase
                   </span>
-                  <span className={/[0-9]/.test(password) ? 'text-gym-lime flex items-center gap-1' : ''}>
+                  <span className={/[0-9]/.test(password) ? 'text-gym-lime flex items-center gap-1 font-medium' : ''}>
                     {/[0-9]/.test(password) ? '✓' : '•'} Number
                   </span>
-                  <span className={confirmPassword && confirmPassword === password ? 'text-gym-lime flex items-center gap-1' : ''}>
-                    {confirmPassword && confirmPassword === password ? '✓ Passwords match' : '• Passwords match'}
+                  <span className={confirmPassword && confirmPassword === password ? 'text-gym-lime flex items-center gap-1 font-medium' : ''}>
+                    {confirmPassword && confirmPassword === password ? '✓ Matches' : '• Matches'}
                   </span>
                 </div>
               </div>
 
               {/* Email OTP Verification Section */}
-              <div className="p-4 bg-gym-black rounded-lg border border-gym-border relative overflow-hidden">
-                <div className="flex items-center justify-between mb-3">
+              <div className="p-5 bg-zinc-900/60 rounded-xl border border-zinc-800/90 relative overflow-hidden space-y-4">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-gym-lime" />
                     <span className="text-xs uppercase font-heading font-black tracking-wider text-white">
-                      Email Ownership Verification (OTP)
+                      Email Authorization (OTP)
                     </span>
                   </div>
                   {isEmailVerified ? (
-                    <span className="px-2 py-0.5 bg-gym-lime/10 text-gym-lime border border-gym-lime/30 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <span className="px-2.5 py-1 bg-gym-lime/10 text-gym-lime border border-gym-lime/30 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
                       <Check className="w-3 h-3 stroke-[3]" /> Verified
                     </span>
                   ) : (
-                    <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
+                    <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
                       Pending Verification
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-gym-secondary mb-4">
+                <p className="text-xs text-zinc-400">
                   Target Email:{' '}
-                  <strong className="text-white font-mono">{email || 'Not provided'}</strong>
+                  <strong className="text-white font-mono">{email || 'Not provided in Step 1'}</strong>
                 </p>
 
                 {!isEmailVerified ? (
                   <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
                       <input
                         type="text"
                         maxLength={6}
@@ -958,7 +997,7 @@ export const RegisterPage: React.FC = () => {
                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                         placeholder="Enter 6-Digit OTP"
                         disabled={!otpSent}
-                        className="flex-1 px-4 py-2.5 bg-zinc-900 border border-gym-border rounded text-center font-mono text-lg tracking-[8px] text-gym-lime placeholder-zinc-600 focus:outline-none focus:border-gym-lime disabled:opacity-50"
+                        className="flex-1 px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-center font-mono text-lg tracking-[8px] text-gym-lime placeholder-zinc-600 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime disabled:opacity-50"
                       />
 
                       {!otpSent ? (
@@ -966,7 +1005,7 @@ export const RegisterPage: React.FC = () => {
                           type="button"
                           onClick={handleSendOtp}
                           disabled={isSendingOtp}
-                          className="px-5 py-2.5 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          className="px-6 py-2.5 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-gym-lime/20"
                         >
                           {isSendingOtp ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -980,7 +1019,7 @@ export const RegisterPage: React.FC = () => {
                           type="button"
                           onClick={handleVerifyOtp}
                           disabled={isVerifyingOtp || otpCode.length < 6}
-                          className="px-5 py-2.5 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          className="px-6 py-2.5 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-gym-lime/20"
                         >
                           {isVerifyingOtp ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -993,13 +1032,13 @@ export const RegisterPage: React.FC = () => {
                     </div>
 
                     {otpSent && (
-                      <div className="flex items-center justify-between text-[11px] text-gym-muted pt-1">
-                        <span>Check your inbox & spam folder for the authorization code.</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-zinc-500 pt-1 gap-1">
+                        <span>Check your inbox & spam folder for the access code.</span>
                         <button
                           type="button"
                           onClick={handleSendOtp}
                           disabled={resendCooldown > 0 || isSendingOtp}
-                          className="text-gym-lime hover:underline disabled:text-zinc-600 disabled:no-underline font-bold"
+                          className="text-gym-lime hover:underline disabled:text-zinc-600 disabled:no-underline font-bold self-start sm:self-auto"
                         >
                           {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend Code'}
                         </button>
@@ -1008,14 +1047,14 @@ export const RegisterPage: React.FC = () => {
 
                     {/* Developer Sandbox Notice & Instant Autofill */}
                     {devOtpHint && (
-                      <div className="p-2.5 bg-gym-lime/5 border border-gym-lime/30 rounded flex items-center justify-between text-xs">
+                      <div className="p-3 bg-gym-lime/5 border border-gym-lime/30 rounded-xl flex items-center justify-between text-xs">
                         <span className="text-gym-lime font-mono">
                           ⚡ <strong>Dev Sandbox Code:</strong> {devOtpHint}
                         </span>
                         <button
                           type="button"
                           onClick={() => setOtpCode(devOtpHint)}
-                          className="px-2 py-0.5 bg-gym-lime text-black rounded text-[10px] font-bold uppercase tracking-wider hover:bg-white"
+                          className="px-2.5 py-1 bg-gym-lime text-black rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-white transition-colors"
                         >
                           Autofill
                         </button>
@@ -1023,13 +1062,13 @@ export const RegisterPage: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="p-3 bg-gym-lime/10 border border-gym-lime/30 rounded flex items-center gap-3">
+                  <div className="p-3.5 bg-gym-lime/10 border border-gym-lime/30 rounded-xl flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-gym-lime flex-shrink-0" />
                     <div>
                       <span className="text-xs font-bold text-white uppercase tracking-wider block">
                         Identity Authorized
                       </span>
-                      <span className="text-[11px] text-gym-muted">
+                      <span className="text-xs text-zinc-400">
                         Your email address has been confirmed and locked for this athlete profile.
                       </span>
                     </div>
@@ -1039,16 +1078,16 @@ export const RegisterPage: React.FC = () => {
 
               {/* Terms and Conditions */}
               <div className="pt-2">
-                <label className="flex items-start gap-3 p-3 bg-gym-black rounded border border-gym-border/80 cursor-pointer hover:border-zinc-500 transition-colors">
+                <label className="flex items-start gap-3 p-3.5 bg-zinc-900/50 rounded-xl border border-zinc-800/80 cursor-pointer hover:border-zinc-700 transition-colors">
                   <input
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 accent-gym-lime rounded bg-zinc-900 border-zinc-700"
+                    className="mt-0.5 w-4 h-4 accent-gym-lime rounded bg-zinc-950 border-zinc-700 cursor-pointer"
                   />
-                  <span className="text-xs text-gym-secondary leading-relaxed">
+                  <span className="text-xs text-zinc-300 leading-relaxed">
                     I agree to the{' '}
-                    <span className="text-white font-bold underline">
+                    <span className="text-white font-bold underline hover:text-gym-lime">
                       PROFIT Facility Code of Conduct
                     </span>
                     , Safety Liability Release, and Terms of Membership.
@@ -1057,20 +1096,20 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               {/* Step 2 Actions */}
-              <div className="pt-4 flex items-center justify-between gap-4">
+              <div className="pt-6 border-t border-zinc-800/80 flex items-center justify-between gap-4">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-5 py-3 border border-gym-border hover:border-zinc-500 text-gym-secondary hover:text-white font-heading font-black uppercase tracking-wider text-xs rounded transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white font-heading font-black uppercase tracking-wider text-xs rounded-xl transition-colors flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back: Identity
                 </button>
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="px-6 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded hover:bg-white transition-all flex items-center gap-2 group shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                  className="px-8 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-all flex items-center gap-2 group shadow-lg shadow-gym-lime/20"
                 >
-                  Next: Choose Plan
+                  Continue: Choose Tier
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -1082,18 +1121,18 @@ export const RegisterPage: React.FC = () => {
           {/* ──────────────────────────────────────────────────────── */}
           {currentStep === 3 && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="border-b border-gym-border pb-4">
-                <h2 className="font-heading text-2xl font-black uppercase tracking-wider text-white">
+              <div className="border-b border-zinc-800/80 pb-4">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
                   Membership Tier & Activation
                 </h2>
-                <p className="text-xs text-gym-muted mt-1">
-                  Select your clearance tier, commitment cadence, and desired facility start date.
+                <p className="text-xs text-zinc-400 mt-1">
+                  Select your clearance level, payment frequency, and facility start date.
                 </p>
               </div>
 
-              {/* Billing Cycle Switcher */}
+              {/* Billing Cycle Switcher - Modern Luxury Pill */}
               <div className="flex items-center justify-center">
-                <div className="bg-gym-black p-1 rounded border border-gym-border flex items-center gap-1">
+                <div className="bg-zinc-950 p-1.5 rounded-xl border border-zinc-800 flex items-center gap-1 shadow-inner">
                   {[
                     { key: 'MONTHLY', label: 'Monthly' },
                     { key: 'QUARTERLY', label: 'Quarterly', discount: 'Save 10%' },
@@ -1103,16 +1142,16 @@ export const RegisterPage: React.FC = () => {
                       key={cycle.key}
                       type="button"
                       onClick={() => setBillingCycle(cycle.key as any)}
-                      className={`px-4 py-2 rounded text-xs font-heading font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      className={`px-4 py-2 rounded-lg text-xs font-heading font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                         billingCycle === cycle.key
-                          ? 'bg-gym-lime text-black shadow'
-                          : 'text-gym-secondary hover:text-white'
+                          ? 'bg-gym-lime text-black shadow-md shadow-gym-lime/20'
+                          : 'text-zinc-400 hover:text-white'
                       }`}
                     >
                       {cycle.label}
                       {cycle.discount && (
                         <span
-                          className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                             billingCycle === cycle.key
                               ? 'bg-black text-gym-lime'
                               : 'bg-gym-lime/10 text-gym-lime border border-gym-lime/30'
@@ -1158,14 +1197,14 @@ export const RegisterPage: React.FC = () => {
                   <div
                     key={tier.id}
                     onClick={() => setSelectedPlanId(tier.id)}
-                    className={`cursor-pointer rounded-lg p-5 border relative flex flex-col justify-between transition-all ${
+                    className={`cursor-pointer rounded-xl p-5 border relative flex flex-col justify-between transition-all ${
                       selectedPlanId === tier.id
-                        ? 'border-gym-lime bg-gym-lime/5 shadow-[0_0_20px_rgba(204,255,0,0.15)] ring-1 ring-gym-lime'
-                        : 'border-gym-border bg-gym-black/70 hover:border-zinc-500'
+                        ? 'border-gym-lime bg-gym-lime/5 shadow-lg shadow-gym-lime/15 ring-1 ring-gym-lime'
+                        : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/80'
                     }`}
                   >
                     {tier.popular && (
-                      <span className="absolute -top-2.5 right-4 px-2 py-0.5 bg-gym-lime text-black text-[9px] font-heading font-black tracking-widest uppercase rounded">
+                      <span className="absolute -top-2.5 right-4 px-2 py-0.5 bg-gym-lime text-black text-[9px] font-heading font-black tracking-widest uppercase rounded-full shadow-sm">
                         MOST POPULAR
                       </span>
                     )}
@@ -1176,27 +1215,27 @@ export const RegisterPage: React.FC = () => {
                           {tier.name}
                         </span>
                         <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
                             selectedPlanId === tier.id
                               ? 'border-gym-lime bg-gym-lime text-black'
-                              : 'border-zinc-700'
+                              : 'border-zinc-700 bg-zinc-900'
                           }`}
                         >
-                          {selectedPlanId === tier.id && <Check className="w-3 h-3 stroke-[3]" />}
+                          {selectedPlanId === tier.id && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                         </div>
                       </div>
 
                       <div className="mb-2">
                         <span className="text-3xl font-heading font-black text-white">${tier.price}</span>
-                        <span className="text-xs text-gym-muted ml-1">{tier.period}</span>
+                        <span className="text-xs text-zinc-400 ml-1">{tier.period}</span>
                       </div>
 
-                      <p className="text-[11px] text-gym-secondary mb-4">{tier.desc}</p>
+                      <p className="text-xs text-zinc-400 mb-4">{tier.desc}</p>
 
-                      <ul className="space-y-1.5 border-t border-gym-border/60 pt-3">
+                      <ul className="space-y-2 border-t border-zinc-800/80 pt-3">
                         {tier.features.map((feat, idx) => (
-                          <li key={idx} className="text-[11px] text-gym-muted flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-gym-lime flex-shrink-0" />
+                          <li key={idx} className="text-xs text-zinc-300 flex items-center gap-2">
+                            <Check className="w-3.5 h-3.5 text-gym-lime flex-shrink-0" />
                             <span>{feat}</span>
                           </li>
                         ))}
@@ -1207,34 +1246,34 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               {/* Start Date & Live Expiry Calculation */}
-              <div className="p-4 bg-gym-black rounded border border-gym-border grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+              <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/90 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Membership Activation Date
                   </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="block w-full px-3 py-2 bg-zinc-900 border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime [color-scheme:dark]"
+                    className="block w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime [color-scheme:dark]"
                   />
-                  <span className="text-[10px] text-gym-muted mt-1 block">
-                    Pass begins functioning at turnstiles on this date.
+                  <span className="text-[11px] text-zinc-500 mt-1 block">
+                    Pass activates at turnstiles on this date.
                   </span>
                 </div>
 
-                <div className="p-3 bg-zinc-900/80 rounded border border-zinc-800">
+                <div className="p-3.5 bg-zinc-950 rounded-xl border border-zinc-800">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gym-secondary uppercase font-bold text-[10px]">
+                    <span className="text-zinc-400 uppercase font-bold text-[10px]">
                       Calculated Expiry Date:
                     </span>
                     <span className="text-gym-lime font-mono font-bold text-sm">
                       {planDetails.expiryDate}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs mt-1">
-                    <span className="text-gym-muted text-[10px]">Duration:</span>
-                    <span className="text-white text-[11px] font-bold">
+                  <div className="flex items-center justify-between text-xs mt-1.5">
+                    <span className="text-zinc-500 text-[10px]">Duration:</span>
+                    <span className="text-white text-xs font-bold">
                       {planDetails.days} Days Active Access
                     </span>
                   </div>
@@ -1242,20 +1281,20 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               {/* Step 3 Actions */}
-              <div className="pt-4 flex items-center justify-between gap-4">
+              <div className="pt-6 border-t border-zinc-800/80 flex items-center justify-between gap-4">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-5 py-3 border border-gym-border hover:border-zinc-500 text-gym-secondary hover:text-white font-heading font-black uppercase tracking-wider text-xs rounded transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white font-heading font-black uppercase tracking-wider text-xs rounded-xl transition-colors flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back: Security
                 </button>
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="px-6 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded hover:bg-white transition-all flex items-center gap-2 group shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                  className="px-8 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-all flex items-center gap-2 group shadow-lg shadow-gym-lime/20"
                 >
-                  Next: Training Goals
+                  Continue: Training Profile
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -1267,27 +1306,27 @@ export const RegisterPage: React.FC = () => {
           {/* ──────────────────────────────────────────────────────── */}
           {currentStep === 4 && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="border-b border-gym-border pb-4">
-                <h2 className="font-heading text-2xl font-black uppercase tracking-wider text-white">
+              <div className="border-b border-zinc-800/80 pb-4">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
                   Training Diagnostics & Safety
                 </h2>
-                <p className="text-xs text-gym-muted mt-1">
-                  Help our coaching staff tailor your program. You may also skip and configure later.
+                <p className="text-xs text-zinc-400 mt-1">
+                  Optional preferences to help our coaches customize your onboarding workouts.
                 </p>
               </div>
 
-              {/* Primary Fitness Goal */}
+              {/* Primary Fitness Goal - Sleek Interactive Tiles */}
               <div>
-                <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
+                <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-2 font-heading">
                   Primary Fitness Objective
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {[
-                    { key: 'MUSCLE_GAIN', label: 'Muscle Hypertrophy', icon: Dumbbell },
-                    { key: 'WEIGHT_LOSS', label: 'Fat Loss & Conditioning', icon: Flame },
+                    { key: 'MUSCLE_GAIN', label: 'Hypertrophy & Muscle', icon: Dumbbell },
+                    { key: 'WEIGHT_LOSS', label: 'Fat Loss & Tone', icon: Flame },
                     { key: 'STRENGTH', label: 'Absolute Strength', icon: Target },
                     { key: 'ENDURANCE', label: 'Cardio & Stamina', icon: Activity },
-                    { key: 'GENERAL_FITNESS', label: 'General Longevity', icon: Award },
+                    { key: 'GENERAL_FITNESS', label: 'Longevity & Health', icon: Award },
                   ].map((goal) => {
                     const Icon = goal.icon;
                     return (
@@ -1295,13 +1334,13 @@ export const RegisterPage: React.FC = () => {
                         key={goal.key}
                         type="button"
                         onClick={() => setPrimaryGoal(goal.key)}
-                        className={`p-3 rounded border text-left flex items-center gap-2.5 transition-all ${
+                        className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
                           primaryGoal === goal.key
-                            ? 'border-gym-lime bg-gym-lime/10 text-white'
-                            : 'border-gym-border bg-gym-black text-gym-secondary hover:border-zinc-500'
+                            ? 'border-gym-lime bg-gym-lime/10 text-white shadow-sm shadow-gym-lime/10 ring-1 ring-gym-lime'
+                            : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 ${primaryGoal === goal.key ? 'text-gym-lime' : 'text-gym-muted'}`} />
+                        <Icon className={`w-4 h-4 flex-shrink-0 ${primaryGoal === goal.key ? 'text-gym-lime' : 'text-zinc-500'}`} />
                         <span className="text-xs font-bold font-heading uppercase tracking-wider truncate">
                           {goal.label}
                         </span>
@@ -1314,7 +1353,7 @@ export const RegisterPage: React.FC = () => {
               {/* Experience Level & Workout Window */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Experience Level
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -1327,10 +1366,10 @@ export const RegisterPage: React.FC = () => {
                         key={lvl.key}
                         type="button"
                         onClick={() => setExperienceLevel(lvl.key)}
-                        className={`py-2 text-xs font-bold rounded border transition-colors ${
+                        className={`py-2 text-xs font-bold rounded-lg border transition-all ${
                           experienceLevel === lvl.key
-                            ? 'border-gym-lime bg-gym-lime text-black'
-                            : 'border-gym-border bg-gym-black text-gym-secondary hover:border-zinc-500'
+                            ? 'border-gym-lime bg-gym-lime text-black shadow-md shadow-gym-lime/20'
+                            : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700'
                         }`}
                       >
                         {lvl.label}
@@ -1340,26 +1379,27 @@ export const RegisterPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-1.5 font-heading">
+                  <label className="block text-xs uppercase tracking-wider font-bold text-zinc-300 mb-1.5 font-heading">
                     Preferred Training Window
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { key: 'MORNING', label: '06:00 - 10:00' },
-                      { key: 'MIDDAY', label: '11:00 - 15:00' },
-                      { key: 'EVENING', label: '17:00 - 22:00' },
+                      { key: 'MORNING', label: 'Morning', sub: '06:00 - 10:00' },
+                      { key: 'MIDDAY', label: 'Midday', sub: '11:00 - 15:00' },
+                      { key: 'EVENING', label: 'Evening', sub: '17:00 - 22:00' },
                     ].map((time) => (
                       <button
                         key={time.key}
                         type="button"
                         onClick={() => setPreferredTime(time.key)}
-                        className={`py-2 text-xs font-bold rounded border transition-colors ${
+                        className={`py-2 px-1 text-xs font-bold rounded-lg border transition-all flex flex-col items-center ${
                           preferredTime === time.key
-                            ? 'border-gym-lime bg-gym-lime text-black'
-                            : 'border-gym-border bg-gym-black text-gym-secondary hover:border-zinc-500'
+                            ? 'border-gym-lime bg-gym-lime text-black shadow-md shadow-gym-lime/20'
+                            : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700'
                         }`}
                       >
-                        {time.label}
+                        <span>{time.label}</span>
+                        <span className="text-[9px] font-normal opacity-80">{time.sub}</span>
                       </button>
                     ))}
                   </div>
@@ -1367,19 +1407,19 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               {/* Coach Assignment Request */}
-              <div className="p-3 bg-gym-black rounded border border-gym-border flex items-center justify-between">
+              <div className="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800/90 flex items-center justify-between">
                 <div>
                   <span className="text-xs uppercase font-heading font-black tracking-wider text-white block">
-                    Assign 1-on-1 Dedicated Coach
+                    Complimentary Coach Consultation
                   </span>
-                  <span className="text-[11px] text-gym-muted">
-                    Request an initial complimentary movement screen with Marcus Drake.
+                  <span className="text-xs text-zinc-400">
+                    Pair with Master Coach Marcus Drake for an initial movement screen.
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setRequiresTrainer(!requiresTrainer)}
-                  className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${
+                  className={`w-12 h-6 rounded-full transition-colors relative p-0.5 flex-shrink-0 ${
                     requiresTrainer ? 'bg-gym-lime' : 'bg-zinc-800'
                   }`}
                 >
@@ -1392,22 +1432,22 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               {/* Emergency Contact */}
-              <div className="pt-2 border-t border-gym-border/60">
-                <span className="text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 block font-heading">
-                  Emergency Medical Contact <span className="text-gym-muted font-normal">(Optional)</span>
+              <div className="pt-3 border-t border-zinc-800/80">
+                <span className="text-xs uppercase tracking-wider font-bold text-zinc-300 mb-2.5 block font-heading">
+                  Emergency Medical Contact <span className="text-zinc-500 font-normal">(Optional)</span>
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <input
                     type="text"
                     value={emergencyName}
                     onChange={(e) => setEmergencyName(e.target.value)}
                     placeholder="Contact Full Name"
-                    className="block w-full px-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime"
+                    className="block w-full px-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                   />
                   <select
                     value={emergencyRelation}
                     onChange={(e) => setEmergencyRelation(e.target.value)}
-                    className="block w-full px-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white focus:outline-none focus:border-gym-lime"
+                    className="block w-full px-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                   >
                     <option value="Parent">Parent</option>
                     <option value="Spouse">Spouse</option>
@@ -1420,17 +1460,17 @@ export const RegisterPage: React.FC = () => {
                     value={emergencyPhone}
                     onChange={(e) => setEmergencyPhone(e.target.value)}
                     placeholder="Emergency Phone"
-                    className="block w-full px-3 py-2 bg-gym-black border border-gym-border rounded text-xs text-white placeholder-gym-muted focus:outline-none focus:border-gym-lime"
+                    className="block w-full px-3.5 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gym-lime focus:ring-1 focus:ring-gym-lime transition-all"
                   />
                 </div>
               </div>
 
               {/* Step 4 Actions */}
-              <div className="pt-4 flex items-center justify-between gap-4">
+              <div className="pt-6 border-t border-zinc-800/80 flex items-center justify-between gap-4">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-5 py-3 border border-gym-border hover:border-zinc-500 text-gym-secondary hover:text-white font-heading font-black uppercase tracking-wider text-xs rounded transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white font-heading font-black uppercase tracking-wider text-xs rounded-xl transition-colors flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back: Plan
                 </button>
@@ -1440,7 +1480,7 @@ export const RegisterPage: React.FC = () => {
                     type="button"
                     onClick={() => handleFinalSubmit()}
                     disabled={isSubmitting}
-                    className="text-xs text-gym-muted hover:text-white uppercase font-bold"
+                    className="text-xs text-zinc-400 hover:text-white uppercase font-bold transition-colors hidden sm:inline"
                   >
                     Complete Later
                   </button>
@@ -1449,7 +1489,7 @@ export const RegisterPage: React.FC = () => {
                     type="button"
                     onClick={() => handleFinalSubmit()}
                     disabled={isSubmitting}
-                    className="px-8 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded hover:bg-white transition-all flex items-center gap-2 shadow-[0_0_25px_rgba(204,255,0,0.3)] disabled:opacity-50"
+                    className="px-8 py-3 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-all flex items-center gap-2 shadow-lg shadow-gym-lime/25 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
@@ -1466,98 +1506,100 @@ export const RegisterPage: React.FC = () => {
             </div>
           )}
         </div>
+      </main>
 
-        {/* ──────────────────────────────────────────────────────── */}
-        {/* Right Column: Live Athlete Pass Preview (4 Cols)         */}
-        {/* ──────────────────────────────────────────────────────── */}
-        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
-          <div className="bg-gym-surface border border-gym-border rounded-lg p-5 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gym-border/80">
-              <span className="text-[11px] uppercase tracking-wider font-heading font-black text-white flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-gym-lime" /> DIGITAL ATHLETE PASS
-              </span>
-              <span className="text-[9px] uppercase font-bold px-2 py-0.5 bg-gym-lime/10 text-gym-lime border border-gym-lime/30 rounded">
-                LIVE PREVIEW
-              </span>
+      {/* Live Athlete Pass Preview Modal */}
+      {showPassModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#14151a] border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
+            {/* Background Neon Accent */}
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-gym-lime/15 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-gym-lime" />
+                <span className="font-heading font-black text-sm uppercase text-white tracking-wider">
+                  Digital Athlete Pass
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPassModal(false)}
+                className="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Simulated Athletic Pass Card */}
-            <div className="p-4 bg-gym-black rounded-lg border border-gym-border relative overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-28 h-28 bg-gym-lime/10 rounded-full blur-xl pointer-events-none"></div>
-
-              <div className="flex items-center gap-3.5 mb-4">
+            {/* Pass Body */}
+            <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-900 space-y-4">
+              <div className="flex items-center gap-3.5">
                 <img
                   src={avatarUrl}
-                  alt="Athlete Pass Avatar"
+                  alt="Athlete Avatar"
                   className="w-14 h-14 rounded-full object-cover border-2 border-gym-lime flex-shrink-0"
                 />
                 <div className="overflow-hidden">
                   <span className="font-heading font-black text-sm text-white uppercase tracking-wider block truncate">
-                    {fullName || 'ATHLETE NAME'}
+                    {fullName || 'Marcus Vance'}
                   </span>
-                  <span className="text-[10px] text-gym-muted font-mono block truncate">
-                    {email || 'athlete@profitgym.com'}
+                  <span className="text-[11px] text-zinc-400 font-mono block truncate">
+                    {email || 'marcus@athletes.com'}
                   </span>
-                  <span className="inline-block mt-1 text-[9px] font-heading font-bold uppercase tracking-wider px-1.5 py-0.2 bg-zinc-800 text-gym-lime rounded">
+                  <span className="inline-block mt-1 text-[9px] font-heading font-bold uppercase tracking-wider px-2 py-0.5 bg-gym-lime/10 text-gym-lime border border-gym-lime/30 rounded-full">
                     {planDetails.name}
                   </span>
                 </div>
               </div>
 
-              {/* Validity Matrix */}
-              <div className="grid grid-cols-2 gap-2 text-[10px] p-2 bg-zinc-950 rounded border border-zinc-900 mb-3">
-                <div>
-                  <span className="text-zinc-500 uppercase block">START DATE</span>
-                  <span className="font-mono text-zinc-300 font-bold">{startDate}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500 uppercase block">EXPIRY DATE</span>
-                  <span className="font-mono text-gym-lime font-bold">{planDetails.expiryDate}</span>
-                </div>
-              </div>
-
-              {/* Turnstile QR Code Simulator */}
-              <div className="flex items-center justify-between p-2.5 bg-zinc-900/60 rounded border border-zinc-800">
-                <div className="flex items-center gap-2">
+              {/* Turnstile Access Code */}
+              <div className="flex items-center justify-between p-3 bg-zinc-900 rounded-lg border border-zinc-800">
+                <div className="flex items-center gap-2.5">
                   <QrCode className="w-8 h-8 text-gym-lime" />
                   <div>
-                    <span className="text-[10px] font-bold text-white block uppercase">
-                      TURNSTILE NFC PASS
+                    <span className="text-[10px] font-bold text-white block uppercase font-heading tracking-wider">
+                      Turnstile NFC Gate Pass
                     </span>
-                    <span className="text-[9px] text-zinc-500 font-mono">
-                      TOKEN: PRO-QR-{Date.now().toString().slice(-4)}
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      TOKEN: PRO-PASS-{Date.now().toString().slice(-4)}
                     </span>
                   </div>
                 </div>
-                <div className="w-2 h-2 rounded-full bg-gym-lime animate-pulse"></div>
+                <span className="w-2 h-2 rounded-full bg-gym-lime animate-pulse"></span>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/80">
+                <div>
+                  <span className="text-zinc-500 uppercase block">Start Date</span>
+                  <span className="font-mono text-zinc-300 font-bold">{startDate}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 uppercase block">Expiry Date</span>
+                  <span className="font-mono text-gym-lime font-bold">{planDetails.expiryDate}</span>
+                </div>
               </div>
             </div>
 
-            {/* Price & Billing Summary */}
-            <div className="mt-4 pt-4 border-t border-gym-border/80 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gym-secondary">Clearance Tier:</span>
-                <span className="text-white font-bold">{planDetails.name}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gym-secondary">Billing Schedule:</span>
-                <span className="text-white font-bold">{billingCycle}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gym-secondary">Duration:</span>
-                <span className="text-white font-bold">{planDetails.days} Days Active</span>
-              </div>
-              <div className="flex items-center justify-between text-sm pt-2 border-t border-gym-border/60 font-heading font-black">
-                <span className="text-white uppercase tracking-wider">Total Activation:</span>
-                <span className="text-gym-lime text-lg font-mono">${planDetails.price}</span>
-              </div>
+            {/* Price & Summary */}
+            <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
+              <span className="text-zinc-400">Total Commitment:</span>
+              <span className="text-gym-lime font-mono font-bold text-base">${planDetails.price}</span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPassModal(false)}
+              className="w-full mt-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+              Close Preview
+            </button>
           </div>
         </div>
-      </main>
+      )}
 
       {/* Footer */}
-      <footer className="border-t border-gym-border/60 py-6 text-center text-[11px] text-gym-muted">
+      <footer className="border-t border-zinc-800/60 py-6 text-center text-xs text-zinc-500">
         PROFIT TRAINING CLUB • 452 LAFAYETTE ST, NOHO NYC • ATHLETE CLEARANCE PRIVACY GUARANTEED
       </footer>
     </div>
