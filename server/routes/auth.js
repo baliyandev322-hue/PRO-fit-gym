@@ -107,7 +107,7 @@ router.post('/send-otp', authLimiter, async (req, res) => {
       success: true,
       message: `A 6-digit verification code has been dispatched to ${normalizedEmail}.`,
       // Expose in response during development for instant testing
-      devOtp: process.env.NODE_ENV !== 'production' ? otpCode : undefined,
+      devOtp: (process.env.NODE_ENV !== 'production' || !process.env.RESEND_API_KEY) ? otpCode : undefined,
     });
   } catch (error) {
     console.error('[Send OTP Error]', error);
