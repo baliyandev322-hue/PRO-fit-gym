@@ -6,7 +6,11 @@
 const cleanPhoneNumber = (number) => {
   if (!number) return '';
   // Strip all non-digit characters (+, spaces, hyphens)
-  return String(number).replace(/\D/g, '');
+  let clean = String(number).replace(/\D/g, '');
+  if (clean.length === 10) {
+    clean = '91' + clean;
+  }
+  return clean;
 };
 
 /**
