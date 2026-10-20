@@ -1045,21 +1045,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Developer Sandbox Notice & Instant Autofill */}
-                    {devOtpHint && (
-                      <div className="p-3 bg-gym-lime/5 border border-gym-lime/30 rounded-xl flex items-center justify-between text-xs">
-                        <span className="text-gym-lime font-mono">
-                          ⚡ <strong>Dev Sandbox Code:</strong> {devOtpHint}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setOtpCode(devOtpHint)}
-                          className="px-2.5 py-1 bg-gym-lime text-black rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-white transition-colors"
-                        >
-                          Autofill
-                        </button>
-                      </div>
-                    )}
+
                   </div>
                 ) : (
                   <div className="p-3.5 bg-gym-lime/10 border border-gym-lime/30 rounded-xl flex items-center gap-3">
