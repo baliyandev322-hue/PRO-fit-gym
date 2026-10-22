@@ -101,7 +101,13 @@ router.post('/send-otp', authLimiter, async (req, res) => {
     });
 
     // Send email via emailService
-    await sendOtpVerificationEmail(normalizedEmail, otpCode, fullName);
+    const emailResult = await sendOtpVerificationEmail(normalizedEmail, otpCode, fullName);
+    if (emailResult && !emailResult.success && emailResult.error) {
+      return res.status(400).json({
+        success: false,
+        message: `Email dispatch failed: ${emailResult.error}`,
+      });
+    }
 
     return res.status(200).json({
       success: true,

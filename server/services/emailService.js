@@ -551,9 +551,14 @@ const sendOtpVerificationEmail = async (recipientEmail, otpCode, athleteName = '
         subject: `🔐 [PROFIT Security] Your 6-Digit Verification Code: ${otpCode}`,
         html,
       });
+      if (data && data.error) {
+        console.error('[Resend Error]', data.error);
+        return { success: false, error: data.error.message || 'Resend rejected delivery' };
+      }
       return { success: true, id: data.id, provider: 'resend' };
     } catch (resendErr) {
-      console.warn('[Email Warning] Resend failed, falling back to simulated output:', resendErr.message);
+      console.error('[Resend Exception]', resendErr.message);
+      return { success: false, error: resendErr.message };
     }
   }
 
