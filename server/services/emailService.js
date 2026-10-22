@@ -543,6 +543,35 @@ const sendOtpVerificationEmail = async (recipientEmail, otpCode, athleteName = '
   console.log('\x1b[32m%s\x1b[0m', `⚡ [ONBOARDING OTP] Code for ${recipientEmail}: ${otpCode}`);
   console.log('\x1b[35m%s\x1b[0m', `==============================================`);
 
+    // 1. Prioritize SMTP (Brevo / Gmail) for reliable zero-domain global delivery
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+        port: parseInt(process.env.SMTP_PORT, 10) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      const fromAddressSmtp = process.env.EMAIL_FROM || ('PROFIT Training Club <' + (process.env.SMTP_FROM || 'baliyandev322@gmail.com') + '>');
+      const info = await transporter.sendMail({
+        from: fromAddressSmtp,
+        to: recipientEmail,
+        subject: '🔐 [PROFIT Security] Your 6-Digit Verification Code: ' + otpCode,
+        html,
+      });
+
+      console.log('\x1b[32m%s\x1b[0m', '[Email OTP Sent via SMTP] Delivered to ' + recipientEmail + ' (ID: ' + info.messageId + ')');
+      return { success: true, id: info.messageId, provider: 'nodemailer' };
+    } catch (smtpErr) {
+      console.error('\x1b[31m%s\x1b[0m', '[SMTP Error] ' + smtpErr.message);
+      return { success: false, error: smtpErr.message };
+    }
+  }
+
   if (resend) {
     try {
       const data = await resend.emails.send({
