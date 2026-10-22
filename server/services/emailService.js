@@ -543,7 +543,42 @@ const sendOtpVerificationEmail = async (recipientEmail, otpCode, athleteName = '
   console.log('\x1b[32m%s\x1b[0m', `⚡ [ONBOARDING OTP] Code for ${recipientEmail}: ${otpCode}`);
   console.log('\x1b[35m%s\x1b[0m', `==============================================`);
 
-    // 1. Prioritize SMTP (Brevo / Gmail) for reliable zero-domain global delivery
+  // 1. Prioritize Brevo HTTPS REST API (Uses Port 443 - works on Render Free Tier where SMTP 587 is blocked)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const brevoSenderEmail = process.env.SMTP_FROM || 'baliyandev322@gmail.com';
+      const brevoSenderName = 'PROFIT Training Club';
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY.trim(),
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: brevoSenderName, email: brevoSenderEmail },
+          to: [{ email: recipientEmail, name: athleteName }],
+          subject: '🔐 [PROFIT Security] Your 6-Digit Verification Code: ' + otpCode,
+          htmlContent: html,
+        }),
+      });
+
+      const resData = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        console.log('\x1b[32m%s\x1b[0m', '[Email OTP Sent via Brevo API] Delivered to ' + recipientEmail + ' (ID: ' + resData.messageId + ')');
+        return { success: true, id: resData.messageId, provider: 'brevo-api' };
+      } else {
+        console.error('\x1b[31m%s\x1b[0m', '[Brevo API Error] ' + response.status + ': ' + (resData.message || JSON.stringify(resData)));
+        return { success: false, error: resData.message || 'Brevo API error' };
+      }
+    } catch (brevoErr) {
+      console.error('\x1b[31m%s\x1b[0m', '[Brevo API Network Error] ' + brevoErr.message);
+      return { success: false, error: brevoErr.message };
+    }
+  }
+
+    // 2. Prioritize SMTP (Brevo / Gmail) for reliable zero-domain global delivery
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
       const transporter = nodemailer.createTransport({
