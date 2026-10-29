@@ -8,6 +8,7 @@ export interface WhatsAppReceiptOptions {
   athleteName: string;
   planName: string;
   amount: number;
+  currency?: 'INR' | 'USD' | string;
   paymentId?: string;
   receiptNumber?: string;
   expiryDate?: string;
@@ -39,7 +40,8 @@ export function formatWhatsAppPhoneNumber(phone?: string): string {
  */
 export function generateWhatsAppReceiptUrl(options: WhatsAppReceiptOptions): string {
   const phone = formatWhatsAppPhoneNumber(options.phone);
-  const formattedAmount = options.amount.toLocaleString('en-IN');
+  const isUSD = options.currency === 'USD' || (options.amount > 0 && options.amount < 1000);
+  const formattedPrice = isUSD ? `$${options.amount} USD` : `₹${options.amount.toLocaleString('en-IN')} INR`;
   const receiptNo = options.receiptNumber || `INV-PROFIT-${Date.now().toString().slice(-6)}`;
   const validDate = options.expiryDate || new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -56,12 +58,12 @@ export function generateWhatsAppReceiptUrl(options: WhatsAppReceiptOptions): str
     `🧾 *Invoice No:* ${receiptNo}`,
     `💳 *Payment ID:* ${options.paymentId || 'pay_verified'}`,
     `🏋️ *Membership Tier:* ${options.planName}`,
-    `💰 *Amount Paid:* ₹${formattedAmount} INR`,
+    `💰 *Amount Paid:* ${formattedPrice}`,
     `📅 *Valid Until:* ${validDate}`,
     ``,
     `🎟️ *Digital Turnstile Pass:* ACTIVE`,
     `Pull up your live QR pass and workout programming anytime:`,
-    `🔗 https://profitgym-ten.vercel.app/member/dashboard`,
+    `🔗 https://profitgymclub.com/member/dashboard`,
     `----------------------------------------------------`,
     `Show this pass at the front desk turnstiles for entry.`,
     `Train Hard. Stay Consistent. 💪`,

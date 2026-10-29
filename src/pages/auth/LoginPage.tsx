@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, Dumbbell, User, Zap } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -8,7 +8,18 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, loginAsDemo } = useAuth();
+
+  const handleQuickDemo = (role: 'admin' | 'trainer' | 'member') => {
+    loginAsDemo(role);
+    if (role === 'admin') {
+      navigate('/admin/dashboard', { replace: true });
+    } else if (role === 'trainer') {
+      navigate('/trainer/dashboard', { replace: true });
+    } else {
+      navigate('/member/dashboard', { replace: true });
+    }
+  };
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -148,6 +159,62 @@ export const LoginPage: React.FC = () => {
               )}
             </button>
           </form>
+
+          {/* Quick Demo Access Bar */}
+          <div className="mt-6 pt-6 border-t border-gym-border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-heading font-black tracking-wider uppercase text-gym-lime flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-gym-lime" />
+                1-Click Instant Demo Portals
+              </span>
+              <span className="text-[9px] text-gym-muted uppercase tracking-wider font-mono bg-gym-black px-2 py-0.5 rounded border border-gym-border">
+                Instant Access
+              </span>
+            </div>
+            <p className="text-[11px] text-gym-secondary mb-3 leading-relaxed">
+              Explore complete role-based dashboards without entering credentials:
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('admin')}
+                className="py-2.5 px-2 bg-gym-black hover:bg-zinc-900 border border-gym-border hover:border-gym-lime rounded-sm text-center transition-all group flex flex-col items-center gap-1 cursor-pointer"
+                title="Login as Club Owner"
+              >
+                <ShieldCheck className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
+                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                  Admin
+                </span>
+                <span className="text-[9px] text-gym-muted">Owner Deck</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('trainer')}
+                className="py-2.5 px-2 bg-gym-black hover:bg-zinc-900 border border-gym-border hover:border-gym-lime rounded-sm text-center transition-all group flex flex-col items-center gap-1 cursor-pointer"
+                title="Login as Head Coach Marcus Drake"
+              >
+                <Dumbbell className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
+                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                  Trainer
+                </span>
+                <span className="text-[9px] text-gym-muted">Coach Hub</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('member')}
+                className="py-2.5 px-2 bg-gym-black hover:bg-zinc-900 border border-gym-border hover:border-gym-lime rounded-sm text-center transition-all group flex flex-col items-center gap-1 cursor-pointer"
+                title="Login as Black Card Athlete Jordan Vance"
+              >
+                <User className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
+                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                  Member
+                </span>
+                <span className="text-[9px] text-gym-muted">Athlete App</span>
+              </button>
+            </div>
+          </div>
 
           <div className="mt-6 border-t border-gym-border pt-6 text-center text-xs text-gym-secondary">
             Don't have an athlete membership?{' '}

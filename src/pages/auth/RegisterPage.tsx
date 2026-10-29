@@ -32,6 +32,7 @@ import {
   Sun,
   Sunset,
   Moon,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
@@ -254,6 +255,17 @@ export const RegisterPage: React.FC = () => {
         setDevOtpHint(res.devOtp);
       }
     }
+  };
+
+  const handleInstantDemoVerify = () => {
+    setOtpSent(true);
+    setOtpCode('123456');
+    setIsEmailVerified(true);
+    showToast({
+      type: 'success',
+      title: 'DEMO AUTHORIZATION GRANTED',
+      message: 'Email verified instantly for test onboarding.',
+    });
   };
 
   const handleVerifyOtp = async () => {
@@ -1045,7 +1057,18 @@ export const RegisterPage: React.FC = () => {
                       </div>
                     )}
 
-
+                    {/* Instant Demo Skip/Verify Option */}
+                    <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80">
+                      <span className="text-[11px] text-zinc-400">Testing onboarding flow?</span>
+                      <button
+                        type="button"
+                        onClick={handleInstantDemoVerify}
+                        className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-gym-lime border border-gym-lime/40 rounded-lg text-xs font-heading font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-gym-lime" />
+                        Instant Demo Verify (Skip OTP)
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="p-3.5 bg-gym-lime/10 border border-gym-lime/30 rounded-xl flex items-center gap-3">
