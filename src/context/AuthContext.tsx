@@ -133,9 +133,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       mockProfile = {
         id: 'demo-member-id',
-        email: 'member@profitgym.com',
+        email: 'alex.vance@athlete.com',
         role: 'member',
-        full_name: 'Jordan Vance (Black Card Member)',
+        full_name: 'Alex Vance',
         avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
         phone: '+91 9368593249',
         created_at: new Date().toISOString(),
@@ -157,20 +157,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail === 'admin@profitgym.com') {
-      loginAsDemo('admin');
-      return { success: true };
-    }
-    if (normalizedEmail === 'trainer@profitgym.com') {
-      loginAsDemo('trainer');
-      return { success: true };
-    }
-    if (normalizedEmail === 'member@profitgym.com' || normalizedEmail === 'alex.vance@athlete.com') {
-      loginAsDemo('member');
-      return { success: true };
-    }
-
     setIsLoading(true);
 
     try {
@@ -184,6 +170,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!res.ok || !data.success) {
         setIsLoading(false);
+        // Fallback for demo credentials if server returns error or demo account
+        const norm = email.trim().toLowerCase();
+        if (norm === 'admin@profitgym.com') {
+          loginAsDemo('admin');
+          return { success: true };
+        }
+        if (norm === 'trainer@profitgym.com') {
+          loginAsDemo('trainer');
+          return { success: true };
+        }
+        if (norm === 'member@profitgym.com' || norm === 'alex.vance@athlete.com') {
+          loginAsDemo('member');
+          return { success: true };
+        }
+
         const errorMsg = data.message || 'Invalid email or password credentials.';
         showToast({
           type: 'error',
@@ -195,7 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setToken(data.token);
       const loggedUser: UserProfile = {
-        id: data.user.id,
+        id: data.user.id || data.user._id,
         email: data.user.email,
         role: (data.user.role || 'MEMBER').toLowerCase() as UserRole,
         full_name: data.user.fullName || data.user.full_name || 'Athlete',
@@ -203,6 +204,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: new Date().toISOString(),
       };
       localStorage.setItem('profit_gym_current_user', JSON.stringify(loggedUser));
+      localStorage.setItem('profit_gym_jwt_token', data.token);
+      localStorage.setItem('auth_token', data.token);
       setUser(loggedUser);
       setIsLoading(false);
 
@@ -214,6 +217,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     } catch (err: any) {
       setIsLoading(false);
+      // Fallback for demo testing when backend is offline
+      const norm = email.trim().toLowerCase();
+      if (norm === 'admin@profitgym.com') {
+        loginAsDemo('admin');
+        return { success: true };
+      }
+      if (norm === 'trainer@profitgym.com') {
+        loginAsDemo('trainer');
+        return { success: true };
+      }
+      if (norm === 'member@profitgym.com' || norm === 'alex.vance@athlete.com') {
+        loginAsDemo('member');
+        return { success: true };
+      }
+
       const networkMsg = 'Could not connect to authentication server. Please check your backend connection.';
       showToast({
         type: 'error',

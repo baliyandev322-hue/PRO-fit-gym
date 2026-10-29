@@ -1247,7 +1247,7 @@ export const LandingPage: React.FC = () => {
                     type="tel"
                     value={trialPhone}
                     onChange={(e) => setTrialPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
+                    placeholder="+1 (212) 555-0199"
                     required
                     className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
                   />
