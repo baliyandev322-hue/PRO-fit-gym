@@ -296,12 +296,15 @@ export const LandingPage: React.FC = () => {
           </Link>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs uppercase font-heading font-bold tracking-wider text-gym-secondary">
+          <nav className="hidden md:flex items-center gap-7 text-xs uppercase font-heading font-bold tracking-wider text-gym-secondary">
             <a href="#about" className="hover:text-gym-lime transition-colors">Philosophy</a>
             <a href="#programs" className="hover:text-gym-lime transition-colors">Disciplines</a>
             <a href="#plans" className="hover:text-gym-lime transition-colors">Memberships</a>
             <a href="#lab" className="hover:text-gym-lime transition-colors">Performance Lab</a>
             <a href="#trainers" className="hover:text-gym-lime transition-colors">Coaches</a>
+            <Link to="/blog" className="text-gym-lime hover:text-white transition-colors flex items-center gap-1 font-black">
+              Articles
+            </Link>
             <a href="#faq" className="hover:text-gym-lime transition-colors">FAQ</a>
           </nav>
 
@@ -356,6 +359,7 @@ export const LandingPage: React.FC = () => {
             <a href="#plans" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Memberships</a>
             <a href="#lab" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Performance Lab</a>
             <a href="#trainers" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Coaches</a>
+            <Link to="/blog" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-black text-gym-lime">Articles &amp; Protocols</Link>
             <div className="pt-3 border-t border-gym-border flex flex-col gap-2">
               <Link to="/login" className="py-2 text-center text-xs uppercase font-heading font-bold bg-gym-black border border-gym-border rounded">
                 Athlete Login
@@ -846,6 +850,127 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ================= 7.5 PERFORMANCE KNOWLEDGE BASE PREVIEW ================= */}
+      <section id="knowledge" className="py-20 border-b border-gym-border bg-gym-black relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="text-xs font-heading font-bold uppercase text-gym-lime tracking-widest block mb-2">
+                SCIENTIFIC KNOWLEDGE BASE &amp; PROTOCOLS
+              </span>
+              <h2 className="font-heading text-3xl sm:text-5xl font-black uppercase text-gym-primary tracking-wide">
+                EVIDENCE-BASED ATHLETIC RESEARCH
+              </h2>
+              <p className="text-xs text-gym-secondary mt-2 max-w-xl leading-relaxed">
+                Peer-reviewed training protocols, 1RM strength formulas, sports nutrition clinical breakdowns, and recovery science published by our master coaching faculty.
+              </p>
+            </div>
+            <Link
+              to="/blog"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gym-surface hover:bg-gym-surface-hover border border-gym-lime/40 text-gym-lime hover:text-white font-heading font-bold text-xs uppercase tracking-wider rounded transition-all shrink-0 shadow-lime-glow"
+            >
+              <span>Explore All 16 Protocols</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link
+              to="/blog/push-pull-legs-hypertrophy-masterclass"
+              className="group bg-gym-surface border border-gym-border rounded overflow-hidden hover:border-gym-lime/50 transition-all flex flex-col justify-between shadow-card hover:-translate-y-1 duration-300"
+            >
+              <div className="h-44 relative overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80"
+                  alt="Push Pull Legs Protocol"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-2 py-0.5 bg-gym-black/90 text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">
+                  Hypertrophy
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] text-gym-muted font-mono block mb-1">8 min read &bull; CSCS Certified</span>
+                  <h3 className="font-heading text-lg font-black uppercase text-gym-primary group-hover:text-gym-lime transition-colors leading-snug line-clamp-2">
+                    The Ultimate Push-Pull-Legs Split for Maximum Muscle Hypertrophy
+                  </h3>
+                  <p className="text-xs text-gym-secondary mt-2 line-clamp-2">
+                    A scientific breakdown of the 6-day and 3-day PPL protocols. Mechanical tension, volume allocation, and recovery.
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-gym-border/40 mt-4 flex items-center justify-between text-xs text-gym-lime font-heading font-bold uppercase">
+                  <span>Read Protocol</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              to="/blog/creatine-monohydrate-science-dosage-timing"
+              className="group bg-gym-surface border border-gym-border rounded overflow-hidden hover:border-gym-lime/50 transition-all flex flex-col justify-between shadow-card hover:-translate-y-1 duration-300"
+            >
+              <div className="h-44 relative overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=600&q=80"
+                  alt="Creatine Monohydrate Science"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-2 py-0.5 bg-gym-black/90 text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">
+                  Nutrition
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] text-gym-muted font-mono block mb-1">6 min read &bull; Clinical Science</span>
+                  <h3 className="font-heading text-lg font-black uppercase text-gym-primary group-hover:text-gym-lime transition-colors leading-snug line-clamp-2">
+                    Creatine Monohydrate: Clinical Guide to Dosage, Timing &amp; Myths
+                  </h3>
+                  <p className="text-xs text-gym-secondary mt-2 line-clamp-2">
+                    Everything peer-reviewed research reveals about phosphocreatine saturation, kidney safety, and cognitive performance.
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-gym-border/40 mt-4 flex items-center justify-between text-xs text-gym-lime font-heading font-bold uppercase">
+                  <span>Read Protocol</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              to="/blog/cold-plunge-and-sauna-contrast-therapy"
+              className="group bg-gym-surface border border-gym-border rounded overflow-hidden hover:border-gym-lime/50 transition-all flex flex-col justify-between shadow-card hover:-translate-y-1 duration-300"
+            >
+              <div className="h-44 relative overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80"
+                  alt="Cold Plunge and Sauna Contrast"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-2 py-0.5 bg-gym-black/90 text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">
+                  Recovery
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] text-gym-muted font-mono block mb-1">7 min read &bull; Biohacking</span>
+                  <h3 className="font-heading text-lg font-black uppercase text-gym-primary group-hover:text-gym-lime transition-colors leading-snug line-clamp-2">
+                    Cold Plunge &amp; Sauna Contrast: Cellular Recovery &amp; Neurochemistry
+                  </h3>
+                  <p className="text-xs text-gym-secondary mt-2 line-clamp-2">
+                    How thermal shock proteins accelerate lactate clearance and stimulate a sustained 250% dopamine baseline surge.
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-gym-border/40 mt-4 flex items-center justify-between text-xs text-gym-lime font-heading font-bold uppercase">
+                  <span>Read Protocol</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ================= 8. SANCTUARY CONCIERGE & INQUIRIES ================= */}
       <section id="contact" className="py-20 border-b border-gym-border bg-gym-surface/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1318,7 +1443,7 @@ export const LandingPage: React.FC = () => {
       {/* ================= 9. ARCHITECTURAL FOOTER ================= */}
       <footer className="bg-gym-black py-16 border-t border-gym-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
             <div>
               <Link to="/" className="inline-block group mb-3">
                 <span className="font-heading text-3xl font-black tracking-wider text-gym-primary">
@@ -1355,6 +1480,18 @@ export const LandingPage: React.FC = () => {
 
             <div>
               <h4 className="font-heading text-xs font-black uppercase tracking-wider text-gym-primary mb-3">
+                KNOWLEDGE BASE
+              </h4>
+              <ul className="space-y-2 text-xs text-gym-secondary">
+                <li><Link to="/blog/push-pull-legs-hypertrophy-masterclass" className="hover:text-gym-lime transition-colors">PPL Hypertrophy Split</Link></li>
+                <li><Link to="/blog/creatine-monohydrate-science-dosage-timing" className="hover:text-gym-lime transition-colors">Creatine Dosage Guide</Link></li>
+                <li><Link to="/blog/how-to-calculate-and-use-1rm" className="hover:text-gym-lime transition-colors">1RM Formula Calculator</Link></li>
+                <li><Link to="/blog" className="text-gym-lime hover:underline font-bold flex items-center gap-1">All 16 Scientific Protocols &rarr;</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-heading text-xs font-black uppercase tracking-wider text-gym-primary mb-3">
                 ATHLETE PORTAL
               </h4>
               <ul className="space-y-2 text-xs text-gym-secondary">
@@ -1379,30 +1516,35 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="pt-8 border-t border-gym-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gym-muted">
-            <div>&copy; 2026 PROFIT Training Club LLC. All rights reserved.</div>
+            <div>&copy; 2026 PROFIT Training Club LLC. All rights reserved. &bull; profitgymclub.com</div>
             <div className="flex flex-wrap items-center gap-3 text-xs">
-              <button 
-                type="button" 
-                onClick={() => setActivePolicy('terms')} 
+              <Link 
+                to="/terms"
                 className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
               >
                 Terms of Service
-              </button>
+              </Link>
               <span>&bull;</span>
-              <button 
-                type="button" 
-                onClick={() => setActivePolicy('privacy')} 
+              <Link 
+                to="/privacy"
                 className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
               >
                 Privacy Policy
-              </button>
+              </Link>
+              <span>&bull;</span>
+              <Link 
+                to="/blog"
+                className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
+              >
+                Scientific Articles
+              </Link>
               <span>&bull;</span>
               <button 
                 type="button" 
                 onClick={() => setActivePolicy('refund')} 
                 className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
               >
-                Refund & Cancellation
+                Refund Policy
               </button>
               <span>&bull;</span>
               <span>PCI-DSS Level 1 & Razorpay Verified</span>
