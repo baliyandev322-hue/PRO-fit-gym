@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /blog/*
+Allow: /privacy
+Allow: /terms
+
+Disallow: /admin/
+Disallow: /trainer/
+Disallow: /member/
+
+Sitemap: https://profitgymclub.com/sitemap.xml
