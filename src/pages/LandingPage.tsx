@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 import confetti from 'canvas-confetti';
 
 interface ConfirmedTrialPass {
@@ -1156,7 +1157,7 @@ export const LandingPage: React.FC = () => {
                     className="w-full py-3 bg-gym-lime hover:bg-gym-lime-hover text-gym-black font-heading font-black uppercase text-xs tracking-wider rounded shadow-lime-glow transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isSubmittingContact ? (
-                      <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                      <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
                     ) : (
                       <>
                         <span>Transmit Message to Concierge</span>
@@ -1312,7 +1313,7 @@ export const LandingPage: React.FC = () => {
                   className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSubmittingTrial ? (
-                    <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                    <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
                   ) : (
                     <span>Reserve Complimentary Pass</span>
                   )}

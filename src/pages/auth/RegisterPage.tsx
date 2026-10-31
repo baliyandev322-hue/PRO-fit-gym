@@ -39,6 +39,7 @@ import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
 import confetti from 'canvas-confetti';
 import type { RegisterPayload } from '@/types';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 
 type OnboardingStep = 1 | 2 | 3 | 4;
 
@@ -1502,7 +1503,7 @@ export const RegisterPage: React.FC = () => {
                   >
                     {isSubmitting ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin" /> Provisioning Access...
+                        <WeightlifterIcon className="w-5 h-5 text-black" isLifting={true} /> Provisioning Access...
                       </>
                     ) : (
                       <>
