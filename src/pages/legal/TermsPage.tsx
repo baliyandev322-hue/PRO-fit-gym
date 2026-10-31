@@ -99,7 +99,11 @@ export const TermsPage: React.FC = () => {
       <footer className="bg-gym-surface border-t border-gym-border py-8 mt-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gym-muted">
           <div>&copy; 2026 PROFIT Training Club LLC.</div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            <Link to="/about" className="hover:text-gym-lime transition-colors">About Us</Link>
+            <span>&bull;</span>
+            <Link to="/contact" className="hover:text-gym-lime transition-colors">Contact</Link>
+            <span>&bull;</span>
             <Link to="/privacy" className="hover:text-gym-lime transition-colors">Privacy Policy</Link>
             <span>&bull;</span>
             <Link to="/blog" className="hover:text-gym-lime transition-colors">Articles Archive</Link>

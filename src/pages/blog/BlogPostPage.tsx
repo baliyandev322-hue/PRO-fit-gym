@@ -9,7 +9,8 @@ import {
   Sparkles, 
   ArrowRight,
   BookOpen,
-  Dumbbell
+  Dumbbell,
+  ShieldAlert
 } from 'lucide-react';
 import { getArticleBySlug, getRelatedArticles } from '@/data/blogArticles';
 import { SEOHead } from '@/components/common/SEOHead';
@@ -277,13 +278,27 @@ export const BlogPostPage: React.FC = () => {
             </div>
           </div>
         )}
+        {/* ================= MANDATORY MEDICAL & FITNESS DISCLAIMER (YMYL) ================= */}
+        <div className="mt-16 p-6 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-200 space-y-2">
+          <div className="flex items-center gap-2 text-yellow-400 font-heading font-black uppercase text-xs sm:text-sm">
+            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <span>MEDICAL &amp; EXERCISE PHYSIOLOGY DISCLAIMER</span>
+          </div>
+          <p className="text-xs leading-relaxed text-yellow-200/90">
+            The training protocols, biomechanical recommendations, and nutritional dosages presented in this article are authored for educational, athletic, and informational purposes only. They do not constitute personalized medical advice or clinical diagnosis. Always consult with a licensed physician or physical therapist prior to executing maximal compound lifts or altering your nutritional intake.
+          </p>
+        </div>
       </article>
 
       {/* ================= FOOTER ================= */}
       <footer className="bg-gym-surface border-t border-gym-border py-8 mt-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gym-muted">
-          <div>&copy; 2026 PROFIT Training Club LLC.</div>
-          <div className="flex items-center gap-4">
+          <div>&copy; 2026 PROFIT Training Club LLC. All rights reserved.</div>
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            <Link to="/about" className="hover:text-gym-lime transition-colors">About Us</Link>
+            <span>&bull;</span>
+            <Link to="/contact" className="hover:text-gym-lime transition-colors">Contact</Link>
+            <span>&bull;</span>
             <Link to="/privacy" className="hover:text-gym-lime transition-colors">Privacy Policy</Link>
             <span>&bull;</span>
             <Link to="/terms" className="hover:text-gym-lime transition-colors">Terms of Service</Link>

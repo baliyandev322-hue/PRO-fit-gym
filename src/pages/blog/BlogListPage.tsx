@@ -278,7 +278,11 @@ export const BlogListPage: React.FC = () => {
           <div>
             &copy; 2026 PROFIT Training Club LLC. Published for educational & athletic conditioning purposes.
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            <Link to="/about" className="hover:text-gym-lime transition-colors">About Us</Link>
+            <span>&bull;</span>
+            <Link to="/contact" className="hover:text-gym-lime transition-colors">Contact</Link>
+            <span>&bull;</span>
             <Link to="/privacy" className="hover:text-gym-lime transition-colors">Privacy Policy</Link>
             <span>&bull;</span>
             <Link to="/terms" className="hover:text-gym-lime transition-colors">Terms of Service</Link>

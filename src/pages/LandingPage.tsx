@@ -1615,6 +1615,20 @@ export const LandingPage: React.FC = () => {
             <div>&copy; 2026 PROFIT Training Club LLC. All rights reserved. &bull; profitgymclub.com</div>
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <Link 
+                to="/about"
+                className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
+              >
+                About Us
+              </Link>
+              <span>&bull;</span>
+              <Link 
+                to="/contact"
+                className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
+              >
+                Contact
+              </Link>
+              <span>&bull;</span>
+              <Link 
                 to="/terms"
                 className="hover:text-gym-lime transition-colors underline-offset-4 hover:underline"
               >

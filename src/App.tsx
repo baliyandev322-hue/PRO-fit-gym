@@ -29,6 +29,8 @@ const BlogListPage = lazy(() => import('@/pages/blog/BlogListPage').then(m => ({
 const BlogPostPage = lazy(() => import('@/pages/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })));
 const PrivacyPolicyPage = lazy(() => import('@/pages/legal/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
 const TermsPage = lazy(() => import('@/pages/legal/TermsPage').then(m => ({ default: m.TermsPage })));
+const AboutUsPage = lazy(() => import('@/pages/public/AboutUsPage').then(m => ({ default: m.AboutUsPage })));
+const ContactUsPage = lazy(() => import('@/pages/public/ContactUsPage').then(m => ({ default: m.ContactUsPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Member Pages (Code-split)
@@ -74,6 +76,10 @@ export const App: React.FC = () => {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/blog" element={<BlogListPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
+              <Route path="/about" element={<AboutUsPage />} />
+              <Route path="/about-us" element={<Navigate to="/about" replace />} />
+              <Route path="/contact" element={<ContactUsPage />} />
+              <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
               <Route path="/terms" element={<TermsPage />} />
