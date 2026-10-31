@@ -42,6 +42,7 @@ export const LoginPage: React.FC = () => {
   });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'trainer' | 'member' | null>(null);
   const [rememberMe, setRememberMe] = useState(() => {
     return localStorage.getItem('profit_gym_remember_me') !== 'false';
   });
@@ -49,7 +50,7 @@ export const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [factIndex, setFactIndex] = useState(0);
 
-  const { login, loginAsDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -68,21 +69,21 @@ export const LoginPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [isSubmitting]);
 
-  const handleQuickDemo = (role: 'admin' | 'trainer' | 'member') => {
-    loginAsDemo(role);
-    if (role === 'admin') {
-      navigate('/admin/dashboard', { replace: true });
-    } else if (role === 'trainer') {
-      navigate('/trainer/dashboard', { replace: true });
-    } else {
-      navigate('/member/dashboard', { replace: true });
-    }
-  };
-
-  const handleAutofill = (demoEmail: string, demoPass: string = 'password123') => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
+  // When clicking an account card, immediately autofill credentials into the inputs
+  const handleSelectDemoRole = (role: 'admin' | 'trainer' | 'member') => {
+    setSelectedRole(role);
     setErrorMessage(null);
+
+    if (role === 'admin') {
+      setEmail('admin@profitgym.com');
+      setPassword('password123');
+    } else if (role === 'trainer') {
+      setEmail('trainer@profitgym.com');
+      setPassword('password123');
+    } else {
+      setEmail('member@profitgym.com');
+      setPassword('password123');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,7 +183,10 @@ export const LoginPage: React.FC = () => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setSelectedRole(null);
+                  }}
                   placeholder="member@profitgym.com"
                   required
                   autoComplete="email"
@@ -210,7 +214,10 @@ export const LoginPage: React.FC = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setSelectedRole(null);
+                  }}
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
@@ -268,90 +275,66 @@ export const LoginPage: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-heading font-black tracking-wider uppercase text-gym-lime flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-gym-lime" />
-                1-Click Instant Demo Portals
+                Demo Accounts
               </span>
               <span className="text-[9px] text-gym-muted uppercase tracking-wider font-mono bg-gym-black px-2 py-0.5 rounded border border-gym-border">
-                Instant Access
+                Click To Autofill
               </span>
             </div>
             <p className="text-[11px] text-gym-secondary mb-3 leading-relaxed">
-              Click a role for instant access, or click the small autofill tag to populate the form:
+              Click any role below to autofill its demo credentials into the form:
             </p>
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-gym-black border border-gym-border hover:border-gym-lime rounded-sm p-2 text-center transition-all flex flex-col justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('admin')}
-                  className="w-full flex flex-col items-center gap-1 cursor-pointer group"
-                  title="Direct 1-Click Access as Club Owner"
-                >
-                  <ShieldCheck className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
-                  <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
-                    Admin
-                  </span>
-                  <span className="text-[9px] text-gym-muted">Owner Deck</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('admin@profitgym.com', 'password123')}
-                  className="mt-2 text-[9px] text-gym-muted hover:text-gym-lime underline block"
-                  title="Autofill email & password into the form above"
-                >
-                  Autofill
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => handleSelectDemoRole('admin')}
+                className={`p-3 bg-gym-black border rounded-sm text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer group ${
+                  selectedRole === 'admin'
+                    ? 'border-gym-lime bg-gym-lime/5 shadow-lime-glow'
+                    : 'border-gym-border hover:border-gym-lime/70'
+                }`}
+                title="Autofill Admin credentials"
+              >
+                <ShieldCheck className={`w-4 h-4 transition-transform group-hover:scale-110 ${selectedRole === 'admin' ? 'text-gym-lime' : 'text-gym-secondary'}`} />
+                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                  Admin
+                </span>
+                <span className="text-[9px] text-gym-muted">Owner Deck</span>
+              </button>
 
-              <div className="bg-gym-black border border-gym-border hover:border-gym-lime rounded-sm p-2 text-center transition-all flex flex-col justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('trainer')}
-                  className="w-full flex flex-col items-center gap-1 cursor-pointer group"
-                  title="Direct 1-Click Access as Master Coach Marcus Drake"
-                >
-                  <Dumbbell className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
-                  <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
-                    Trainer
-                  </span>
-                  <span className="text-[9px] text-gym-muted">Coach Hub</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('trainer@profitgym.com', 'password123')}
-                  className="mt-2 text-[9px] text-gym-muted hover:text-gym-lime underline block"
-                  title="Autofill email & password into the form above"
-                >
-                  Autofill
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => handleSelectDemoRole('trainer')}
+                className={`p-3 bg-gym-black border rounded-sm text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer group ${
+                  selectedRole === 'trainer'
+                    ? 'border-gym-lime bg-gym-lime/5 shadow-lime-glow'
+                    : 'border-gym-border hover:border-gym-lime/70'
+                }`}
+                title="Autofill Trainer credentials"
+              >
+                <Dumbbell className={`w-4 h-4 transition-transform group-hover:scale-110 ${selectedRole === 'trainer' ? 'text-gym-lime' : 'text-gym-secondary'}`} />
+                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                  Trainer
+                </span>
+                <span className="text-[9px] text-gym-muted">Coach Hub</span>
+              </button>
 
-              <div className="bg-gym-black border border-gym-border hover:border-gym-lime rounded-sm p-2 text-center transition-all flex flex-col justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('member')}
-                  className="w-full flex flex-col items-center gap-1 cursor-pointer group"
-                  title="Direct 1-Click Access as Black Card Athlete Alex Vance"
-                >
-                  <User className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
-                  <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
-                    Member
-                  </span>
-                  <span className="text-[9px] text-gym-muted">Athlete App</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAutofill('member@profitgym.com', 'password123')}
-                  className="mt-2 text-[9px] text-gym-muted hover:text-gym-lime underline block"
-                  title="Autofill email & password into the form above"
-                >
-                  Autofill
-                </button>
-              </div>
-            </div>
-
-            {/* Hint Box with exact credentials */}
-            <div className="mt-3 p-2 bg-gym-black/60 border border-gym-border/70 rounded text-[10px] text-gym-muted flex items-center justify-between font-mono">
-              <span>Default password: <strong className="text-gym-lime font-bold">password123</strong></span>
-              <span className="text-gym-secondary text-[9px]">All 3 roles</span>
+              <button
+                type="button"
+                onClick={() => handleSelectDemoRole('member')}
+                className={`p-3 bg-gym-black border rounded-sm text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer group ${
+                  selectedRole === 'member'
+                    ? 'border-gym-lime bg-gym-lime/5 shadow-lime-glow'
+                    : 'border-gym-border hover:border-gym-lime/70'
+                }`}
+                title="Autofill Member credentials"
+              >
+                <User className={`w-4 h-4 transition-transform group-hover:scale-110 ${selectedRole === 'member' ? 'text-gym-lime' : 'text-gym-secondary'}`} />
+                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                  Member
+                </span>
+                <span className="text-[9px] text-gym-muted">Athlete App</span>
+              </button>
             </div>
           </div>
 

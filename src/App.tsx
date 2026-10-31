@@ -5,12 +5,13 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { GymDataProvider } from '@/context/GymDataContext';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 
 // Sleek Brand Loader for lazy-loaded route transitions
 const PageLoader: React.FC = () => (
   <div className="min-h-screen bg-gym-black flex items-center justify-center">
     <div className="flex flex-col items-center gap-3">
-      <div className="w-9 h-9 border-2 border-gym-lime border-t-transparent rounded-full animate-spin shadow-lime-glow"></div>
+      <WeightlifterIcon className="w-14 h-14 text-gym-lime" isLifting={true} />
       <span className="font-heading text-xs tracking-widest text-gym-secondary uppercase font-bold">
         PRO<span className="text-gym-lime">FIT</span> LOADING...
       </span>
