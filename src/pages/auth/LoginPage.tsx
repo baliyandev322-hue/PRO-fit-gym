@@ -34,18 +34,6 @@ const GYM_FACTS = [
     tag: 'RECOVERY TIP',
     fact: '7 to 8 hours of good sleep is when your muscles actually heal and grow bigger.',
   },
-  {
-    tag: 'STRENGTH TIP',
-    fact: 'Warm-up sets prime your joints and blood flow so you can lift heavier and safer.',
-  },
-  {
-    tag: 'NUTRITION FACT',
-    fact: 'Eating protein within a few hours of training helps your muscles rebuild faster.',
-  },
-  {
-    tag: 'GOLDEN RULE',
-    fact: 'Form always beats heavy weight. Clean reps prevent injuries and build pure strength.',
-  },
 ];
 
 export const LoginPage: React.FC = () => {
@@ -60,7 +48,8 @@ export const LoginPage: React.FC = () => {
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [factIndex, setFactIndex] = useState(() => Math.floor(Math.random() * GYM_FACTS.length));
+  const [showSlowNotice, setShowSlowNotice] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -68,16 +57,32 @@ export const LoginPage: React.FC = () => {
 
   const from = (location.state as any)?.from?.pathname || '/member/dashboard';
 
-  // Rotate gym tips every 3 seconds if login takes longer (e.g. cloud server cold start)
+  // Only show the gym tips card if login genuinely takes > 1.5 seconds (e.g. cloud server wake up)
+  // Fast logins (< 1.5s) transition immediately with zero waiting or UI flashing
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isSubmitting) {
+      timer = setTimeout(() => {
+        setShowSlowNotice(true);
+      }, 1500);
+    } else {
+      setShowSlowNotice(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isSubmitting]);
+
+  // Rotate gym tips every 3 seconds only while slow notice is active
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isSubmitting) {
+    if (isSubmitting && showSlowNotice) {
       interval = setInterval(() => {
         setFactIndex((prev) => (prev + 1) % GYM_FACTS.length);
       }, 3000);
+    } else if (!isSubmitting) {
+      setFactIndex(0);
     }
     return () => clearInterval(interval);
-  }, [isSubmitting]);
+  }, [isSubmitting, showSlowNotice]);
 
   // When clicking an account card, immediately autofill credentials into the inputs
   const handleSelectDemoRole = (role: 'admin' | 'trainer' | 'member') => {
@@ -110,20 +115,7 @@ export const LoginPage: React.FC = () => {
 
     setErrorMessage(null);
     setIsSubmitting(true);
-    // Pick a fresh random fact to show during this login attempt
-    setFactIndex(Math.floor(Math.random() * GYM_FACTS.length));
-
-    const startTime = Date.now();
     const result = await login(email, password);
-    const elapsed = Date.now() - startTime;
-
-    // Appropriate loading duration (~2.2s for success, ~0.9s for error)
-    // Gives the athlete time to watch the weightlifter do reps and comfortably read the gym tip
-    const minDelay = result.success ? 2200 : 900;
-    if (elapsed < minDelay) {
-      await new Promise((resolve) => setTimeout(resolve, minDelay - elapsed));
-    }
-
     setIsSubmitting(false);
 
     if (result.success) {
@@ -176,8 +168,8 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {/* Animated Weightlifter & Simple Fitness Tip while Loading */}
-          {isSubmitting && (
+          {/* Animated Weightlifter & Fitness Tip - ONLY shown if login genuinely takes > 1.5s (e.g. cloud server cold start) */}
+          {isSubmitting && showSlowNotice && (
             <div className="mb-6 p-4 bg-gym-black/90 border border-gym-lime/50 rounded-sm shadow-lime-glow animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-heading font-black tracking-widest uppercase text-gym-lime flex items-center gap-2">
@@ -185,15 +177,12 @@ export const LoginPage: React.FC = () => {
                   {GYM_FACTS[factIndex].tag}
                 </span>
                 <span className="text-[9px] text-gym-muted uppercase tracking-wider font-mono">
-                  TIP {(factIndex % GYM_FACTS.length) + 1} OF {GYM_FACTS.length}
+                  CONNECTING TO SERVER...
                 </span>
               </div>
               <p className="text-xs text-gym-primary leading-relaxed font-sans transition-all duration-300">
                 "{GYM_FACTS[factIndex].fact}"
               </p>
-              <div className="w-full bg-gym-border/40 h-1 rounded-full overflow-hidden mt-3">
-                <div className="h-full bg-gym-lime w-full animate-pulse"></div>
-              </div>
             </div>
           )}
 
@@ -284,11 +273,10 @@ export const LoginPage: React.FC = () => {
               {isSubmitting ? (
                 <div className="flex items-center gap-2.5">
                   <WeightlifterIcon className="w-5 h-5 text-gym-black" isLifting={true} />
-                  <span>Lifting Your Profile...</span>
+                  <span>Signing In...</span>
                 </div>
               ) : (
                 <>
-                  <WeightlifterIcon className="w-4 h-4 text-gym-black" />
                   <span>Sign In To Portal</span>
                   <ArrowRight className="w-4 h-4" />
                 </>

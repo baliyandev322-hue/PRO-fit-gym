@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, X, AlertCircle, CheckCircle2, RefreshCw, Zap } from 'lucide-react';
 
@@ -146,7 +147,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             {/* Loading Indicator */}
             {isInitializing && !cameraError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gym-black/90 z-10 gap-3">
-                <RefreshCw className="w-8 h-8 text-gym-lime animate-spin" />
+                <WeightlifterIcon className="w-10 h-10 text-gym-lime" isLifting={true} />
                 <span className="text-xs font-heading font-bold uppercase tracking-wider text-gym-muted">
                   Initializing Optical Camera Feed...
                 </span>

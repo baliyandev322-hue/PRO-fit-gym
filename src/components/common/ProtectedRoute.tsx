@@ -16,22 +16,32 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, role, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  // 1. Instant Navigation: If the athlete profile is already active or cached,
+  // render immediately! Do not block navigation with full-screen loading screens.
+  if (user && isAuthenticated) {
+    if (allowedRoles && role && !allowedRoles.includes(role)) {
+      if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+      if (role === 'trainer') return <Navigate to="/trainer/dashboard" replace />;
+      return <Navigate to="/member/dashboard" replace />;
+    }
+    return <>{children}</>;
+  }
+
+  // 2. Only show full-page loading if an unverified token is active with NO cached user profile yet
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-gym-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <WeightlifterIcon className="w-16 h-16 text-gym-lime" isLifting={true} />
+          <WeightlifterIcon className="w-14 h-14 text-gym-lime" isLifting={true} />
           <span className="font-heading uppercase tracking-widest text-sm text-gym-primary font-bold">
-            Authenticating Athlete Profile...
-          </span>
-          <span className="text-xs text-gym-muted font-sans -mt-2">
-            Loading your training sanctuary
+            Authenticating Profile...
           </span>
         </div>
       </div>
     );
   }
 
+  // 3. Not authenticated
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

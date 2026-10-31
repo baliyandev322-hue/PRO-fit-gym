@@ -41,7 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(!!token);
+  // Only true if we have a token requiring background verification but NO cached user yet
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!token && !user);
   const { showToast } = useNotifications();
 
   // Persist session to local storage when state changes
@@ -161,7 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    setIsLoading(true);
     const norm = email.trim().toLowerCase();
 
     // 1. Instant check for registered local user accounts

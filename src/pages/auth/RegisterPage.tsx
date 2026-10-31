@@ -1021,7 +1021,7 @@ export const RegisterPage: React.FC = () => {
                           className="px-6 py-2.5 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-gym-lime/20"
                         >
                           {isSendingOtp ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <WeightlifterIcon className="w-4 h-4 text-black" isLifting={true} />
                           ) : (
                             <Mail className="w-4 h-4" />
                           )}
@@ -1035,7 +1035,7 @@ export const RegisterPage: React.FC = () => {
                           className="px-6 py-2.5 bg-gym-lime text-black font-heading font-black uppercase tracking-wider text-xs rounded-xl hover:bg-[#b8e600] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-gym-lime/20"
                         >
                           {isVerifyingOtp ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <WeightlifterIcon className="w-4 h-4 text-black" isLifting={true} />
                           ) : (
                             <Check className="w-4 h-4 stroke-[3]" />
                           )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 import { 
   CreditCard, 
   Check, 
@@ -461,7 +462,7 @@ export const MemberMembershipPage: React.FC = () => {
                     className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isProcessing ? (
-                      <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                      <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
                     ) : (
                       <span>Pay ₹{getPlanPriceINR(selectedPlanForCheckout).toLocaleString()} via Razorpay</span>
                     )}
@@ -547,7 +548,7 @@ export const MemberMembershipPage: React.FC = () => {
                     className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isProcessing ? (
-                      <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                      <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
                     ) : (
                       <span>Pay ${selectedPlanForCheckout.price}.00 via Card</span>
                     )}

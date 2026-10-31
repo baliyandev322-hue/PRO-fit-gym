@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 import { executeRazorpayCheckout, RazorpayVerificationResult } from '@/lib/razorpay';
 import { useNotifications } from '@/context/NotificationContext';
 
@@ -93,7 +94,7 @@ export const RazorpayCheckoutButton: React.FC<RazorpayCheckoutButtonProps> = ({
     >
       {loading ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
           <span>Processing Checkout...</span>
         </>
       ) : (
