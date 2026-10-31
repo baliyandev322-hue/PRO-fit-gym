@@ -23,6 +23,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
+import { SEOHead } from '@/components/common/SEOHead';
+import { 
+  trackTrialFormSubmission, 
+  trackTrialBookingSuccess, 
+  trackContactFormSubmission, 
+  trackWhatsAppLeadClick 
+} from '@/lib/analytics';
 import confetti from 'canvas-confetti';
 
 interface ConfirmedTrialPass {
@@ -153,6 +160,7 @@ export const LandingPage: React.FC = () => {
       return;
     }
 
+    trackTrialFormSubmission(trialDiscipline);
     setIsSubmittingTrial(true);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -197,6 +205,8 @@ export const LandingPage: React.FC = () => {
         title: 'TRIAL PASS CONFIRMED',
         message: `Complimentary pass issued for ${trialName.trim()}! Reference: ${issuedRef}.`
       });
+
+      trackTrialBookingSuccess(issuedRef, trialDiscipline);
 
       setConfirmedTrialPass({
         athleteName: trialName.trim(),
@@ -261,6 +271,8 @@ export const LandingPage: React.FC = () => {
         message: `Thank you, ${contactName.trim()}. Ref: ${contactRef}. Concierge desk will reply within 2 hours.`
       });
 
+      trackContactFormSubmission(contactSubject, contactRef);
+
       setContactName('');
       setContactEmail('');
       setContactPhone('');
@@ -270,6 +282,11 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen">
+      <SEOHead
+        title="High Performance Strength Sanctuary & SaaS"
+        description="Exclusive 300-member strength sanctuary. Eleiko calibrated iron, biometric turnstiles, and elite athlete management platform."
+        canonicalUrl="https://profitgymclub.com/"
+      />
       {/* ================= 1. ARCHITECTURAL NAVBAR ================= */}
       <header className="sticky top-0 z-50 bg-gym-surface/90 backdrop-blur-md border-b border-gym-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -367,6 +384,10 @@ export const LandingPage: React.FC = () => {
           <img
             src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=80"
             alt="PROFIT Training Club Facility"
+            width="1920"
+            height="1080"
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover opacity-25 filter grayscale contrast-125 scale-105 transform animate-pulse duration-[10000ms]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gym-black via-gym-black/80 to-gym-black/40"></div>
@@ -819,6 +840,10 @@ export const LandingPage: React.FC = () => {
                   <img
                     src={coach.img}
                     alt={coach.name}
+                    loading="lazy"
+                    decoding="async"
+                    width="600"
+                    height="400"
                     className="w-full h-full object-cover grayscale contrast-125 group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gym-surface to-transparent"></div>
@@ -908,6 +933,10 @@ export const LandingPage: React.FC = () => {
                 <img
                   src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80"
                   alt="Push Pull Legs Protocol"
+                  loading="lazy"
+                  decoding="async"
+                  width="600"
+                  height="350"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span className="absolute top-3 left-3 px-2 py-0.5 bg-gym-black/90 text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">
@@ -939,6 +968,10 @@ export const LandingPage: React.FC = () => {
                 <img
                   src="https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=600&q=80"
                   alt="Creatine Monohydrate Science"
+                  loading="lazy"
+                  decoding="async"
+                  width="600"
+                  height="350"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span className="absolute top-3 left-3 px-2 py-0.5 bg-gym-black/90 text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">
@@ -970,6 +1003,10 @@ export const LandingPage: React.FC = () => {
                 <img
                   src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80"
                   alt="Cold Plunge and Sauna Contrast"
+                  loading="lazy"
+                  decoding="async"
+                  width="600"
+                  height="350"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <span className="absolute top-3 left-3 px-2 py-0.5 bg-gym-black/90 text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">
@@ -1027,7 +1064,13 @@ export const LandingPage: React.FC = () => {
                   <Phone className="w-4 h-4 text-gym-lime shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold text-white block uppercase font-heading">Direct Concierge & WhatsApp Desk</span>
-                    <a href="https://wa.me/919368593249" target="_blank" rel="noopener noreferrer" className="text-gym-secondary font-mono hover:text-gym-lime transition-colors">
+                    <a 
+                      href="https://wa.me/919368593249" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      onClick={() => trackWhatsAppLeadClick('concierge_desk')}
+                      className="text-gym-secondary font-mono hover:text-gym-lime transition-colors"
+                    >
                       +91 9368593249 &bull; Daily 5:00 AM – 11:00 PM
                     </a>
                   </div>
@@ -1076,29 +1119,33 @@ export const LandingPage: React.FC = () => {
               <form onSubmit={handleContactSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    <label htmlFor="contact-name" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                       Full Legal Name
                     </label>
                     <input
+                      id="contact-name"
                       type="text"
                       value={contactName}
                       onChange={(e) => setContactName(e.target.value)}
                       placeholder="e.g. Marcus Stone"
                       required
+                      aria-required="true"
                       className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    <label htmlFor="contact-email" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                       Email Address
                     </label>
                     <input
+                      id="contact-email"
                       type="email"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
                       placeholder="e.g. marcus@firm.com"
                       required
+                      aria-required="true"
                       className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
                     />
                   </div>
@@ -1106,10 +1153,11 @@ export const LandingPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    <label htmlFor="contact-phone" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                       Contact Phone
                     </label>
                     <input
+                      id="contact-phone"
                       type="tel"
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value)}
@@ -1119,10 +1167,11 @@ export const LandingPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                    <label htmlFor="contact-subject" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                       Inquiry Category
                     </label>
                     <select
+                      id="contact-subject"
                       value={contactSubject}
                       onChange={(e) => setContactSubject(e.target.value)}
                       className="w-full py-2.5 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
@@ -1137,15 +1186,17 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  <label htmlFor="contact-message" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                     Your Message / Athletic Objectives
                   </label>
                   <textarea
+                    id="contact-message"
                     rows={4}
                     value={contactMessage}
                     onChange={(e) => setContactMessage(e.target.value)}
                     placeholder="Tell us about your training background, questions, or specific access requirements..."
                     required
+                    aria-required="true"
                     className="w-full p-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
                   />
                 </div>
@@ -1212,44 +1263,50 @@ export const LandingPage: React.FC = () => {
 
             <form onSubmit={handleTrialSubmit} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                <label htmlFor="trial-name" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                   Full Athlete Name
                 </label>
                 <input
+                  id="trial-name"
                   type="text"
                   value={trialName}
                   onChange={(e) => setTrialName(e.target.value)}
                   placeholder="e.g. Jordan Vance"
                   required
+                  aria-required="true"
                   className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  <label htmlFor="trial-email" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                     Email Address
                   </label>
                   <input
+                    id="trial-email"
                     type="email"
                     value={trialEmail}
                     onChange={(e) => setTrialEmail(e.target.value)}
                     placeholder="jordan@athlete.com"
                     required
+                    aria-required="true"
                     className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  <label htmlFor="trial-phone" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                     Mobile Phone
                   </label>
                   <input
+                    id="trial-phone"
                     type="tel"
                     value={trialPhone}
                     onChange={(e) => setTrialPhone(e.target.value)}
                     placeholder="+1 (212) 555-0199"
                     required
+                    aria-required="true"
                     className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime font-mono"
                   />
                 </div>
@@ -1257,10 +1314,11 @@ export const LandingPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  <label htmlFor="trial-discipline" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                     Primary Discipline
                   </label>
                   <select
+                    id="trial-discipline"
                     value={trialDiscipline}
                     onChange={(e) => setTrialDiscipline(e.target.value)}
                     className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-xs text-gym-primary focus:outline-none focus:border-gym-lime"
@@ -1274,10 +1332,11 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
+                  <label htmlFor="trial-date" className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
                     Preferred Visit Date
                   </label>
                   <input
+                    id="trial-date"
                     type="date"
                     value={trialDate}
                     onChange={(e) => setTrialDate(e.target.value)}
@@ -1502,7 +1561,13 @@ export const LandingPage: React.FC = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone className="w-3.5 h-3.5 text-gym-lime" />
-                  <a href="https://wa.me/919368593249" target="_blank" rel="noopener noreferrer" className="hover:text-gym-lime transition-colors">
+                  <a 
+                    href="https://wa.me/919368593249" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    onClick={() => trackWhatsAppLeadClick('footer')}
+                    className="hover:text-gym-lime transition-colors"
+                  >
                     +91 9368593249 (WhatsApp)
                   </a>
                 </li>

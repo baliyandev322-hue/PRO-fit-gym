@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
+import { SEOHead } from '@/components/common/SEOHead';
 
 export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -52,6 +53,11 @@ export const ForgotPasswordPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gym-black flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      <SEOHead
+        title="Reset Password"
+        description="Password Recovery Protocol for PROFIT Training Club."
+        noindex={true}
+      />
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
         <div className="text-center">
           <Link to="/" className="inline-block group mb-3">
@@ -75,7 +81,7 @@ export const ForgotPasswordPage: React.FC = () => {
               </p>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
+                <label htmlFor="forgot-email" className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
                   Athlete Email Address
                 </label>
                 <div className="relative">
@@ -83,11 +89,13 @@ export const ForgotPasswordPage: React.FC = () => {
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
+                    id="forgot-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="alex.vance@athlete.com"
                     required
+                    aria-required="true"
                     className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded-sm text-gym-primary placeholder-gym-muted text-sm focus:outline-none focus:border-gym-lime transition-colors"
                   />
                 </div>

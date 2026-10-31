@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
-import { processStripePayment } from '@/lib/stripe';
 import { executeRazorpayCheckout } from '@/lib/razorpay';
 import { openWhatsAppReceipt } from '@/lib/whatsapp';
 import { useNotifications } from '@/context/NotificationContext';
+import { trackCheckoutInitiation, trackPaymentSuccess } from '@/lib/analytics';
 import confetti from 'canvas-confetti';
 import type { MembershipPlan } from '@/types';
 
@@ -34,11 +34,7 @@ export const MemberMembershipPage: React.FC = () => {
   const { showToast } = useNotifications();
 
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<MembershipPlan | null>(null);
-  const [paymentGateway, setPaymentGateway] = useState<'razorpay' | 'card'>('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cardNumber, setCardNumber] = useState('4242 4242 4242 4242');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [cardCvc, setCardCvc] = useState('981');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [verifiedReceiptModal, setVerifiedReceiptModal] = useState<{
     planName: string;
@@ -70,6 +66,7 @@ export const MemberMembershipPage: React.FC = () => {
     setPaymentError(null);
 
     const priceINR = getPlanPriceINR(selectedPlanForCheckout);
+    trackCheckoutInitiation(selectedPlanForCheckout.id, selectedPlanForCheckout.name, priceINR);
 
     try {
       const result = await executeRazorpayCheckout({
@@ -87,6 +84,7 @@ export const MemberMembershipPage: React.FC = () => {
       setIsProcessing(false);
 
       if (result.success) {
+        trackPaymentSuccess(result.paymentId || 'pay_verified', selectedPlanForCheckout.name, priceINR);
         await purchaseMembership(selectedPlanForCheckout.id, 'RAZORPAY_UPI');
         const receiptNo = `INV-PROFIT-${Date.now().toString().slice(-6)}`;
         setVerifiedReceiptModal({
@@ -119,50 +117,7 @@ export const MemberMembershipPage: React.FC = () => {
     }
   };
 
-  const handleExecutePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPlanForCheckout) return;
 
-    if (paymentGateway === 'razorpay') {
-      return handleExecuteRazorpay();
-    }
-
-    setIsProcessing(true);
-    setPaymentError(null);
-
-    const result = await processStripePayment({
-      planId: selectedPlanForCheckout.id,
-      planName: selectedPlanForCheckout.name,
-      amount: selectedPlanForCheckout.price,
-      userId: user.id,
-      userName: user.full_name,
-      cardNumber,
-      expiry: cardExpiry,
-      cvc: cardCvc
-    });
-
-    setIsProcessing(false);
-
-    if (result.success) {
-      await purchaseMembership(selectedPlanForCheckout.id, 'STRIPE_CARD');
-      setSelectedPlanForCheckout(null);
-
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ccff00', '#ffffff', '#23252a']
-      });
-
-      showToast({
-        type: 'success',
-        title: 'PAYMENT VERIFIED (CARD)',
-        message: `Transaction ${result.transactionId} settled. Plan activated!`
-      });
-    } else {
-      setPaymentError(result.error || 'Payment failed. Please verify your card details.');
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -393,169 +348,52 @@ export const MemberMembershipPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Gateway Selector Tabs */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <button
-                type="button"
-                onClick={() => setPaymentGateway('razorpay')}
-                className={`py-2 px-3 text-xs font-heading font-bold uppercase rounded border transition-all flex items-center justify-center gap-1.5 ${
-                  paymentGateway === 'razorpay'
-                    ? 'bg-gym-lime text-gym-black border-gym-lime shadow-lime-glow'
-                    : 'bg-gym-black text-gym-secondary border-gym-border hover:text-white'
-                }`}
-              >
-                <span>⚡ Razorpay (UPI & INR)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentGateway('card')}
-                className={`py-2 px-3 text-xs font-heading font-bold uppercase rounded border transition-all flex items-center justify-center gap-1.5 ${
-                  paymentGateway === 'card'
-                    ? 'bg-gym-lime text-gym-black border-gym-lime shadow-lime-glow'
-                    : 'bg-gym-black text-gym-secondary border-gym-border hover:text-white'
-                }`}
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                <span>Credit / Debit Card</span>
-              </button>
-            </div>
-
             {paymentError && (
-              <div className="p-3 mb-4 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+              <div role="alert" className="p-3 mb-4 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{paymentError}</span>
               </div>
             )}
 
-            {paymentGateway === 'razorpay' ? (
-              /* RAZORPAY UPI & INDIAN RAILS TAB */
-              <div className="space-y-4">
-                <div className="p-3.5 bg-gym-black rounded border border-gym-border space-y-2">
-                  <span className="text-[11px] font-heading font-bold uppercase text-gym-lime block">
-                    Supported Payment Rails (India):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 text-[10px] font-mono text-gym-secondary">
-                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">UPI (GPay / PhonePe / Paytm)</span>
-                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">Scan & Pay QR</span>
-                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">RuPay / Visa / MC</span>
-                    <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">50+ NetBanking Banks</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-gym-black rounded border border-gym-border text-[11px] text-gym-muted leading-relaxed">
-                  Razorpay server order will be signed with <strong className="text-white">HMAC-SHA256</strong>. Upon instant completion, your sanctuary membership will be extended by 30 days and synced to the front desk turnstiles.
-                </div>
-
-                <div className="pt-2 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlanForCheckout(null)}
-                    className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleExecuteRazorpay}
-                    disabled={isProcessing}
-                    className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isProcessing ? (
-                      <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
-                    ) : (
-                      <span>Pay ₹{getPlanPriceINR(selectedPlanForCheckout).toLocaleString()} via Razorpay</span>
-                    )}
-                  </button>
+            <div className="space-y-4">
+              <div className="p-3.5 bg-gym-black rounded border border-gym-border space-y-2">
+                <span className="text-[11px] font-heading font-bold uppercase text-gym-lime block">
+                  Accepted Payment Methods:
+                </span>
+                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono text-gym-secondary">
+                  <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">Credit / Debit Cards (Visa, MC, RuPay, Amex)</span>
+                  <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">UPI (GPay / PhonePe / Paytm)</span>
+                  <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">NetBanking (50+ Banks)</span>
+                  <span className="px-2 py-0.5 bg-gym-surface rounded border border-gym-border">Instant QR Pass</span>
                 </div>
               </div>
-            ) : (
-              /* CARD CHECKOUT TAB */
-              <form onSubmit={handleExecutePayment} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                    Cardholder Name
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue={user.full_name}
-                    required
-                    className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary text-xs focus:outline-none focus:border-gym-lime"
-                  />
-                </div>
 
-                <div>
-                  <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                    Card Number (Visa / Mastercard / Amex)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      placeholder="4242 4242 4242 4242"
-                      required
-                      className="w-full py-2 pl-3 pr-10 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
-                    />
-                    <CreditCard className="w-4 h-4 text-gym-muted absolute right-3 top-2.5" />
-                  </div>
-                </div>
+              <div className="p-3 bg-gym-black rounded border border-gym-border text-[11px] text-gym-muted leading-relaxed">
+                Transactions are processed through official Razorpay checkout with server-side <strong className="text-white">HMAC-SHA256</strong> cryptographic signature verification. Card details are processed directly within Razorpay's certified vault.
+              </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                      Expiration
-                    </label>
-                    <input
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                      placeholder="MM/YY"
-                      required
-                      className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-heading font-bold uppercase text-gym-secondary mb-1">
-                      CVC / CVV
-                    </label>
-                    <input
-                      type="text"
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value)}
-                      placeholder="CVC"
-                      required
-                      className="w-full py-2 px-3 bg-gym-black border border-gym-border rounded text-gym-primary font-mono text-xs focus:outline-none focus:border-gym-lime"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-3 bg-gym-black rounded border border-gym-border text-[11px] text-gym-muted leading-relaxed">
-                  By clicking pay, you authorize PROFIT Training Club to charge your card <strong className="text-white">${selectedPlanForCheckout.price}.00 USD</strong>.
-                </div>
-
-                <div className="pt-2 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlanForCheckout(null)}
-                    className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isProcessing}
-                    className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isProcessing ? (
-                      <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
-                    ) : (
-                      <span>Pay ${selectedPlanForCheckout.price}.00 via Card</span>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlanForCheckout(null)}
+                  className="w-1/3 py-2.5 bg-gym-black hover:bg-gym-surface border border-gym-border text-gym-secondary text-xs uppercase font-heading font-bold rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteRazorpay}
+                  disabled={isProcessing}
+                  className="w-2/3 py-2.5 bg-gym-lime hover:bg-gym-lime-hover text-gym-black text-xs uppercase font-heading font-black tracking-wider rounded shadow-lime-glow flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <WeightlifterIcon className="w-4 h-4 text-gym-black" isLifting={true} />
+                  ) : (
+                    <span>Pay ₹{getPlanPriceINR(selectedPlanForCheckout).toLocaleString()} via Razorpay</span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

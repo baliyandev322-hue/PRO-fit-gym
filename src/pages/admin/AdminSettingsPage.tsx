@@ -96,14 +96,14 @@ export const AdminSettingsPage: React.FC = () => {
           <div className="bg-gym-surface border border-gym-border rounded-sm p-5">
             <div className="flex items-center justify-between mb-2">
               <span className="font-heading font-bold uppercase text-xs text-gym-primary flex items-center gap-2">
-                <Database className="w-4 h-4 text-emerald-400" /> POSTGRESQL & PRISMA ORM
+                <Database className="w-4 h-4 text-emerald-400" /> MONGODB ATLAS &amp; MONGOOSE ODM
               </span>
               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                 CONNECTED
               </span>
             </div>
             <p className="text-xs text-gym-secondary">
-              Relational PostgreSQL database active with 19 Prisma models, foreign keys, and indexes.
+              Production MongoDB Atlas cluster active with Mongoose models, role access validation, and telemetry.
             </p>
           </div>
 

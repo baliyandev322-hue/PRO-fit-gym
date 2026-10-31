@@ -30,7 +30,7 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 // CORS Configuration
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500,http://127.0.0.1:5500,https://profitgym-ten.vercel.app')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5500,http://127.0.0.1:5500,https://profitgym-ten.vercel.app,https://profitgymclub.com,https://www.profitgymclub.com')
   .split(',')
   .map((origin) => origin.trim().replace(/\/$/, ''));
 

@@ -13,6 +13,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { BLOG_ARTICLES, BLOG_CATEGORIES, BlogArticle } from '@/data/blogArticles';
+import { SEOHead } from '@/components/common/SEOHead';
 
 export const BlogListPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -33,6 +34,11 @@ export const BlogListPage: React.FC = () => {
 
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen flex flex-col">
+      <SEOHead
+        title="Scientific Protocols & Strength Training Library"
+        description="Explore evidence-based exercise science, hypertrophy programming, nutrition blueprints, and recovery protocols curated by PROFIT coaches."
+        canonicalUrl="https://profitgymclub.com/blog"
+      />
       {/* ================= TOP NAVBAR ================= */}
       <header className="sticky top-0 z-50 bg-gym-surface/90 backdrop-blur-md border-b border-gym-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -126,6 +132,10 @@ export const BlogListPage: React.FC = () => {
                   <img
                     src={featuredArticle.image}
                     alt={featuredArticle.title}
+                    width="800"
+                    height="450"
+                    loading="eager"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gym-black/80 via-transparent to-transparent"></div>
@@ -161,6 +171,10 @@ export const BlogListPage: React.FC = () => {
                       <img
                         src={featuredArticle.author.avatar}
                         alt={featuredArticle.author.name}
+                        width="36"
+                        height="36"
+                        loading="lazy"
+                        decoding="async"
                         className="w-9 h-9 rounded-full object-cover border border-gym-border"
                       />
                       <div>
@@ -210,8 +224,11 @@ export const BlogListPage: React.FC = () => {
                     <img
                       src={article.image}
                       alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      width="600"
+                      height="350"
                       loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-3 left-3">
                       <span className="px-2.5 py-0.5 bg-gym-black/90 backdrop-blur-md text-gym-lime font-heading font-bold uppercase text-[10px] tracking-wider rounded border border-gym-lime/30">

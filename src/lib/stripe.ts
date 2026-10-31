@@ -1,53 +1,52 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_demo_profit_gym';
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
 export const getStripe = () => {
-  if (!stripePromise && stripePublishableKey && !stripePublishableKey.includes('demo')) {
+  if (!stripePromise && stripePublishableKey && !stripePublishableKey.includes('Mock')) {
     stripePromise = loadStripe(stripePublishableKey);
   }
   return stripePromise;
 };
 
-export interface ProcessPaymentParams {
+export interface StripeCheckoutParams {
   planId: string;
   planName: string;
   amount: number;
   userId: string;
   userName: string;
-  cardNumber?: string;
-  expiry?: string;
-  cvc?: string;
 }
 
 export interface PaymentResult {
   success: boolean;
-  transactionId?: string;
+  sessionId?: string;
   error?: string;
-  receiptUrl?: string;
+  redirectUrl?: string;
 }
 
-// Production & Dev resilient Stripe Checkout simulator / executor
-export async function processStripePayment(params: ProcessPaymentParams): Promise<PaymentResult> {
-  // Simulate network latency (0.8s) for real checkout feel
-  await new Promise(res => setTimeout(res, 800));
-
-  // If card number is provided and ends with 0000 -> simulate decline
-  if (params.cardNumber && params.cardNumber.replace(/\s/g, '').endsWith('0000')) {
+/**
+ * Initiates secure Stripe Hosted Checkout.
+ * Raw cardholder data (PAN, CVV, Expiry) is NEVER collected or processed
+ * in client state or custom application memory.
+ */
+export async function redirectToStripeCheckout(sessionId: string): Promise<PaymentResult> {
+  const stripe = await getStripe();
+  if (!stripe) {
     return {
       success: false,
-      error: 'Card declined by issuing bank (Test Simulator). Please check card details or use another card.'
+      error: 'Stripe gateway is not configured with an active production publishable key.'
     };
   }
 
-  const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-  const receiptUrl = `https://pay.stripe.com/receipts/acct_profitgym/${transactionId}`;
+  const { error } = await (stripe as any).redirectToCheckout({ sessionId });
+  if (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 
-  return {
-    success: true,
-    transactionId,
-    receiptUrl
-  };
+  return { success: true, sessionId };
 }

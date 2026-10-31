@@ -12,6 +12,7 @@ import {
   Dumbbell
 } from 'lucide-react';
 import { getArticleBySlug, getRelatedArticles } from '@/data/blogArticles';
+import { SEOHead } from '@/components/common/SEOHead';
 
 export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -28,6 +29,11 @@ export const BlogPostPage: React.FC = () => {
   if (!article) {
     return (
       <div className="min-h-screen bg-gym-black text-gym-primary flex flex-col items-center justify-center p-4">
+        <SEOHead
+          title="Protocol Not Found"
+          description="The requested scientific article does not exist or has been relocated."
+          noindex={true}
+        />
         <BookOpen className="w-12 h-12 text-gym-lime mb-4" />
         <h1 className="font-heading text-3xl font-black uppercase tracking-wider mb-2">Protocol Not Found</h1>
         <p className="text-xs text-gym-secondary mb-6">The requested scientific article does not exist or has been relocated.</p>
@@ -57,6 +63,13 @@ export const BlogPostPage: React.FC = () => {
 
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen flex flex-col">
+      <SEOHead
+        title={article.title}
+        description={article.summary}
+        canonicalUrl={`https://profitgymclub.com/blog/${article.slug}`}
+        ogImage={article.image}
+        ogType="article"
+      />
       {/* ================= STICKY TOP NAVIGATION ================= */}
       <header className="sticky top-0 z-50 bg-gym-surface/90 backdrop-blur-md border-b border-gym-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -112,6 +125,10 @@ export const BlogPostPage: React.FC = () => {
           <img
             src={article.author.avatar}
             alt={article.author.name}
+            width="48"
+            height="48"
+            loading="lazy"
+            decoding="async"
             className="w-12 h-12 rounded-full object-cover border border-gym-border"
           />
           <div>
@@ -129,6 +146,10 @@ export const BlogPostPage: React.FC = () => {
           <img
             src={article.image}
             alt={article.title}
+            width="1200"
+            height="630"
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover"
           />
         </div>
@@ -235,6 +256,10 @@ export const BlogPostPage: React.FC = () => {
                     <img
                       src={rel.image}
                       alt={rel.title}
+                      width="400"
+                      height="225"
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>

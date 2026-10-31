@@ -6,6 +6,7 @@ import { GymDataProvider } from '@/context/GymDataContext';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 // Sleek Brand Loader for lazy-loaded route transitions
 const PageLoader: React.FC = () => (
@@ -28,6 +29,7 @@ const BlogListPage = lazy(() => import('@/pages/blog/BlogListPage').then(m => ({
 const BlogPostPage = lazy(() => import('@/pages/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })));
 const PrivacyPolicyPage = lazy(() => import('@/pages/legal/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
 const TermsPage = lazy(() => import('@/pages/legal/TermsPage').then(m => ({ default: m.TermsPage })));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Member Pages (Code-split)
 const MemberDashboard = lazy(() => import('@/pages/member/MemberDashboard').then(m => ({ default: m.MemberDashboard })));
@@ -58,7 +60,8 @@ const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage').t
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
       <NotificationProvider>
         <AuthProvider>
           <GymDataProvider>
@@ -139,14 +142,15 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* Catch-all redirect to Landing */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* 404 Route for Unmatched Paths */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </GymDataProvider>
         </AuthProvider>
       </NotificationProvider>
     </BrowserRouter>
+  </ErrorBoundary>
   );
 };
 

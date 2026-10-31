@@ -37,6 +37,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useGymData } from '@/context/GymDataContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { SEOHead } from '@/components/common/SEOHead';
 import confetti from 'canvas-confetti';
 import type { RegisterPayload } from '@/types';
 import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
@@ -526,6 +527,11 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0b0d] text-gym-primary flex flex-col justify-between relative overflow-x-hidden">
+      <SEOHead
+        title="Athlete Onboarding"
+        description="Exclusive 300-member private membership onboarding for PROFIT Training Club."
+        noindex={true}
+      />
       {/* Ambient Lighting Orbs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-gym-lime/5 rounded-full blur-[160px] pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-gym-lime/3 rounded-full blur-[140px] pointer-events-none"></div>

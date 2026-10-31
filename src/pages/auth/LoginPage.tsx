@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck, Dumbbell, User, Zap, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
+import { SEOHead } from '@/components/common/SEOHead';
 
 // Simple, friendly English fitness facts that inspire & engage the athlete while waiting
 const GYM_FACTS = [
@@ -139,6 +140,11 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gym-black flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      <SEOHead
+        title="Athlete Login"
+        description="Athlete & Admin Portal Sign-in for PROFIT Training Club."
+        noindex={true}
+      />
       {/* Background Graphic Accents */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-gym-lime/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gym-lime/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -162,7 +168,7 @@ export const LoginPage: React.FC = () => {
         {/* Login Card */}
         <div className="mt-8 bg-gym-surface border border-gym-border py-8 px-6 shadow-card rounded sm:px-10">
           {errorMessage && (
-            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-sm flex items-start gap-2">
+            <div role="alert" aria-live="assertive" className="mb-6 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-sm flex items-start gap-2">
               <span className="font-bold">Error:</span>
               <span className="flex-1">{errorMessage}</span>
             </div>
@@ -188,7 +194,7 @@ export const LoginPage: React.FC = () => {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
+              <label htmlFor="login-email" className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
                 Athlete Email Address
               </label>
               <div className="relative">
@@ -196,6 +202,7 @@ export const LoginPage: React.FC = () => {
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => {
@@ -205,6 +212,8 @@ export const LoginPage: React.FC = () => {
                   placeholder="member@profitgym.com"
                   required
                   autoComplete="email"
+                  aria-required="true"
+                  aria-invalid={!!errorMessage}
                   className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded-sm text-gym-primary placeholder-gym-muted text-sm focus:outline-none focus:border-gym-lime transition-colors"
                 />
               </div>
@@ -212,7 +221,7 @@ export const LoginPage: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary font-heading">
+                <label htmlFor="login-password" className="block text-xs uppercase tracking-wider font-bold text-gym-secondary font-heading">
                   Password
                 </label>
                 <Link
@@ -227,6 +236,7 @@ export const LoginPage: React.FC = () => {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => {
@@ -236,6 +246,8 @@ export const LoginPage: React.FC = () => {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
+                  aria-required="true"
+                  aria-invalid={!!errorMessage}
                   className="block w-full pl-10 pr-10 py-2.5 bg-gym-black border border-gym-border rounded-sm text-gym-primary placeholder-gym-muted text-sm focus:outline-none focus:border-gym-lime transition-colors"
                 />
                 <button

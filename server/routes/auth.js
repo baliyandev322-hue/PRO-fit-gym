@@ -332,11 +332,10 @@ router.post('/register', authLimiter, async (req, res) => {
       qrPassToken: `QR_${Date.now()}_MOCK`,
     };
 
-    // Store in in-memory registry so the athlete can log in anytime
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Store in in-memory registry so the athlete can log in anytime (using bcrypt hash only)
+    const passwordHash = await bcrypt.hash(password, 12);
     const userRecord = {
       ...mockUser,
-      password,
       passwordHash,
     };
     inMemoryUsersStore.set(normalizedEmail, userRecord);
@@ -461,24 +460,27 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     }
 
-    // 3. Attempt In-Memory Registered User authentication
-    if (inMemoryUsersStore.has(normalizedEmail)) {
+    // 3. Attempt In-Memory Registered Athlete authentication (Non-Production fallback only)
+    if (process.env.NODE_ENV !== 'production' && inMemoryUsersStore.has(normalizedEmail)) {
       const stored = inMemoryUsersStore.get(normalizedEmail);
       let isMatch = false;
-      if (stored.password === password) {
-        isMatch = true;
-      } else if (stored.passwordHash) {
+      // Strictly require bcrypt hash verification; never compare plaintext passwords
+      if (stored.passwordHash) {
         try {
           isMatch = await bcrypt.compare(password, stored.passwordHash);
-        } catch {}
+        } catch (hashErr) {
+          console.warn('[Auth Warning] In-memory hash comparison error:', hashErr.message);
+        }
       }
 
-      if (isMatch) {
+      // Security Guardrail: In-memory store can NEVER issue administrative JWTs
+      const assignedRole = (stored.role || 'MEMBER').toUpperCase();
+      if (isMatch && assignedRole !== 'ADMIN') {
         const verifiedUser = {
           id: stored.id,
           email: stored.email,
           fullName: stored.fullName,
-          role: stored.role || 'MEMBER',
+          role: assignedRole,
           avatarUrl: stored.avatarUrl,
         };
         const token = signToken(verifiedUser);
@@ -491,65 +493,15 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     }
 
-    // 4. Known Seed Accounts (Development & Offline Resilience)
-    const SEED_CREDENTIALS = {
-      'admin@profitgym.com': {
-        id: 'usr_admin_01',
-        name: 'Dev Baliyan',
-        role: 'ADMIN',
-        validPasswords: ['password123']
-      },
-      'trainer@profitgym.com': {
-        id: 'usr_trainer_01',
-        name: 'Marcus Drake',
-        role: 'TRAINER',
-        validPasswords: ['password123']
-      },
-      'alex.vance@athlete.com': {
-        id: 'usr_member_01',
-        name: 'Alex Vance',
-        role: 'MEMBER',
-        validPasswords: ['password123']
-      },
-      'member@profitgym.com': {
-        id: 'usr_member_02',
-        name: 'Jordan Bell',
-        role: 'MEMBER',
-        validPasswords: ['password123']
-      },
-      'princekrssm1@gmail.com': {
-        id: 'usr_member_prince',
-        name: 'Prince',
-        role: 'MEMBER',
-        validPasswords: ['password123', 'admin123']
-      }
-    };
-
-    const seedAccount = SEED_CREDENTIALS[normalizedEmail];
-    if (seedAccount && seedAccount.validPasswords.includes(password)) {
-      const verifiedUser = {
-        id: seedAccount.id,
-        email: normalizedEmail,
-        fullName: seedAccount.name,
-        role: seedAccount.role,
-      };
-      const token = signToken(verifiedUser);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Authentication successful.',
-        token,
-        user: verifiedUser,
-        admin: {
-          id: verifiedUser.id,
-          email: verifiedUser.email,
-          name: verifiedUser.fullName,
-          role: verifiedUser.role.toLowerCase(),
-        },
+    // Production Guardrail: Ensure production requests never bypass database authentication
+    if (process.env.NODE_ENV === 'production' && mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Authentication service temporarily unavailable. Database connection offline.',
       });
     }
 
-    // If credentials are invalid, strictly reject
+    // Strictly reject invalid credentials - no hardcoded seed backdoors permitted
     return res.status(401).json({
       success: false,
       message: 'Invalid email or password credentials.',

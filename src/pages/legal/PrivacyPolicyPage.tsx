@@ -1,10 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Lock, FileText, CheckCircle } from 'lucide-react';
+import { SEOHead } from '@/components/common/SEOHead';
 
 export const PrivacyPolicyPage: React.FC = () => {
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen flex flex-col">
+      <SEOHead
+        title="Privacy Policy"
+        description="Official Privacy Policy and Data Disclosure for PROFIT Training Club members and visitors."
+        canonicalUrl="https://profitgymclub.com/privacy"
+      />
       <header className="sticky top-0 z-50 bg-gym-surface/90 backdrop-blur-md border-b border-gym-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="text-xs uppercase font-heading font-bold tracking-wider text-gym-secondary hover:text-white transition-colors flex items-center gap-2">
