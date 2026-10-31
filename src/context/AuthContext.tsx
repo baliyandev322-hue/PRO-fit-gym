@@ -49,9 +49,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user && token) {
       localStorage.setItem('profit_gym_current_user', JSON.stringify(user));
       localStorage.setItem('profit_gym_jwt_token', token);
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('profit_auth_token', token);
     } else {
       localStorage.removeItem('profit_gym_current_user');
       localStorage.removeItem('profit_gym_jwt_token');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('profit_auth_token');
     }
   }, [user, token]);
 
@@ -112,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mockProfile: UserProfile;
     if (demoRole === 'admin') {
       mockProfile = {
-        id: 'demo-admin-id',
+        id: 'user-admin-1',
         email: 'admin@profitgym.com',
         role: 'admin',
         full_name: 'Director & Club Owner',
@@ -122,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     } else if (demoRole === 'trainer') {
       mockProfile = {
-        id: 'demo-trainer-id',
+        id: 'user-trainer-1',
         email: 'trainer@profitgym.com',
         role: 'trainer',
         full_name: 'Marcus Drake (Head Coach)',
@@ -132,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     } else {
       mockProfile = {
-        id: 'demo-member-id',
+        id: 'user-member-1',
         email: 'alex.vance@athlete.com',
         role: 'member',
         full_name: 'Alex Vance',
@@ -158,29 +162,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true);
+    const norm = email.trim().toLowerCase();
+
+    // 1. Instant check for registered local user accounts
+    try {
+      const savedUsers = JSON.parse(localStorage.getItem('profit_gym_registered_users') || '[]');
+      const found = savedUsers.find((u: any) => u.email?.toLowerCase().trim() === norm);
+      if (found && (!found.password || found.password === password)) {
+        const localToken = `local-token-${found.id}`;
+        setToken(localToken);
+        setUser(found);
+        localStorage.setItem('profit_gym_jwt_token', localToken);
+        localStorage.setItem('auth_token', localToken);
+        localStorage.setItem('profit_auth_token', localToken);
+        localStorage.setItem('profit_gym_current_user', JSON.stringify(found));
+        setIsLoading(false);
+        showToast({
+          type: 'success',
+          title: 'AUTHENTICATION VERIFIED',
+          message: `Welcome back, ${found.full_name}!`,
+        });
+        return { success: true };
+      }
+    } catch {}
+
+    // 2. Immediate resolution for standard demo credentials
+    if (password === 'password123' || password === 'admin123') {
+      if (norm === 'admin@profitgym.com') {
+        loginAsDemo('admin');
+        return { success: true };
+      }
+      if (norm === 'trainer@profitgym.com') {
+        loginAsDemo('trainer');
+        return { success: true };
+      }
+      if (norm === 'member@profitgym.com' || norm === 'alex.vance@athlete.com') {
+        loginAsDemo('member');
+        return { success: true };
+      }
+    }
 
     try {
+      // 10-second timeout to prevent indefinite frozen spinners during server wake-ups
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.success) {
         setIsLoading(false);
-        // Fallback for demo credentials if server returns error or demo account
-        const norm = email.trim().toLowerCase();
-        if (norm === 'admin@profitgym.com') {
+        // Fallback for demo credentials if server returns rate limit or error
+        if (norm === 'admin@profitgym.com' && (password === 'password123' || password === 'admin123')) {
           loginAsDemo('admin');
           return { success: true };
         }
-        if (norm === 'trainer@profitgym.com') {
+        if (norm === 'trainer@profitgym.com' && (password === 'password123' || password === 'admin123')) {
           loginAsDemo('trainer');
           return { success: true };
         }
-        if (norm === 'member@profitgym.com' || norm === 'alex.vance@athlete.com') {
+        if ((norm === 'member@profitgym.com' || norm === 'alex.vance@athlete.com') && (password === 'password123' || password === 'admin123')) {
           loginAsDemo('member');
           return { success: true };
         }
@@ -206,6 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('profit_gym_current_user', JSON.stringify(loggedUser));
       localStorage.setItem('profit_gym_jwt_token', data.token);
       localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('profit_auth_token', data.token);
       setUser(loggedUser);
       setIsLoading(false);
 
@@ -217,8 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     } catch (err: any) {
       setIsLoading(false);
-      // Fallback for demo testing when backend is offline
-      const norm = email.trim().toLowerCase();
+      // Fallback for demo testing when backend is cold or offline
       if (norm === 'admin@profitgym.com') {
         loginAsDemo('admin');
         return { success: true };
@@ -232,10 +280,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true };
       }
 
-      const networkMsg = 'Could not connect to authentication server. Please check your backend connection.';
+      const networkMsg = err.name === 'AbortError'
+        ? 'Authentication server is waking up. Please try again or use 1-Click Instant Demo.'
+        : 'Could not connect to authentication server. Please check your network connection.';
       showToast({
         type: 'error',
-        title: 'NETWORK ERROR',
+        title: err.name === 'AbortError' ? 'SERVER COLD START' : 'NETWORK ERROR',
         message: networkMsg,
       });
       return { success: false, message: networkMsg };

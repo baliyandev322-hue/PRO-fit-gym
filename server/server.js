@@ -23,6 +23,9 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable trust proxy for correct client IP detection behind reverse proxies
+app.set('trust proxy', 1);
+
 // Security HTTP headers
 app.use(helmet());
 

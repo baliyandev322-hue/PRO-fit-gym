@@ -1,14 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, ShieldCheck, Dumbbell, User, Zap } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, Dumbbell, User, Zap, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
+
+// Simple, friendly English fitness facts that inspire & engage the athlete while waiting
+const GYM_FACTS = [
+  {
+    tag: 'QUICK TIP',
+    fact: 'Drinking water between your sets keeps your energy high and prevents muscle cramps.',
+  },
+  {
+    tag: 'DID YOU KNOW?',
+    fact: 'Lifting weights burns calories even while you rest, because muscles need energy to recover.',
+  },
+  {
+    tag: 'PRO TIP',
+    fact: 'Resting 2 to 3 minutes between heavy sets helps you lift more weight on your next set.',
+  },
+  {
+    tag: 'SANCTUARY RULE',
+    fact: 'PROFIT has a strict 300-member limit so you never have to wait for any gym equipment.',
+  },
+  {
+    tag: 'MUSCLE FACT',
+    fact: 'Lowering the weights slowly (controlled reps) builds stronger muscles than lifting fast.',
+  },
+  {
+    tag: 'MOTIVATION',
+    fact: 'Consistency is everything. Showing up today is already a win for your health.',
+  },
+  {
+    tag: 'RECOVERY TIP',
+    fact: '7 to 8 hours of good sleep is when your muscles actually heal and grow bigger.',
+  },
+];
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('profit_gym_remembered_email') || '';
+  });
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('profit_gym_remember_me') !== 'false';
+  });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
+
   const { login, loginAsDemo } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = (location.state as any)?.from?.pathname || '/member/dashboard';
+
+  // Rotate gym tips every 2.8 seconds while waiting for login
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isSubmitting) {
+      interval = setInterval(() => {
+        setFactIndex((prev) => (prev + 1) % GYM_FACTS.length);
+      }, 2800);
+    } else {
+      setFactIndex(0);
+    }
+    return () => clearInterval(interval);
+  }, [isSubmitting]);
 
   const handleQuickDemo = (role: 'admin' | 'trainer' | 'member') => {
     loginAsDemo(role);
@@ -20,14 +78,24 @@ export const LoginPage: React.FC = () => {
       navigate('/member/dashboard', { replace: true });
     }
   };
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/member/dashboard';
+  const handleAutofill = (demoEmail: string, demoPass: string = 'password123') => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setErrorMessage(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
+
+    if (rememberMe) {
+      localStorage.setItem('profit_gym_remembered_email', email.trim());
+      localStorage.setItem('profit_gym_remember_me', 'true');
+    } else {
+      localStorage.removeItem('profit_gym_remembered_email');
+      localStorage.setItem('profit_gym_remember_me', 'false');
+    }
 
     setErrorMessage(null);
     setIsSubmitting(true);
@@ -78,10 +146,30 @@ export const LoginPage: React.FC = () => {
         {/* Login Card */}
         <div className="mt-8 bg-gym-surface border border-gym-border py-8 px-6 shadow-card rounded sm:px-10">
           {errorMessage && (
-            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-sm">
-              {errorMessage}
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-sm flex items-start gap-2">
+              <span className="font-bold">Error:</span>
+              <span className="flex-1">{errorMessage}</span>
             </div>
           )}
+
+          {/* Animated Weightlifter & Simple Fitness Tip while Loading */}
+          {isSubmitting && (
+            <div className="mb-6 p-4 bg-gym-black/90 border border-gym-lime/50 rounded-sm shadow-lime-glow animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-heading font-black tracking-widest uppercase text-gym-lime flex items-center gap-2">
+                  <WeightlifterIcon className="w-5 h-5 text-gym-lime" isLifting={true} />
+                  {GYM_FACTS[factIndex].tag}
+                </span>
+                <span className="text-[9px] text-gym-muted uppercase tracking-wider font-mono">
+                  TIP {(factIndex % GYM_FACTS.length) + 1} OF {GYM_FACTS.length}
+                </span>
+              </div>
+              <p className="text-xs text-gym-primary leading-relaxed font-sans transition-all duration-300">
+                "{GYM_FACTS[factIndex].fact}"
+              </p>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs uppercase tracking-wider font-bold text-gym-secondary mb-2 font-heading">
@@ -95,8 +183,9 @@ export const LoginPage: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alex.vance@athlete.com"
+                  placeholder="member@profitgym.com"
                   required
+                  autoComplete="email"
                   className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded-sm text-gym-primary placeholder-gym-muted text-sm focus:outline-none focus:border-gym-lime transition-colors"
                 />
               </div>
@@ -119,40 +208,54 @@ export const LoginPage: React.FC = () => {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="block w-full pl-10 pr-3 py-2.5 bg-gym-black border border-gym-border rounded-sm text-gym-primary placeholder-gym-muted text-sm focus:outline-none focus:border-gym-lime transition-colors"
+                  autoComplete="current-password"
+                  className="block w-full pl-10 pr-10 py-2.5 bg-gym-black border border-gym-border rounded-sm text-gym-primary placeholder-gym-muted text-sm focus:outline-none focus:border-gym-lime transition-colors"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gym-muted hover:text-white transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
+              <label htmlFor="remember-me" className="flex items-center cursor-pointer select-none">
                 <input
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  defaultChecked
-                  className="h-4 w-4 rounded bg-gym-black border-gym-border text-gym-lime focus:ring-gym-lime"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded bg-gym-black border-gym-border text-gym-lime focus:ring-gym-lime cursor-pointer accent-[#ccff00]"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-xs text-gym-secondary">
+                <span className="ml-2 block text-xs text-gym-secondary hover:text-gym-primary transition-colors">
                   Remember credentials on this terminal
-                </label>
-              </div>
+                </span>
+              </label>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-sm font-heading uppercase font-bold tracking-wider text-sm bg-gym-lime text-gym-black hover:bg-gym-lime-hover shadow-lime-glow transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-sm font-heading uppercase font-bold tracking-wider text-sm bg-gym-lime text-gym-black hover:bg-gym-lime-hover shadow-lime-glow transition-all disabled:opacity-75 cursor-pointer"
             >
               {isSubmitting ? (
-                <div className="w-4 h-4 border-2 border-gym-black border-t-transparent rounded-full animate-spin"></div>
+                <div className="flex items-center gap-2.5">
+                  <WeightlifterIcon className="w-5 h-5 text-gym-black" isLifting={true} />
+                  <span>Lifting Your Profile...</span>
+                </div>
               ) : (
                 <>
+                  <WeightlifterIcon className="w-4 h-4 text-gym-black" />
                   <span>Sign In To Portal</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
@@ -172,47 +275,83 @@ export const LoginPage: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] text-gym-secondary mb-3 leading-relaxed">
-              Explore complete role-based dashboards without entering credentials:
+              Click a role for instant access, or click the small autofill tag to populate the form:
             </p>
             <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('admin')}
-                className="py-2.5 px-2 bg-gym-black hover:bg-zinc-900 border border-gym-border hover:border-gym-lime rounded-sm text-center transition-all group flex flex-col items-center gap-1 cursor-pointer"
-                title="Login as Club Owner"
-              >
-                <ShieldCheck className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
-                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
-                  Admin
-                </span>
-                <span className="text-[9px] text-gym-muted">Owner Deck</span>
-              </button>
+              <div className="bg-gym-black border border-gym-border hover:border-gym-lime rounded-sm p-2 text-center transition-all flex flex-col justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('admin')}
+                  className="w-full flex flex-col items-center gap-1 cursor-pointer group"
+                  title="Direct 1-Click Access as Club Owner"
+                >
+                  <ShieldCheck className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
+                  <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                    Admin
+                  </span>
+                  <span className="text-[9px] text-gym-muted">Owner Deck</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('admin@profitgym.com', 'password123')}
+                  className="mt-2 text-[9px] text-gym-muted hover:text-gym-lime underline block"
+                  title="Autofill email & password into the form above"
+                >
+                  Autofill
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('trainer')}
-                className="py-2.5 px-2 bg-gym-black hover:bg-zinc-900 border border-gym-border hover:border-gym-lime rounded-sm text-center transition-all group flex flex-col items-center gap-1 cursor-pointer"
-                title="Login as Head Coach Marcus Drake"
-              >
-                <Dumbbell className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
-                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
-                  Trainer
-                </span>
-                <span className="text-[9px] text-gym-muted">Coach Hub</span>
-              </button>
+              <div className="bg-gym-black border border-gym-border hover:border-gym-lime rounded-sm p-2 text-center transition-all flex flex-col justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('trainer')}
+                  className="w-full flex flex-col items-center gap-1 cursor-pointer group"
+                  title="Direct 1-Click Access as Master Coach Marcus Drake"
+                >
+                  <Dumbbell className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
+                  <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                    Trainer
+                  </span>
+                  <span className="text-[9px] text-gym-muted">Coach Hub</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('trainer@profitgym.com', 'password123')}
+                  className="mt-2 text-[9px] text-gym-muted hover:text-gym-lime underline block"
+                  title="Autofill email & password into the form above"
+                >
+                  Autofill
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('member')}
-                className="py-2.5 px-2 bg-gym-black hover:bg-zinc-900 border border-gym-border hover:border-gym-lime rounded-sm text-center transition-all group flex flex-col items-center gap-1 cursor-pointer"
-                title="Login as Black Card Athlete Jordan Vance"
-              >
-                <User className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
-                <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
-                  Member
-                </span>
-                <span className="text-[9px] text-gym-muted">Athlete App</span>
-              </button>
+              <div className="bg-gym-black border border-gym-border hover:border-gym-lime rounded-sm p-2 text-center transition-all flex flex-col justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('member')}
+                  className="w-full flex flex-col items-center gap-1 cursor-pointer group"
+                  title="Direct 1-Click Access as Black Card Athlete Alex Vance"
+                >
+                  <User className="w-4 h-4 text-gym-lime group-hover:scale-110 transition-transform" />
+                  <span className="font-heading font-bold text-[10px] uppercase text-gym-primary tracking-wider">
+                    Member
+                  </span>
+                  <span className="text-[9px] text-gym-muted">Athlete App</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAutofill('member@profitgym.com', 'password123')}
+                  className="mt-2 text-[9px] text-gym-muted hover:text-gym-lime underline block"
+                  title="Autofill email & password into the form above"
+                >
+                  Autofill
+                </button>
+              </div>
+            </div>
+
+            {/* Hint Box with exact credentials */}
+            <div className="mt-3 p-2 bg-gym-black/60 border border-gym-border/70 rounded text-[10px] text-gym-muted flex items-center justify-between font-mono">
+              <span>Default password: <strong className="text-gym-lime font-bold">password123</strong></span>
+              <span className="text-gym-secondary text-[9px]">All 3 roles</span>
             </div>
           </div>
 

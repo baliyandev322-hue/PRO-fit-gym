@@ -39,7 +39,7 @@ export const AdminMembersPage: React.FC = () => {
   const fetchMembers = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
       const res = await fetch('/api/admin/members', {
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
@@ -75,7 +75,7 @@ export const AdminMembersPage: React.FC = () => {
 
   const handleDeleteMember = async (id: string, name: string) => {
     try {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
       const res = await fetch(`/api/admin/members/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
@@ -110,7 +110,7 @@ export const AdminMembersPage: React.FC = () => {
     if (!newFullName || !newEmail) return;
 
     try {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
       const res = await fetch('/api/admin/members', {
         method: 'POST',
         headers: {

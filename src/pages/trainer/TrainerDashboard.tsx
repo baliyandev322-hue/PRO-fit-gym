@@ -25,7 +25,7 @@ export const TrainerDashboard: React.FC = () => {
   useEffect(() => {
     const fetchAthletes = async () => {
       try {
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
         const res = await fetch('/api/admin/members', {
           headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         });
@@ -50,6 +50,24 @@ export const TrainerDashboard: React.FC = () => {
               status: 'Active',
               lastCheckIn: 'Today, 2:30 PM',
               focus: 'Deadlift & Posterior Chain 1RM'
+            },
+            {
+              id: 'user-member-2',
+              name: 'Elena Rostova',
+              avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+              tier: 'Elite VIP Tier',
+              status: 'Active',
+              lastCheckIn: 'Today, 11:15 AM',
+              focus: 'Olympic Snatch & Overhead Power'
+            },
+            {
+              id: 'user-member-3',
+              name: 'Jordan Bell',
+              avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+              tier: 'Starter Tier',
+              status: 'Active',
+              lastCheckIn: 'Yesterday',
+              focus: 'Hypertrophy & VO2 Conditioning'
             }
           ]);
         }

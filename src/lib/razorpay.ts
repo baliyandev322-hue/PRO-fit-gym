@@ -72,7 +72,7 @@ export async function createRazorpayOrder(
   planOrOptions: string | { amount?: number; currency?: string; receipt?: string; planId?: string },
   token?: string
 ): Promise<RazorpayOrderData> {
-  const authToken = token || localStorage.getItem('profit_auth_token');
+  const authToken = token || localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || localStorage.getItem('profit_auth_token');
   const planId = typeof planOrOptions === 'string' ? planOrOptions : planOrOptions?.planId || 'plan-performance';
   const customAmount = typeof planOrOptions === 'object' ? planOrOptions.amount : undefined;
   const currency = typeof planOrOptions === 'object' ? planOrOptions.currency || 'INR' : 'INR';
@@ -146,7 +146,7 @@ export async function verifyRazorpayPayment(params: {
   planId?: string;
   token?: string;
 }): Promise<RazorpayVerificationResult> {
-  const authToken = params.token || localStorage.getItem('profit_auth_token');
+  const authToken = params.token || localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || localStorage.getItem('profit_auth_token');
 
   try {
     const apiBase = getApiBase();

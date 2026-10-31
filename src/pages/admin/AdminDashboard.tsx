@@ -44,7 +44,7 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchTelemetry = async () => {
       try {
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const token = localStorage.getItem('profit_gym_jwt_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
         const res = await fetch('/api/admin/telemetry', {
           headers: {
             'Authorization': token ? `Bearer ${token}` : ''
