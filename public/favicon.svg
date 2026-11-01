@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#0d0e10" />
+  <g fill="#ccff00" stroke="#ccff00">
+    <!-- Barbell Bar -->
+    <rect x="12" y="21" width="76" height="4" rx="2" stroke="none" />
+
+    <!-- Left Plates -->
+    <rect x="20" y="8" width="6.5" height="30" rx="2" stroke="none" />
+    <rect x="15" y="13" width="4.5" height="20" rx="1.5" stroke="none" />
+    <rect x="27" y="20" width="2" height="6" rx="0.5" stroke="none" />
+
+    <!-- Right Plates -->
+    <rect x="73.5" y="8" width="6.5" height="30" rx="2" stroke="none" />
+    <rect x="80.5" y="13" width="4.5" height="20" rx="1.5" stroke="none" />
+    <rect x="71" y="20" width="2" height="6" rx="0.5" stroke="none" />
+
+    <!-- Arms Holding Bar Overhead -->
+    <path
+      d="M 32 23 L 42 39 L 46 48"
+      stroke="#ccff00"
+      stroke-width="6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      fill="none"
+    />
+    <path
+      d="M 68 23 L 58 39 L 54 48"
+      stroke="#ccff00"
+      stroke-width="6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      fill="none"
+    />
+
+    <!-- Athlete Head -->
+    <circle cx="50" cy="35" r="7.5" stroke="none" />
+
+    <!-- Athlete Torso -->
+    <path d="M 44 48 L 56 48 L 61 74 L 39 74 Z" stroke="none" />
+
+    <!-- Athlete Legs -->
+    <path
+      d="M 42 73 L 34 94"
+      stroke="#ccff00"
+      stroke-width="7"
+      stroke-linecap="round"
+    />
+    <path
+      d="M 58 73 L 66 94"
+      stroke="#ccff00"
+      stroke-width="7"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>

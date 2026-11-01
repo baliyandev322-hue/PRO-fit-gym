@@ -283,7 +283,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen">
       <SEOHead
-        title="High Performance Strength Sanctuary & SaaS"
+        title="PROFIT - Training Club"
         description="Exclusive 300-member strength sanctuary. Eleiko calibrated iron, biometric turnstiles, and elite athlete management platform."
         canonicalUrl="https://profitgymclub.com/"
       />

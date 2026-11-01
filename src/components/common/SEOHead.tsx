@@ -10,7 +10,8 @@ export interface SEOHeadProps {
   noindex?: boolean;
 }
 
-const DEFAULT_TITLE = 'PROFIT Training Club | High Performance Strength Sanctuary & SaaS';
+const BRAND_TITLE = 'PROFIT - Training Club';
+const DEFAULT_TITLE = 'PROFIT - Training Club';
 const DEFAULT_DESC = 'Exclusive 300-member strength sanctuary. Eleiko calibrated iron, biometric turnstiles, and elite athlete management platform.';
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&h=630&q=80';
 const SITE_ORIGIN = 'https://profitgymclub.com';
@@ -31,7 +32,10 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 
   useEffect(() => {
     // 1. Page Title
-    const finalTitle = title ? `${title} | PROFIT Training Club` : DEFAULT_TITLE;
+    const isMainPage = location.pathname === '/';
+    const finalTitle = isMainPage || !title || title === BRAND_TITLE
+      ? BRAND_TITLE
+      : `${title} | ${BRAND_TITLE}`;
     document.title = finalTitle;
 
     // Helper to get or create a tag
@@ -67,7 +71,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     setMetaTag('property', 'og:url', finalCanonical);
     setMetaTag('property', 'og:image', ogImage);
     setMetaTag('property', 'og:type', ogType);
-    setMetaTag('property', 'og:site_name', 'PROFIT Training Club');
+    setMetaTag('property', 'og:site_name', BRAND_TITLE);
 
     // 6. Twitter Card Metadata
     setMetaTag('name', 'twitter:card', 'summary_large_image');

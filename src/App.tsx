@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { WeightlifterIcon } from '@/components/common/WeightlifterIcon';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { RouteTitleHandler } from '@/components/common/RouteTitleHandler';
 
 // Sleek Brand Loader for lazy-loaded route transitions
 const PageLoader: React.FC = () => (
@@ -64,6 +65,7 @@ export const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <RouteTitleHandler />
       <NotificationProvider>
         <AuthProvider>
           <GymDataProvider>
