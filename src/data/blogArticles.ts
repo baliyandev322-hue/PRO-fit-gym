@@ -87,7 +87,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "Everything clinical research reveals about creatine monohydrate. We debunk kidney damage myths, analyze loading protocols vs daily maintenance, and evaluate cognitive benefits.",
     "image": "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?auto=format&fit=crop&w=1200&h=600&q=80",
@@ -189,7 +189,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "Is it biologically possible to strip fat and synthesize muscle simultaneously? Learn the specific energy balance protocols, protein thresholds, and resistance parameters required.",
     "image": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=1200&h=600&q=80",
@@ -393,7 +393,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "How thermal stress accelerates lactate clearance, stimulates heat shock proteins, and spikes dopamine by 250%. The exact contrast bath timing for athletes.",
     "image": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&h=600&q=80",
@@ -444,7 +444,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "Debunking the mythical 30-minute anabolic window. Learn the leucine threshold, per-meal protein distribution, and how to maximize 24-hour muscle protein accretion.",
     "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&h=600&q=80",
@@ -600,10 +600,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "Sleep is the most potent legal anabolic compound available. The neurobiology of stage 3 slow-wave sleep, cortisol blunting, and nightly testosterone secretion.",
-    "image": "https://images.unsplash.com/photo-1520206183501-b80df61e43c2?auto=format&fit=crop&w=1200&h=600&q=80",
+    "image": "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=1200&h=600&q=80",
     "tags": [
       "Sleep Science",
       "Testosterone",
@@ -652,7 +652,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "Most commercial pre-workouts are under-dosed marketing scams. We break down the exact clinical milligram doses of L-Citrulline, Beta-Alanine, Alpha-GPC, and Caffeine.",
     "image": "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=1200&h=600&q=80",
@@ -756,7 +756,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "The bathroom scale is a liar. Learn how dual-energy X-ray absorptiometry (DEXA) and multi-frequency bioelectrical impedance (InBody 770) reveal true metabolic health.",
     "image": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&h=600&q=80",
@@ -807,7 +807,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     "author": {
       "name": "Dr. Elena Rostova, PhD",
       "role": "Director of Sports Biomechanics & Nutrition",
-      "avatar": "https://images.unsplash.com/photo-1594824813589-4852c0f2095f?auto=format&fit=crop&w=200&h=200&q=80"
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80"
     },
     "summary": "Building muscle isn't just vanity\u2014it is longevity armor. Explore how heavy lifting preserves bone mineral density, reverses insulin resistance, and combats sarcopenia.",
     "image": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=1200&h=600&q=80",
