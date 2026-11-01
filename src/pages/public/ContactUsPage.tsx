@@ -153,7 +153,7 @@ export const ContactUsPage: React.FC = () => {
                 <span className="text-xs text-gym-secondary">Chat directly with head coach</span>
               </div>
               <a
-                href="https://wa.me/919999999999?text=Hello%20PROFIT%20Club%2C%20I%20have%20an%20inquiry%20regarding%20membership%20or%20editorial%20articles."
+                href="https://wa.me/919368593249?text=Hello%20PROFIT%20Club%2C%20I%20have%20an%20inquiry%20regarding%20membership%20or%20editorial%20articles."
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackWhatsAppLeadClick('contact_page')}

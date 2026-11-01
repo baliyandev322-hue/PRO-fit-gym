@@ -60,6 +60,17 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Gracefully handle malformed JSON payloads from external requests/crawlers
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Malformed JSON payload provided.',
+    });
+  }
+  next(err);
+});
+
 // Connect to Database
 connectDB();
 
@@ -138,7 +149,12 @@ app.use('/api/*', (req, res) => {
 
 // Centralized Error Handling Middleware
 app.use((err, req, res, next) => {
-  console.error('[Server Error]', err.stack || err.message);
+  const statusCode = err.status || 500;
+  if (statusCode >= 500) {
+    console.error('[Server Error]', err.stack || err.message);
+  } else {
+    console.warn(`[Client Advisory ${statusCode}]`, err.message);
+  }
 
   if (err.message && err.message.startsWith('CORS blocked')) {
     return res.status(403).json({
@@ -147,7 +163,7 @@ app.use((err, req, res, next) => {
     });
   }
 
-  res.status(err.status || 500).json({
+  res.status(statusCode).json({
     success: false,
     message: process.env.NODE_ENV === 'production' ? 'Internal server error occurred.' : err.message,
   });
