@@ -302,7 +302,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-7 text-xs uppercase font-heading font-bold tracking-wider text-gym-secondary">
-            <a href="#about" className="hover:text-gym-lime transition-colors">Philosophy</a>
+            <Link to="/about" className="hover:text-gym-lime transition-colors">About</Link>
             <a href="#programs" className="hover:text-gym-lime transition-colors">Disciplines</a>
             <a href="#plans" className="hover:text-gym-lime transition-colors">Memberships</a>
             <a href="#lab" className="hover:text-gym-lime transition-colors">Performance Lab</a>
@@ -359,7 +359,7 @@ export const LandingPage: React.FC = () => {
         {/* Mobile Dropdown */}
         {mobileNavOpen && (
           <div className="md:hidden bg-gym-surface border-b border-gym-border px-6 py-4 space-y-3">
-            <a href="#about" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Philosophy</a>
+            <Link to="/about" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary hover:text-gym-lime">About</Link>
             <a href="#programs" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Disciplines</a>
             <a href="#plans" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Memberships</a>
             <a href="#lab" onClick={() => setMobileNavOpen(false)} className="block text-sm uppercase font-heading font-bold text-gym-secondary">Performance Lab</a>
