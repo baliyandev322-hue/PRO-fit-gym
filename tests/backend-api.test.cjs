@@ -1,7 +1,13 @@
 const assert = require('assert');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-require('dotenv').config({ path: 'server/.env' });
+try {
+  require('dotenv').config({ path: 'server/.env' });
+} catch (e) {
+  try {
+    require('../server/node_modules/dotenv').config({ path: 'server/.env' });
+  } catch {}
+}
 
 const BASE_URL = 'http://localhost:5000';
 const JWT_SECRET = process.env.JWT_SECRET || 'profit_gym_super_secure_jwt_secret_key_2026_x92';
