@@ -54,7 +54,7 @@ router.post('/send-otp', authLimiter, async (req, res) => {
   try {
     const { email, fullName = 'Athlete' } = req.body;
 
-    if (!email || !email.includes('@')) {
+    if (typeof email !== 'string' || !email.includes('@')) {
       return res.status(400).json({
         success: false,
         message: 'A valid email address is required to dispatch an OTP.',
@@ -133,7 +133,7 @@ router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
+    if (typeof email !== 'string' || !otp) {
       return res.status(400).json({
         success: false,
         message: 'Email and 6-digit verification code are required.',
@@ -205,7 +205,14 @@ router.post('/register', authLimiter, async (req, res) => {
       fitnessProfile
     } = req.body;
 
-    if (!email || !password || !fullName) {
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      typeof fullName !== 'string' ||
+      !email.trim() ||
+      !password.trim() ||
+      !fullName.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Full name, email address, and password are required.',
@@ -365,9 +372,14 @@ router.post('/register', authLimiter, async (req, res) => {
  */
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    if (!email || !password) {
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Both email and password are required.',

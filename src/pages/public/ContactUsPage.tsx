@@ -48,7 +48,7 @@ export const ContactUsPage: React.FC = () => {
   return (
     <div className="bg-gym-black text-gym-primary font-sans selection:bg-gym-lime selection:text-gym-black min-h-screen flex flex-col">
       <SEOHead
-        title="Contact Concierge & Editorial Desk | PROFIT Training Club"
+        title="Contact Concierge & Editorial Desk"
         description="Connect with PROFIT Training Club concierge desk, schedule a sanctuary walkthrough, or submit editorial & press inquiries."
         canonicalUrl="https://profitgymclub.com/contact"
       />

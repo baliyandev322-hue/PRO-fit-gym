@@ -33,9 +33,10 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   useEffect(() => {
     // 1. Page Title
     const isMainPage = location.pathname === '/';
-    const finalTitle = isMainPage || !title || title === BRAND_TITLE
+    const cleanTitle = title ? title.replace(/\s*\|.*$/, '').trim() : '';
+    const finalTitle = isMainPage || !cleanTitle || cleanTitle === BRAND_TITLE
       ? BRAND_TITLE
-      : `${title} | ${BRAND_TITLE}`;
+      : `${cleanTitle} | ${BRAND_TITLE}`;
     document.title = finalTitle;
 
     // Helper to get or create a tag

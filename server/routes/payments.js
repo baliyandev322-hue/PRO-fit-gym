@@ -272,7 +272,10 @@ const verifyPaymentHandler = async (req, res) => {
       .update(`${orderId}|${paymentId}`)
       .digest('hex');
 
-    const isSignatureValid = (generatedSignature === signature);
+    // Timing-safe constant-time comparison to prevent side-channel timing attacks
+    const genBuf = Buffer.from(generatedSignature, 'utf8');
+    const recBuf = Buffer.from(signature || '', 'utf8');
+    const isSignatureValid = genBuf.length === recBuf.length && crypto.timingSafeEqual(genBuf, recBuf);
 
     if (!isSignatureValid) {
       console.warn(`[SECURITY] Signature mismatch: expected ${generatedSignature}, received ${signature}`);
@@ -410,7 +413,12 @@ router.post('/webhook', async (req, res) => {
       .update(payload)
       .digest('hex');
 
-    const isValid = webhookSignature === expectedSignature || RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY');
+    let isValid = RAZORPAY_KEY_ID.includes('PROFIT_GYM_DEV_KEY');
+    if (!isValid && webhookSignature && expectedSignature) {
+      const sigBuf = Buffer.from(webhookSignature, 'utf8');
+      const expBuf = Buffer.from(expectedSignature, 'utf8');
+      isValid = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+    }
 
     if (!isValid) {
       console.warn('[SECURITY] Razorpay webhook signature verification failed.');
