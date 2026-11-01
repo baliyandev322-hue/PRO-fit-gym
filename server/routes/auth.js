@@ -493,6 +493,60 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     }
 
+    // 4. Development & CI Test Seed Accounts (strictly disabled in production)
+    if (process.env.NODE_ENV !== 'production') {
+      const SEED_CREDENTIALS = {
+        'admin@profitgym.com': {
+          id: 'usr_admin_01',
+          name: 'Dev Baliyan',
+          role: 'ADMIN',
+          validPasswords: ['password123', 'admin123']
+        },
+        'trainer@profitgym.com': {
+          id: 'usr_trainer_01',
+          name: 'Marcus Drake',
+          role: 'TRAINER',
+          validPasswords: ['password123']
+        },
+        'alex.vance@athlete.com': {
+          id: 'usr_member_01',
+          name: 'Alex Vance',
+          role: 'MEMBER',
+          validPasswords: ['password123']
+        },
+        'member@profitgym.com': {
+          id: 'usr_member_02',
+          name: 'Jordan Bell',
+          role: 'MEMBER',
+          validPasswords: ['password123']
+        }
+      };
+
+      const seedAccount = SEED_CREDENTIALS[normalizedEmail];
+      if (seedAccount && seedAccount.validPasswords.includes(password)) {
+        const verifiedUser = {
+          id: seedAccount.id,
+          email: normalizedEmail,
+          fullName: seedAccount.name,
+          role: seedAccount.role,
+        };
+        const token = signToken(verifiedUser);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Authentication successful.',
+          token,
+          user: verifiedUser,
+          admin: {
+            id: verifiedUser.id,
+            email: verifiedUser.email,
+            name: verifiedUser.fullName,
+            role: verifiedUser.role.toLowerCase(),
+          },
+        });
+      }
+    }
+
     // Production Guardrail: Ensure production requests never bypass database authentication
     if (process.env.NODE_ENV === 'production' && mongoose.connection.readyState !== 1) {
       return res.status(503).json({
