@@ -71,6 +71,36 @@ export const BlogPostPage: React.FC = () => {
         ogImage={article.image}
         ogType="article"
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            'headline': article.title,
+            'description': article.summary,
+            'image': [article.image],
+            'datePublished': '2026-10-24T08:00:00+05:30',
+            'author': {
+              '@type': 'Person',
+              'name': article.author.name,
+              'jobTitle': article.author.role,
+            },
+            'publisher': {
+              '@type': 'Organization',
+              'name': 'PROFIT Training Club',
+              'logo': {
+                '@type': 'ImageObject',
+                'url': 'https://profitgymclub.com/weightlifter.png',
+              },
+            },
+            'mainEntityOfPage': {
+              '@type': 'WebPage',
+              '@id': `https://profitgymclub.com/blog/${article.slug}`,
+            },
+          }),
+        }}
+      />
       {/* ================= STICKY TOP NAVIGATION ================= */}
       <header className="sticky top-0 z-50 bg-gym-surface/90 backdrop-blur-md border-b border-gym-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -155,15 +185,6 @@ export const BlogPostPage: React.FC = () => {
           />
         </div>
 
-        {/* ================= GOOGLE ADSENSE PLACEHOLDER (TOP) ================= */}
-        <div className="my-8 p-4 bg-gym-surface/30 border border-gym-border/60 rounded text-center min-h-[90px] flex flex-col items-center justify-center">
-          <span className="text-[10px] uppercase font-mono tracking-widest text-gym-muted mb-1">Advertisement</span>
-          <div className="adsense-slot-top w-full flex items-center justify-center text-xs text-gym-muted/60">
-            {/* Auto-injected by Google AdSense Script */}
-            <span>PROFIT Partner Network</span>
-          </div>
-        </div>
-
         {/* ================= ARTICLE BODY SECTIONS ================= */}
         <div className="space-y-12 text-gym-secondary leading-relaxed text-sm sm:text-base">
           {article.sections.map((section, idx) => (
@@ -207,15 +228,6 @@ export const BlogPostPage: React.FC = () => {
               #{tag}
             </span>
           ))}
-        </div>
-
-        {/* ================= GOOGLE ADSENSE PLACEHOLDER (BOTTOM) ================= */}
-        <div className="my-10 p-6 bg-gym-surface/30 border border-gym-border/60 rounded text-center min-h-[120px] flex flex-col items-center justify-center">
-          <span className="text-[10px] uppercase font-mono tracking-widest text-gym-muted mb-1">Sponsored Recommendation</span>
-          <div className="adsense-slot-bottom w-full flex items-center justify-center text-xs text-gym-muted/60">
-            {/* Auto-injected by Google AdSense Script */}
-            <span>PROFIT High Performance Network</span>
-          </div>
         </div>
 
         {/* CTA BANNER */}

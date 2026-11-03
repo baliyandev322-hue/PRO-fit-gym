@@ -39,6 +39,42 @@
     
     <!-- Razorpay Standard Web Checkout SDK (Deferred non-blocking load) -->
     <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <!-- Schema.org Publisher & Entity Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SportsClub",
+          "@id": "https://profitgymclub.com/#organization",
+          "name": "PROFIT Training Club",
+          "url": "https://profitgymclub.com",
+          "logo": "https://profitgymclub.com/weightlifter.png",
+          "image": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&h=630&q=80",
+          "description": "Exclusive high-performance strength sanctuary with biometric access, Eleiko calibrated iron, and evidence-based exercise physiology protocols.",
+          "telephone": "+91-9368593249",
+          "email": "concierge@profitgymclub.com",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "New York",
+            "addressRegion": "NY",
+            "streetAddress": "452 Lafayette St",
+            "addressCountry": "US"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://profitgymclub.com/#website",
+          "url": "https://profitgymclub.com",
+          "name": "PROFIT Training Club",
+          "publisher": {
+            "@id": "https://profitgymclub.com/#organization"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-gym-black text-gym-primary font-sans antialiased selection:bg-gym-lime selection:text-gym-black min-h-screen">
     <div id="root"></div>
