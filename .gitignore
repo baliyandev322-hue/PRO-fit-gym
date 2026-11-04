@@ -25,3 +25,7 @@ logs/
 .vercel/
 dist/
 build/
+
+# Test outputs
+test-results/
+playwright-report/
