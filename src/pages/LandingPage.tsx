@@ -286,6 +286,25 @@ export const LandingPage: React.FC = () => {
         title="PROFIT - Training Club"
         description="Exclusive 300-member strength sanctuary. Eleiko calibrated iron, biometric turnstiles, and elite athlete management platform."
         canonicalUrl="https://profitgymclub.com/"
+        keywords="gym management saas, strength training club, private athletic facility, high performance gym, eleiko calibrated iron, executive fitness membership, gym billing software, gym attendance qr app"
+      />
+      {/* Schema.org FAQPage Rich Snippet for Google Search SERP Enhancement */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            'mainEntity': faqs.map(faq => ({
+              '@type': 'Question',
+              'name': faq.q,
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': faq.a
+              }
+            }))
+          })
+        }}
       />
       {/* ================= 1. ARCHITECTURAL NAVBAR ================= */}
       <header className="sticky top-0 z-50 bg-gym-surface/90 backdrop-blur-md border-b border-gym-border">

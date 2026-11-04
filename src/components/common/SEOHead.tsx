@@ -7,6 +7,10 @@ export interface SEOHeadProps {
   canonicalUrl?: string;
   ogImage?: string;
   ogType?: 'website' | 'article';
+  keywords?: string;
+  articlePublishedTime?: string;
+  articleAuthor?: string;
+  articleTags?: string[];
   noindex?: boolean;
 }
 
@@ -26,6 +30,10 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   canonicalUrl,
   ogImage = DEFAULT_IMAGE,
   ogType = 'website',
+  keywords,
+  articlePublishedTime,
+  articleAuthor,
+  articleTags,
   noindex = false,
 }) => {
   const location = useLocation();
@@ -62,6 +70,9 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 
     // 3. Meta Description
     setMetaTag('name', 'description', description);
+    if (keywords) {
+      setMetaTag('name', 'keywords', keywords);
+    }
 
     // 4. Meta Robots
     setMetaTag('name', 'robots', noindex ? 'noindex, nofollow' : 'index, follow');
@@ -73,13 +84,18 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     setMetaTag('property', 'og:image', ogImage);
     setMetaTag('property', 'og:type', ogType);
     setMetaTag('property', 'og:site_name', BRAND_TITLE);
+    if (ogType === 'article') {
+      if (articlePublishedTime) setMetaTag('property', 'article:published_time', articlePublishedTime);
+      if (articleAuthor) setMetaTag('property', 'article:author', articleAuthor);
+      if (articleTags && articleTags.length > 0) setMetaTag('property', 'article:tag', articleTags.join(', '));
+    }
 
     // 6. Twitter Card Metadata
     setMetaTag('name', 'twitter:card', 'summary_large_image');
     setMetaTag('name', 'twitter:title', finalTitle);
     setMetaTag('name', 'twitter:description', description);
     setMetaTag('name', 'twitter:image', ogImage);
-  }, [title, description, canonicalUrl, ogImage, ogType, noindex, location.pathname]);
+  }, [title, description, canonicalUrl, ogImage, ogType, keywords, articlePublishedTime, articleAuthor, articleTags, noindex, location.pathname]);
 
   return null;
 };

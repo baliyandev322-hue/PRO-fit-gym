@@ -70,6 +70,10 @@ export const BlogPostPage: React.FC = () => {
         canonicalUrl={`https://profitgymclub.com/blog/${article.slug}`}
         ogImage={article.image}
         ogType="article"
+        keywords={article.tags.join(', ')}
+        articlePublishedTime="2026-10-24T08:00:00+05:30"
+        articleAuthor={article.author.name}
+        articleTags={article.tags}
       />
       <script
         type="application/ld+json"
