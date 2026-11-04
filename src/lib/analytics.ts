@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-const GA4_MEASUREMENT_ID = (import.meta.env.VITE_GA4_MEASUREMENT_ID || '').trim();
+const GA4_MEASUREMENT_ID = (import.meta.env.VITE_GA4_MEASUREMENT_ID || 'G-13D5KME8CC').trim();
 
 // Cache of dispatched event fingerprints to prevent duplicates
 const dispatchedEventsCache = new Set<string>();
