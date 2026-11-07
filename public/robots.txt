@@ -1,3 +1,7 @@
+# Google AdSense Crawler Explicit Authorization
+User-agent: Mediapartners-Google
+Allow: /
+
 User-agent: *
 Allow: /
 Allow: /about

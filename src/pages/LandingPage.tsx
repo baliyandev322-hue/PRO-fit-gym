@@ -938,7 +938,7 @@ export const LandingPage: React.FC = () => {
               to="/blog"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-gym-surface hover:bg-gym-surface-hover border border-gym-lime/40 text-gym-lime hover:text-white font-heading font-bold text-xs uppercase tracking-wider rounded transition-all shrink-0 shadow-lime-glow"
             >
-              <span>Explore All 16 Protocols</span>
+              <span>Explore All 21 Protocols</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -1601,7 +1601,7 @@ export const LandingPage: React.FC = () => {
                 <li><Link to="/blog/push-pull-legs-hypertrophy-masterclass" className="hover:text-gym-lime transition-colors">PPL Hypertrophy Split</Link></li>
                 <li><Link to="/blog/creatine-monohydrate-science-dosage-timing" className="hover:text-gym-lime transition-colors">Creatine Dosage Guide</Link></li>
                 <li><Link to="/blog/how-to-calculate-and-use-1rm" className="hover:text-gym-lime transition-colors">1RM Formula Calculator</Link></li>
-                <li><Link to="/blog" className="text-gym-lime hover:underline font-bold flex items-center gap-1">All 16 Scientific Protocols &rarr;</Link></li>
+                <li><Link to="/blog" className="text-gym-lime hover:underline font-bold flex items-center gap-1">All 21 Scientific Protocols &rarr;</Link></li>
               </ul>
             </div>
 
